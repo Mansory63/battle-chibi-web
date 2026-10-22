@@ -983,10 +983,23 @@ func _spawn_loot() -> void:
 func _random_kind() -> String:
 	return LOOT_WEIGHTED[randi() % LOOT_WEIGHTED.size()]
 
+func _spread_spawn() -> Vector2:
+	var best := _random_free(BOT_RADIUS)
+	var best_d := -1.0
+	for k in 12:
+		var p := _random_free(BOT_RADIUS)
+		var d := 99999.0
+		for b in bots:
+			d = minf(d, p.distance_to(b["pos"]))
+		if d > best_d:
+			best_d = d
+			best = p
+	return best
+
 func _spawn_bots() -> void:
 	for i in BOT_COUNT:
 		bots.append({
-			"pos": _random_free(BOT_RADIUS),
+			"pos": _spread_spawn(),
 			"health": 100.0,
 			"alive": true,
 			"color": Color(0.9, 0.5, 0.5),
