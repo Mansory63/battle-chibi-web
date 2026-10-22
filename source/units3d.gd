@@ -22,6 +22,7 @@ var pitch_angle := asin(VIEW_TILT)
 var world_root: Node3D
 var unit_root: Node3D
 var world_mode := false
+var zoom := 1.0
 var houses: Array = []
 var tree_nodes: Array = []
 var mat_tree_solid: StandardMaterial3D
@@ -298,6 +299,7 @@ func end_frame() -> void:
 
 # ---------- Kamera und Modus ----------
 func _apply_camera() -> void:
+	camera.size = vsize.y / zoom if world_mode else vsize.y
 	if world_mode:
 		camera.rotation = Vector3(-pitch_angle, 0.0, 0.0)
 		camera.position = cam_target + Vector3(0.0, sin(pitch_angle) * CAM_DIST, cos(pitch_angle) * CAM_DIST)
@@ -377,6 +379,7 @@ func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, col: Color, ref :
 	for p in [a, b, c]:
 		st.set_normal(n)
 		st.set_color(col)
+		st.set_uv(Vector2.ZERO)
 		st.add_vertex(p)
 
 func _add_box(st: SurfaceTool, c: Vector3, size: Vector3, col: Color) -> void:
@@ -411,6 +414,7 @@ func _add_sphere(st: SurfaceTool, c: Vector3, r: float, col: Color, squash := 0.
 				for v in tri:
 					st.set_normal(v)
 					st.set_color(cc)
+					st.set_uv(Vector2.ZERO)
 					st.add_vertex(c + Vector3(v.x * r, v.y * r * squash, v.z * r))
 
 func _add_cyl(st: SurfaceTool, base: Vector3, r: float, h: float, col: Color) -> void:

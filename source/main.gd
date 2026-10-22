@@ -166,6 +166,10 @@ var message_timer := 0.0
 var cam: Camera2D
 var units3d: Node = null
 var hardcore := false
+var flashes: Array[Dictionary] = []
+var sparks: Array[Dictionary] = []
+var fireballs: Array[Dictionary] = []
+var shake := 0.0
 var tut_done := false
 var tut_step := 0
 const TUT_TEXTS := ["Linker Daumen: laufen", "Rechter Daumen: FEUER halten = schießen, ziehen = zielen", "Kisten öffnen: 3 Sekunden daneben stehen", "Bleib in der Zone, das Feuer außen tut weh!"]
@@ -178,6 +182,7 @@ var mode_btn: Button
 var popups: Array[Dictionary] = []
 var fx: Control
 var damage_flash := 0.0
+const ZOOM := 1.3
 const ONLINE := false   # Online-Multiplayer gibt es noch nicht; Pause verhält sich dann anders
 var paused_away := false
 var pause_layer: CanvasLayer
@@ -225,6 +230,7 @@ func _ready() -> void:
 	units3d.build_world(obstacles, trees, tex_roofs)
 
 	cam = Camera2D.new()
+	cam.zoom = Vector2(ZOOM, ZOOM)
 	add_child(cam)
 	cam.make_current()
 	_set_camera_limits(true)
@@ -238,6 +244,7 @@ func _ready() -> void:
 	hud.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.12))
 	hud.add_theme_constant_override("outline_size", 8)
 	layer.add_child(hud)
+	hud.visible = false
 	center_label = Label.new()
 	center_label.anchor_right = 1.0
 	center_label.offset_top = 250.0
@@ -380,7 +387,7 @@ func _build_fx() -> void:
 	fx.draw.connect(_draw_fx)
 
 func _fx_screen(p: Vector2) -> Vector2:
-	return _w(p) - cam.get_screen_center_position() + get_viewport_rect().size * 0.5
+	return (_w(p) - cam.get_screen_center_position()) * ZOOM + get_viewport_rect().size * 0.5
 
 func _fx_bar(sp: Vector2, hp: float, col: Color) -> void:
 	var w := 50.0
@@ -390,33 +397,142 @@ func _fx_bar(sp: Vector2, hp: float, col: Color) -> void:
 	fx.draw_rect(Rect2(top, Vector2(w, 7)), Color(0.25, 0.25, 0.28))
 	fx.draw_rect(Rect2(top, Vector2(w * ratio, 7)), col)
 
+func _pill(r: Rect2, col: Color, radius := 10) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = col
+	sb.set_corner_radius_all(radius)
+	fx.draw_style_box(sb, r)
+
+func _bar(r: Rect2, ratio: float, col: Color, back := Color(0.08, 0.09, 0.14, 0.75)) -> void:
+	_pill(Rect2(r.position - Vector2(3, 3), r.size + Vector2(6, 6)), Color(0.05, 0.05, 0.08, 0.9), 12)
+	_pill(r, back, 10)
+	if ratio > 0.01:
+		_pill(Rect2(r.position, Vector2(maxf(r.size.y, r.size.x * clampf(ratio, 0.0, 1.0)), r.size.y)), col, 10)
+		_pill(Rect2(r.position + Vector2(3, 2), Vector2(maxf(4.0, r.size.x * clampf(ratio, 0.0, 1.0) - 6.0), r.size.y * 0.35)), Color(1, 1, 1, 0.22), 6)
+
+func _text(p: Vector2, t: String, size: int, col := Color.WHITE, width := -1.0, align := HORIZONTAL_ALIGNMENT_LEFT) -> void:
+	var f := ThemeDB.fallback_font
+	fx.draw_string_outline(f, p, t, align, width, size, 7, Color(0.06, 0.05, 0.1, 0.95))
+	fx.draw_string(f, p, t, align, width, size, col)
+
+func _draw_hud(vs: Vector2) -> void:
+	var alive := _living_bots() + 1
+	_pill(Rect2(16, 14, 170, 40), Color(0.05, 0.06, 0.12, 0.7), 20)
+	_text(Vector2(30, 43), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
+	_pill(Rect2(16, 60, 130, 34), Color(0.05, 0.06, 0.12, 0.7), 17)
+	_text(Vector2(30, 85), "KILLS  %d" % kills, 20)
+	# Leiste unten in der Mitte
+	var w := clampf(vs.x - 760.0, 300.0, 420.0)
+	var x0 := vs.x * 0.5 - w * 0.5
+	var y0 := vs.y - 56.0
+	var hp := health / 100.0
+	var hcol := Color(0.3, 0.9, 0.4) if hp > 0.5 else (Color(1, 0.8, 0.2) if hp > 0.25 else Color(1, 0.3, 0.3))
+	_bar(Rect2(x0, y0, w, 26), hp, hcol)
+	_text(Vector2(x0, y0 + 21), "%d" % int(ceil(health)), 20, Color.WHITE, w, HORIZONTAL_ALIGNMENT_CENTER)
+	_bar(Rect2(x0 + 14, y0 - 22, w - 28, 12), shield / 100.0, Color(0.35, 0.65, 1.0))
+	# Waffe
+	var wname: String = MELEE[melee]["name"]
+	var rc := Color(0.6, 0.6, 0.65)
+	var ammo_t := ""
+	if weapon != "":
+		wname = WEAPONS[weapon]["name"]
+		rc = RARITY_COLORS[weapon_rar]
+		ammo_t = "  %d" % ammo
+	_pill(Rect2(x0 + 14, y0 - 64, w - 28, 34), Color(0.05, 0.06, 0.12, 0.75), 17)
+	_pill(Rect2(x0 + 14, y0 - 64, 10, 34), rc, 5)
+	_text(Vector2(x0 + 34, y0 - 40), wname + ammo_t, 21, rc.lightened(0.35))
+	# Ladungen: Sprung (rot) und Dash (cyan)
+	for i in jump_charges:
+		fx.draw_circle(Vector2(x0 - 22 - i * 22, y0 + 13), 8, Color(1, 0.3, 0.3))
+		fx.draw_arc(Vector2(x0 - 22 - i * 22, y0 + 13), 8, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
+	for i in dash_charges:
+		fx.draw_circle(Vector2(x0 + w + 22 + i * 22, y0 + 13), 8, Color(0.3, 0.9, 1.0))
+		fx.draw_arc(Vector2(x0 + w + 22 + i * 22, y0 + 13), 8, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
+	var ty := y0 - 74.0
+	if power_timer > 0.0:
+		_text(Vector2(x0 + 14, ty), "POWER %d" % int(ceil(power_timer)), 18, Color(1, 0.85, 0.2))
+	if speed_timer > 0.0:
+		_text(Vector2(x0 + w - 100, ty), "SPEED %d" % int(ceil(speed_timer)), 18, Color(0.4, 1, 0.5))
+
 func _draw_fx() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
 	if damage_flash > 0.0:
-		var a := damage_flash / 0.35 * 0.28
-		fx.draw_rect(Rect2(0, 0, vs.x, 60), Color(1, 0.1, 0.1, a))
-		fx.draw_rect(Rect2(0, vs.y - 60, vs.x, 60), Color(1, 0.1, 0.1, a))
-		fx.draw_rect(Rect2(0, 0, 60, vs.y), Color(1, 0.1, 0.1, a))
-		fx.draw_rect(Rect2(vs.x - 60, 0, 60, vs.y), Color(1, 0.1, 0.1, a))
+		var a := damage_flash / 0.35 * 0.3
+		for k in 6:
+			var m := 14.0 * (k + 1)
+			fx.draw_rect(Rect2(0, 0, vs.x, m), Color(1, 0.1, 0.1, a * 0.3))
+			fx.draw_rect(Rect2(0, vs.y - m, vs.x, m), Color(1, 0.1, 0.1, a * 0.3))
+			fx.draw_rect(Rect2(0, 0, m, vs.y), Color(1, 0.1, 0.1, a * 0.3))
+			fx.draw_rect(Rect2(vs.x - m, 0, m, vs.y), Color(1, 0.1, 0.1, a * 0.3))
+	if phase == "fall":
+		_pill(Rect2(vs.x * 0.5 - 150, 14, 300, 44), Color(0.05, 0.06, 0.12, 0.7), 22)
+		_text(Vector2(vs.x * 0.5 - 150, 46), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if phase == "play":
-		_fx_bar(_fx_screen(player_pos), health, Color(0.3, 0.95, 0.4))
-		if shield > 0.0:
-			var sp := _fx_screen(player_pos) + Vector2(-25, -126)
-			fx.draw_rect(Rect2(sp, Vector2(50.0 * clampf(shield / 100.0, 0.0, 1.0), 5)), Color(0.35, 0.65, 1.0))
+		_draw_hud(vs)
+		var hb := 112.0 * ZOOM / 1.15
+		_fx_bar2(_fx_screen(player_pos), health, Color(0.3, 0.95, 0.4), hb)
 		if inside < 0:
 			for b in bots:
 				if b["alive"]:
-					_fx_bar(_fx_screen(b["pos"]), b["health"], Color(0.95, 0.35, 0.3))
-	var f := ThemeDB.fallback_font
+					_fx_bar2(_fx_screen(b["pos"]), b["health"], Color(0.95, 0.35, 0.3), hb)
+	# Kugeln
+	for bl in bullets:
+		var sp := _fx_screen(bl["pos"]) + Vector2(0, -30.0 * ZOOM)
+		var dv := _screen_dir(bl["vel"])
+		if bl["explode"] > 0.0:
+			for k in 5:
+				fx.draw_circle(sp - dv * (10.0 + k * 9.0), 9.0 - k, Color(1, 0.55 - k * 0.07, 0.15, 0.55 - k * 0.1))
+			fx.draw_circle(sp, 9, OUTLINE)
+			fx.draw_circle(sp, 7, Color(0.55, 0.8, 0.55))
+		else:
+			fx.draw_line(sp - dv * 26.0, sp, Color(1, 0.8, 0.25, 0.35), 8.0)
+			fx.draw_line(sp - dv * 20.0, sp, Color(1, 0.95, 0.6, 0.85), 3.5)
+			fx.draw_circle(sp, 6, Color(1, 0.9, 0.4, 0.35))
+			fx.draw_circle(sp, 3.5, Color(1, 1, 0.9))
+	# Mündungsfeuer
+	for f in flashes:
+		var fp := _fx_screen(f["pos"]) + Vector2(0, -30.0 * ZOOM)
+		var fd := _screen_dir(f["dir"])
+		var sz := 26.0 if f["big"] else 17.0
+		var pts := PackedVector2Array()
+		for i in 8:
+			var ang := TAU * i / 8.0
+			var r := sz if i % 2 == 0 else sz * 0.45
+			pts.append(fp + fd * sz * 0.5 + Vector2.from_angle(ang) * r)
+		fx.draw_colored_polygon(pts, Color(1, 0.85, 0.3, 0.9))
+		fx.draw_circle(fp + fd * sz * 0.5, sz * 0.4, Color(1, 1, 0.9, 0.95))
+	# Explosionen
+	for fb in fireballs:
+		var k: float = fb["t"] / 0.55
+		var ep := _fx_screen(fb["pos"]) + Vector2(0, -20.0)
+		var rr: float = fb["r"] * ZOOM * (0.35 + 0.75 * k) * 0.8
+		fx.draw_circle(ep, rr, Color(1, 0.45, 0.1, 0.55 * (1.0 - k)))
+		fx.draw_circle(ep + Vector2(0, -rr * 0.15), rr * 0.7, Color(1, 0.75, 0.25, 0.7 * (1.0 - k)))
+		fx.draw_circle(ep + Vector2(0, -rr * 0.3), rr * 0.4, Color(1, 0.98, 0.7, 0.8 * (1.0 - k)))
+		fx.draw_circle(ep + Vector2(0, -rr * 0.9 * k), rr * 0.45, Color(0.2, 0.18, 0.2, 0.35 * (1.0 - k)))
+		fx.draw_arc(ep, rr * 1.05, 0.0, TAU, 40, Color(1, 0.9, 0.6, 0.6 * (1.0 - k)), 5.0)
+	# Funken
+	for sp in sparks:
+		var k2: float = sp["t"] / sp["life"]
+		var c: Color = sp["col"]
+		c.a = 1.0 - k2
+		fx.draw_circle(_fx_screen(sp["pos"]) + sp["o"] * ZOOM, 4.5 * (1.0 - k2 * 0.6), c)
+	var f2 := ThemeDB.fallback_font
 	for p in popups:
-		var k: float = p["t"] / 0.9
-		var sp2 := _fx_screen(p["pos"]) + Vector2(-20, -90.0 - 46.0 * k)
-		var c: Color = p["col"]
-		c.a = 1.0 - k * k
-		fx.draw_string_outline(f, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, 26, 6, Color(0.1, 0.08, 0.1, c.a))
-		fx.draw_string(f, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, 26, c)
+		var k3: float = p["t"] / 0.9
+		var sp2 := _fx_screen(p["pos"]) + Vector2(-20, -100.0 * ZOOM / 1.15 - 46.0 * k3)
+		var c2: Color = p["col"]
+		c2.a = 1.0 - k3 * k3
+		var sc := 1.0 + 0.5 * maxf(0.0, 1.0 - k3 * 6.0)
+		fx.draw_string_outline(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, int(28 * sc), 7, Color(0.1, 0.08, 0.1, c2.a))
+		fx.draw_string(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, int(28 * sc), c2)
+
+func _fx_bar2(sp: Vector2, hp: float, col: Color, up: float) -> void:
+	var w := 54.0
+	var top := sp + Vector2(-w / 2.0, -up)
+	_bar(Rect2(top, Vector2(w, 8)), hp / 100.0, col)
 
 func _build_pause() -> void:
 	pause_layer = CanvasLayer.new()
@@ -1061,6 +1177,9 @@ func _show_message(text: String, duration: float) -> void:
 	message_timer = duration
 
 func _fire(owner_id: int, origin: Vector2, dir: Vector2, weapon_key: String) -> void:
+	flashes.append({"pos": origin + dir.normalized() * 34.0, "dir": dir.normalized(), "t": 0.0, "big": WEAPONS[weapon_key].has("explode") or int(WEAPONS[weapon_key]["pellets"]) > 1})
+	if owner_id == -1:
+		shake = maxf(shake, 0.12 if not WEAPONS[weapon_key].has("explode") else 0.35)
 	flash_t[owner_id] = Time.get_ticks_msec()
 	var w: Dictionary = WEAPONS[weapon_key]
 	var snd := "rocket" if w.has("explode") else ("shotgun" if int(w["pellets"]) > 1 else "shot")
@@ -1174,6 +1293,19 @@ func _process(delta: float) -> void:
 		p["t"] += delta
 	popups = popups.filter(func(p): return p["t"] < 0.9)
 	damage_flash = maxf(0.0, damage_flash - delta)
+	shake = maxf(0.0, shake - delta * 2.2)
+	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake * 16.0
+	for f in flashes:
+		f["t"] += delta
+	flashes = flashes.filter(func(f): return f["t"] < 0.07)
+	for fb in fireballs:
+		fb["t"] += delta
+	fireballs = fireballs.filter(func(fb): return fb["t"] < 0.55)
+	for sp in sparks:
+		sp["t"] += delta
+		sp["o"] += sp["v"] * delta
+		sp["v"] = Vector2(sp["v"].x * 0.93, sp["v"].y + 520.0 * delta)
+	sparks = sparks.filter(func(sp): return sp["t"] < sp["life"])
 	_update_view()
 	match phase:
 		"fall":
@@ -1380,6 +1512,7 @@ func _damage_player(amount: float) -> void:
 	if phase != "play":
 		return
 	damage_flash = 0.35
+	shake = maxf(shake, 0.3)
 	_popup(player_pos, amount, Color(1, 0.35, 0.3))
 	_play_sfx("hit", -4.0)
 	if shield > 0.0:
@@ -1391,6 +1524,9 @@ func _damage_player(amount: float) -> void:
 		_player_died()
 
 func _explode(pos: Vector2, bl: Dictionary) -> void:
+	fireballs.append({"pos": pos, "t": 0.0, "r": float(bl["explode"])})
+	_spark_burst(pos, Color(1, 0.6, 0.2), 22, 360.0)
+	shake = maxf(shake, 0.6 if pos.distance_to(player_pos) < 500.0 else 0.2)
 	var radius: float = bl["explode"]
 	explosions.append({"pos": pos, "t": 0.0, "r": radius})
 	_play_sfx("explosion", -2.0)
@@ -1480,7 +1616,13 @@ func _update_bots(delta: float) -> void:
 			if b["health"] <= 0.0:
 				_kill_bot(i)
 
+func _spark_burst(pos: Vector2, col: Color, n: int, speed: float) -> void:
+	for i in n:
+		var a := randf() * TAU
+		sparks.append({"pos": pos, "o": Vector2(0, -26), "v": Vector2.from_angle(a) * randf_range(0.3, 1.0) * speed + Vector2(0, -120), "t": 0.0, "life": randf_range(0.25, 0.5), "col": col})
+
 func _popup(pos: Vector2, amount: float, col: Color) -> void:
+	_spark_burst(pos, col, 6, 150.0)
 	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col})
 
 func _kill_bot(i: int, by_player := false) -> void:
@@ -1488,6 +1630,7 @@ func _kill_bot(i: int, by_player := false) -> void:
 		return
 	bots[i]["alive"] = false
 	bots[i]["dead_at"] = Time.get_ticks_msec()
+	_spark_burst(bots[i]["pos"], Color(1, 1, 1), 16, 260.0)
 	if by_player:
 		kills += 1
 		_show_message("Gegner erledigt! (%d)" % kills, 1.2)
@@ -1653,18 +1796,6 @@ func _draw_outdoor() -> void:
 	draw_set_transform_matrix(view)
 	_draw_zone()
 	draw_set_transform_matrix(Transform2D.IDENTITY)
-
-	# ----- Kugeln und Raketen in Brusthöhe -----
-	for bl in bullets:
-		var bp := _w(bl["pos"]) + Vector2(0, -26)
-		if bl["explode"] > 0.0:
-			var back: Vector2 = bp - _screen_dir(bl["vel"]) * 18.0
-			draw_line(back, bp, Color(1, 0.6, 0.2, 0.6), 8.0)
-			draw_circle(bp, 8, OUTLINE)
-			draw_circle(bp, 6, Color(0.5, 0.75, 0.5))
-		else:
-			draw_line(bp - _screen_dir(bl["vel"]) * 14.0, bp, Color(1, 0.9, 0.3, 0.5), 4.0)
-			draw_circle(bp, 4, Color(1, 0.98, 0.6))
 
 	_draw_swings()
 	_draw_chest_progress()
@@ -1999,10 +2130,12 @@ func _sync_units3d() -> void:
 	var vsize := get_viewport_rect().size
 	var cam_center: Vector2 = cam.get_screen_center_position()
 	var outdoor := inside < 0
+	units3d.zoom = ZOOM
 	units3d.set_mode(outdoor, view.affine_inverse() * cam_center)
 	if menu_layer != null and menu_layer.visible and phase in ["menu", "over", "won"]:
 		# Menü: zwei Figuren links und rechts
 		units3d.layer.layer = 7
+		units3d.zoom = 1.0
 		units3d.set_mode(false, Vector2.ZERO)
 		units3d.begin_frame()
 		var tt := Time.get_ticks_msec() / 1000.0
@@ -2023,7 +2156,7 @@ func _sync_units3d() -> void:
 		if falling:
 			lift = 110.0
 		units3d.update_unit("player", {
-			"skin": save_skin, "screen": _w(player_pos) - cam_center + vsize * 0.5 + (Vector2(0, -110) if falling else Vector2.ZERO),
+			"skin": save_skin, "screen": (_w(player_pos) - cam_center) * ZOOM + vsize * 0.5 + (Vector2(0, -110 * ZOOM) if falling else Vector2.ZERO), "scale": ZOOM,
 			"world": player_pos, "aimw": facing if not falling else Vector2(0, 1),
 			"lift": lift, "aim": _screen_dir(facing) if not falling else Vector2.DOWN,
 			"moving": player_moving, "fast": board_timer > 0.0 or speed_timer > 0.0, "weapon": wk,
