@@ -182,6 +182,7 @@ var mode_btn: Button
 var map_btn: Button
 var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee
 var popups: Array[Dictionary] = []
+var kill_feed: Array = []
 var fx: Control
 var damage_flash := 0.0
 const ZOOM := 1.3
@@ -437,6 +438,15 @@ func _draw_hud(vs: Vector2) -> void:
 	_text(Vector2(30, 43), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
 	_pill(Rect2(16, 60, 130, 34), Color(0.05, 0.06, 0.12, 0.7), 17)
 	_text(Vector2(30, 85), "KILLS  %d" % kills, 20)
+	# Kill-Feed
+	var fy := 118.0
+	for kf in kill_feed:
+		var fa := clampf(1.0 - (float(kf["t"]) - 4.0), 0.0, 1.0)
+		if fa <= 0.0:
+			continue
+		_pill(Rect2(16, fy - 22, 190, 30), Color(0.05, 0.06, 0.12, 0.6 * fa), 15)
+		_text(Vector2(28, fy), str(kf["text"]), 18, Color(1, 0.85, 0.5, fa))
+		fy += 34.0
 	# Leiste unten in der Mitte
 	var w := clampf(vs.x - 760.0, 300.0, 420.0)
 	var x0 := vs.x * 0.5 - w * 0.5
@@ -1669,6 +1679,9 @@ func _kill_bot(i: int, by_player := false) -> void:
 	if by_player:
 		kills += 1
 		_show_message("Gegner erledigt! (%d)" % kills, 1.2)
+		kill_feed.append({"text": "DU  ›  %s" % str(bots[i].get("skin", "Gegner")).replace("char_", "").capitalize(), "t": 0.0})
+		if kill_feed.size() > 4:
+			kill_feed.pop_front()
 	if phase == "play" and _living_bots() == 0:
 		phase = "won"
 		placement = 1
@@ -1677,6 +1690,9 @@ func _kill_bot(i: int, by_player := false) -> void:
 		_show_end_menu("SIEG! #1   " + xp_msg)
 
 func _update_bullets(delta: float) -> void:
+	for kf in kill_feed:
+		kf["t"] += delta
+	kill_feed = kill_feed.filter(func(e): return e["t"] < 5.0)
 	for ex in explosions:
 		ex["t"] += delta
 	explosions = explosions.filter(func(e): return e["t"] < 0.4)
