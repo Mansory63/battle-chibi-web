@@ -35,3 +35,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Block 2: Waffen-Rueckstoss beim Schiessen (Waffe ruckt zurueck und kippt).
 - Block 3: Performance (3D-Schatten aus, Render-Aufloesung 1.0) fuer fluessigeres Spiel auf dem Handy.
 - Block 4: neue Sounds (Kiste, Sieg, Niederlage).
+- Block 5: Kartenwahl im Menue (Wiese/Wueste/Schnee), Modus-Button verkleinert.

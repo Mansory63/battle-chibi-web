@@ -179,6 +179,8 @@ var bot_dmg_mult := 0.5
 var bot_cd_mult := 1.0
 var xp_mult := 1.0
 var mode_btn: Button
+var map_btn: Button
+var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee
 var popups: Array[Dictionary] = []
 var fx: Control
 var damage_flash := 0.0
@@ -331,7 +333,20 @@ func _build_menu() -> void:
 		hardcore = not hardcore
 		_write_save()
 		_update_menu_buttons())
-	box.add_child(mode_btn)
+	var row0 := HBoxContainer.new()
+	row0.add_theme_constant_override("separation", 12)
+	box.add_child(row0)
+	mode_btn.custom_minimum_size = Vector2(250, 64)
+	mode_btn.add_theme_font_size_override("font_size", 24)
+	row0.add_child(mode_btn)
+	map_btn = _menu_button("", Color(0.3, 0.5, 0.7))
+	map_btn.custom_minimum_size = Vector2(138, 64)
+	map_btn.add_theme_font_size_override("font_size", 22)
+	map_btn.pressed.connect(func():
+		map_theme = (map_theme + 1) % 3
+		_write_save()
+		_update_menu_buttons())
+	row0.add_child(map_btn)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	box.add_child(row)
@@ -683,6 +698,7 @@ func _load_save() -> void:
 		save_skin = str(cfg.get_value("pass", "skin", "char_player"))
 		muted = bool(cfg.get_value("settings", "muted", false))
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
+		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 3
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
 	if not _skin_unlocked(save_skin):
 		save_skin = "char_player"
@@ -693,6 +709,7 @@ func _write_save() -> void:
 	cfg.set_value("pass", "skin", save_skin)
 	cfg.set_value("settings", "muted", muted)
 	cfg.set_value("settings", "hardcore", hardcore)
+	cfg.set_value("settings", "map_theme", map_theme)
 	cfg.set_value("settings", "tut_done", tut_done)
 	cfg.save(SAVE_PATH)
 
@@ -733,7 +750,9 @@ func _update_menu_buttons() -> void:
 	if sound_btn:
 		sound_btn.text = "TON AUS" if muted else "TON AN"
 	if mode_btn:
-		mode_btn.text = "MODUS: HARDCORE" if hardcore else "MODUS: NORMAL"
+		mode_btn.text = "HARDCORE" if hardcore else "NORMAL"
+	if map_btn:
+		map_btn.text = ["WIESE", "WÜSTE", "SCHNEE"][map_theme]
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
 		pause_sound_btn.text = "TON AUS" if muted else "TON AN"
@@ -1725,7 +1744,7 @@ func _draw_outdoor() -> void:
 
 	# ----- Boden (flach, mit Transformation) -----
 	draw_set_transform_matrix(view)
-	draw_rect(Rect2(-2500, -2500, MAP_SIZE.x + 5000, MAP_SIZE.y + 5000), Color(0.22, 0.5, 0.72))
+	draw_rect(Rect2(-2500, -2500, MAP_SIZE.x + 5000, MAP_SIZE.y + 5000), [Color(0.22, 0.5, 0.72), Color(0.15, 0.6, 0.65), Color(0.35, 0.55, 0.75)][map_theme])
 	# Wasser: animierte Wellenringe und Schaum am Strand
 	for w in 5:
 		var off := 120.0 + w * 150.0 + sin(t_now * 0.8 + w * 1.7) * 26.0
@@ -1733,7 +1752,11 @@ func _draw_outdoor() -> void:
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(40.0 + sin(t_now * 1.6) * 14.0), Color(0.75, 0.92, 1, 0.5), false, 10.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(14.0), Color(0.85, 0.75, 0.5), false, 22.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62))
-	if tex_grass:
+	if map_theme == 1:
+		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.9, 0.76, 0.46))
+	elif map_theme == 2:
+		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.92, 0.95, 0.99))
+	elif tex_grass:
 		draw_texture_rect(tex_grass, Rect2(Vector2.ZERO, MAP_SIZE), true)
 	else:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.56, 0.84, 0.46))
@@ -1746,6 +1769,10 @@ func _draw_outdoor() -> void:
 			grass_blobs.append([Vector2(rng.randf() * MAP_SIZE.x, rng.randf() * MAP_SIZE.y), rng.randf_range(60, 190), rng.randf() < 0.5])
 	for gb in grass_blobs:
 		var gc := Color(0.75, 1, 0.5, 0.10) if gb[2] else Color(0.1, 0.4, 0.2, 0.10)
+		if map_theme == 1:
+			gc = Color(1, 0.9, 0.6, 0.18) if gb[2] else Color(0.75, 0.5, 0.2, 0.16)
+		elif map_theme == 2:
+			gc = Color(1, 1, 1, 0.5) if gb[2] else Color(0.65, 0.78, 0.95, 0.22)
 		draw_circle(gb[0], gb[1], gc)
 		draw_circle(gb[0], gb[1] * 0.6, gc)
 
