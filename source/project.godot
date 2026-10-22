@@ -1,0 +1,27 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="BattleChibi"
+config/features=PackedStringArray("4.7", "Mobile")
+config/icon="res://icon.png"
+run/main_scene="res://main.tscn"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="mobile"
+textures/canvas_textures/default_texture_filter=0
