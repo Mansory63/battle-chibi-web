@@ -34,3 +34,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Block 1 (22.10.): Gras-Variation, animierte Wasserwellen, Schaum am Strand, Bots gleichmäßig verteilt.
 - Block 2: Waffen-Rueckstoss beim Schiessen (Waffe ruckt zurueck und kippt).
 - Block 3: Performance (3D-Schatten aus, Render-Aufloesung 1.0) fuer fluessigeres Spiel auf dem Handy.
+- Block 4: neue Sounds (Kiste, Sieg, Niederlage).

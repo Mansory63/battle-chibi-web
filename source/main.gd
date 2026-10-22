@@ -665,6 +665,7 @@ func _on_menu_play() -> void:
 	_show_message("Fallschirm-Absprung! Steuere zum Landeplatz", 3.0)
 
 func _show_end_menu(title: String) -> void:
+	_play_sfx("win" if title.begins_with("SIEG") else "lose", -4.0)
 	menu_title.text = title
 	menu_title.add_theme_font_size_override("font_size", 54)
 	menu_play.text = "NOCHMAL"
@@ -763,7 +764,7 @@ func _award_xp() -> String:
 
 # ---------- Sound ----------
 func _setup_audio() -> void:
-	for n in ["shot", "shotgun", "rocket", "explosion", "pickup", "power", "hit"]:
+	for n in ["shot", "shotgun", "rocket", "explosion", "pickup", "power", "hit", "chest", "win", "lose"]:
 		var path: String = "res://assets/sfx/" + n + ".wav"
 		if ResourceLoader.exists(path):
 			sfx[n] = load(path)
@@ -1026,6 +1027,7 @@ func _generate_interior(i: int) -> void:
 
 # Kiste öffnen: Waffe in der Seltenheit der Kiste plus Heilung/Schild
 func _open_chest(list: Array[Dictionary], pos: Vector2, rar: int) -> void:
+	_play_sfx("chest", -3.0)
 	var pool: Array = CHEST_WEAPONS[rar]
 	var wk: String = pool[randi() % pool.size()]
 	var extras: Array = []
