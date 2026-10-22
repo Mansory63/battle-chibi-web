@@ -209,6 +209,7 @@ var tex_roofs: Array[Texture2D] = []
 var tex_trees: Array[Texture2D] = []
 var tex_loot: Dictionary = {}   # Art -> Texture2D
 var tex_guns: Dictionary = {}   # Waffen-Art -> Texture2D (Waffe in der Hand)
+var grass_blobs: Array = []
 var tex_grass: Texture2D
 var tex_asphalt: Texture2D
 var view := Transform2D.IDENTITY
@@ -1723,11 +1724,28 @@ func _draw_outdoor() -> void:
 	# ----- Boden (flach, mit Transformation) -----
 	draw_set_transform_matrix(view)
 	draw_rect(Rect2(-2500, -2500, MAP_SIZE.x + 5000, MAP_SIZE.y + 5000), Color(0.22, 0.5, 0.72))
+	# Wasser: animierte Wellenringe und Schaum am Strand
+	for w in 5:
+		var off := 120.0 + w * 150.0 + sin(t_now * 0.8 + w * 1.7) * 26.0
+		draw_rect(Rect2(-60 - off, -60 - off, MAP_SIZE.x + 120 + off * 2.0, MAP_SIZE.y + 120 + off * 2.0), Color(1, 1, 1, 0.07), false, 6.0)
+	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(40.0 + sin(t_now * 1.6) * 14.0), Color(0.75, 0.92, 1, 0.5), false, 10.0)
+	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(14.0), Color(0.85, 0.75, 0.5), false, 22.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62))
 	if tex_grass:
 		draw_texture_rect(tex_grass, Rect2(Vector2.ZERO, MAP_SIZE), true)
 	else:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.56, 0.84, 0.46))
+
+	# Gras-Variation: weiche helle und dunkle Flecken
+	if grass_blobs.is_empty():
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		for k in 160:
+			grass_blobs.append([Vector2(rng.randf() * MAP_SIZE.x, rng.randf() * MAP_SIZE.y), rng.randf_range(60, 190), rng.randf() < 0.5])
+	for gb in grass_blobs:
+		var gc := Color(0.75, 1, 0.5, 0.10) if gb[2] else Color(0.1, 0.4, 0.2, 0.10)
+		draw_circle(gb[0], gb[1], gc)
+		draw_circle(gb[0], gb[1] * 0.6, gc)
 
 	# Straßen: Bürgersteig, Asphalt, Mittelstreifen
 	for road in ROADS:

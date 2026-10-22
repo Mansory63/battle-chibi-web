@@ -29,3 +29,6 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 
 ## Credits
 3D-Figuren: Kenney "Mini Characters" (CC0). Eigene Grafiken/Sounds prozedural erzeugt.
+
+## Changelog
+- Block 1 (22.10.): Gras-Variation, animierte Wasserwellen, Schaum am Strand, Bots gleichmäßig verteilt.
