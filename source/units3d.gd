@@ -281,6 +281,17 @@ func update_unit(id: String, e: Dictionary) -> void:
 	elif armed:
 		anim = "holding-right"
 	_play(d, anim, spd)
+	# Rückstoß: Waffe ruckt beim Schießen nach hinten und kippt leicht hoch
+	var wn = d["weapon_node"]
+	if wn != null:
+		var k: float = float(d.get("kick", 0.0))
+		if armed and e.get("firing", false):
+			k = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.045)
+		else:
+			k = move_toward(k, 0.0, 0.2)
+		d["kick"] = k
+		wn.position = Vector3(-0.13, 0.27, 0.09 - 0.06 * k)
+		wn.rotation.x = -0.18 * k
 
 # Nach dem Aktualisieren aller Einheiten: nicht mehr gesehene aufräumen
 func begin_frame() -> void:
