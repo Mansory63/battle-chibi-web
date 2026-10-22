@@ -14,7 +14,7 @@ const PITCH := 0.42   # Neigung zur Kamera (leichte Draufsicht)
 
 const VIEW_ANGLE := 0.55
 const VIEW_TILT := 0.72
-const RES_SCALE := 1.25
+const RES_SCALE := 1.0
 const HOUSE_WALL_H := 84.0
 const ROOF_H := 44.0
 const CAM_DIST := 1600.0
@@ -78,7 +78,7 @@ func setup(host: Node, layer_index := 1) -> void:
 	camera.make_current()
 	var sun := DirectionalLight3D.new()
 	sun.light_energy = 1.15
-	sun.shadow_enabled = true
+	sun.shadow_enabled = false
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 1500.0
 	sun.shadow_bias = 0.05
