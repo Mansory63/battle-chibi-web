@@ -14,7 +14,7 @@ const PITCH := 0.42   # Neigung zur Kamera (leichte Draufsicht)
 
 const VIEW_ANGLE := 0.55
 const VIEW_TILT := 0.72
-const RES_SCALE := 1.0
+var res_scale := 1.0
 const HOUSE_WALL_H := 84.0
 const ROOF_H := 44.0
 const CAM_DIST := 1600.0
@@ -99,10 +99,20 @@ func setup(host: Node, layer_index := 1) -> void:
 
 func _resize() -> void:
 	var s: Vector2 = get_viewport().get_visible_rect().size
-	viewport.size = Vector2i(int(s.x * RES_SCALE), int(s.y * RES_SCALE))
+	viewport.size = Vector2i(int(s.x * res_scale), int(s.y * res_scale))
 	camera.size = s.y
 	vsize = s
 	_apply_camera()
+
+# Automatische Qualitaetsanpassung: bei niedriger Bildrate Renderaufloesung senken
+func lower_quality() -> bool:
+	if res_scale <= 0.61:
+		return false
+	res_scale = maxf(0.6, res_scale - 0.13)
+	if res_scale < 0.8:
+		viewport.msaa_3d = Viewport.MSAA_DISABLED
+	_resize()
+	return true
 
 func _scene_for(skin: String) -> PackedScene:
 	var m: String = SKIN_MODELS.get(skin, "character-male-a")

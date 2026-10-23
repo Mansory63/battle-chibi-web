@@ -1476,7 +1476,19 @@ func _wants_fire() -> bool:
 	return Input.is_key_pressed(KEY_SPACE) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or touch.fire_held
 
 # ---------- Spielschleife ----------
+var perf_t := 0.0
+var perf_frames := 0
 func _process(delta: float) -> void:
+	# Adaptive Qualitaet: im Spiel messen, bei < 30 FPS Aufloesung der 3D-Ebene senken
+	if phase == "play" and units3d != null:
+		perf_t += delta
+		perf_frames += 1
+		if perf_t >= 2.5:
+			var fps := float(perf_frames) / perf_t
+			perf_t = 0.0
+			perf_frames = 0
+			if fps < 30.0 and elapsed > 3.0:
+				units3d.lower_quality()
 	if message_timer > 0.0:
 		message_timer -= delta
 		if message_timer <= 0.0:
