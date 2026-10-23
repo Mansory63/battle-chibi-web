@@ -184,12 +184,26 @@ func _build_weapon(kind: String) -> Node3D:
 	return n
 
 # ---------- Einheiten ----------
+func _outline_mat(amount: float, col := Color(0.08, 0.06, 0.1)) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = col
+	m.cull_mode = BaseMaterial3D.CULL_FRONT
+	m.grow = true
+	m.grow_amount = amount
+	return m
+
+func _add_outline(node: Node, mat: Material) -> void:
+	for ch in node.find_children("*", "MeshInstance3D", true, false):
+		(ch as MeshInstance3D).material_overlay = mat
+
 func _make_unit(skin: String) -> Dictionary:
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()
 	pivot.add_child(yaw)
 	var model: Node3D = _scene_for(skin).instantiate()
 	yaw.add_child(model)
+	_add_outline(model, _outline_mat(0.018))
 	pivot.scale = Vector3.ONE * UNIT_SCALE
 	unit_root.add_child(pivot)
 	var ap: AnimationPlayer = model.find_child("AnimationPlayer", true, false)

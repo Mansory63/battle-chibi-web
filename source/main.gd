@@ -1844,6 +1844,13 @@ func _draw_outdoor() -> void:
 		var sz: Vector2 = dd["size"]
 		draw_texture_rect(dd["tex"], Rect2(dd["pos"] - sz / 2.0, sz), false)
 
+	# Wolkenschatten ziehen langsam über die Karte
+	for ci in 7:
+		var cx := fposmod(float(ci) * 677.0 + t_now * 24.0, MAP_SIZE.x + 800.0) - 400.0
+		var cy := fposmod(float(ci) * 431.0 + t_now * 9.0 + sin(float(ci)) * 300.0, MAP_SIZE.y + 600.0) - 300.0
+		for part in 4:
+			draw_circle(Vector2(cx + part * 110.0 - 160.0, cy + sin(float(part + ci)) * 50.0), 150.0 - part * 12.0, Color(0.05, 0.1, 0.2, 0.045))
+
 	# Schatten von Häusern und Bäumen
 	for r in obstacles:
 		draw_rect(Rect2(r.position + Vector2(26, 26), r.size), Color(0, 0, 0, 0.22))
