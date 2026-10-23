@@ -848,7 +848,7 @@ func _draw_minimap() -> void:
 	var basis := Transform2D(Vector2(1, 0), Vector2(0, VIEW_TILT), Vector2.ZERO) * Transform2D(VIEW_ANGLE, Vector2.ZERO)
 	var mt := Transform2D(0.0, Vector2(sc, sc), 0.0, m.size / 2.0) * basis * Transform2D(0.0, -center_pos)
 	m.draw_set_transform_matrix(mt)
-	m.draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.35, 0.65, 0.35))
+	m.draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), [Color(0.35, 0.65, 0.35), Color(0.85, 0.72, 0.45), Color(0.9, 0.94, 0.98)][map_theme])
 	for road in ROADS:
 		m.draw_rect(road, Color(0.45, 0.47, 0.52))
 	for r in obstacles:

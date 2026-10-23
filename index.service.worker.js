@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1792712996|6594747';
+const CACHE_VERSION = '1792717615|3888266';
 /** @type {string} */
 const CACHE_PREFIX = 'BattleChibi-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;

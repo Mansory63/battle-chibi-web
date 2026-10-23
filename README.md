@@ -37,3 +37,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Block 4: neue Sounds (Kiste, Sieg, Niederlage).
 - Block 5: Kartenwahl im Menue (Wiese/Wueste/Schnee), Modus-Button verkleinert.
 - Block 6: Kill-Feed im HUD.
+- Block 7: Minikarte passt zur gewaehlten Karte.
