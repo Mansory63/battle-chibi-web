@@ -500,8 +500,8 @@ func _draw_fx() -> void:
 			fx.draw_rect(Rect2(0, 0, m, vs.y), Color(1, 0.1, 0.1, a * 0.3))
 			fx.draw_rect(Rect2(vs.x - m, 0, m, vs.y), Color(1, 0.1, 0.1, a * 0.3))
 	if phase == "fall":
-		_pill(Rect2(vs.x * 0.5 - 150, 14, 300, 44), Color(0.05, 0.06, 0.12, 0.7), 22)
-		_text(Vector2(vs.x * 0.5 - 150, 46), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
+		_pill(Rect2(vs.x * 0.5 - 150, 84, 300, 44), Color(0.05, 0.06, 0.12, 0.7), 22)
+		_text(Vector2(vs.x * 0.5 - 150, 116), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if phase == "play":
 		_draw_hud(vs)
 		var hb := 112.0 * ZOOM / 1.15

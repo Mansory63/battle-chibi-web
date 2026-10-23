@@ -40,3 +40,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Block 7: Minikarte passt zur gewaehlten Karte.
 - Block 8: Treffer-Marker beim Treffen von Gegnern.
 - Block 9: PWA-Offline-Cache abgeschaltet (lieferte alte Version aus); Kill-Switch-Service-Worker raeumt alte Caches.
+- Block 10: Live-Spieltest ok; Landungs-Anzeige ueberdeckt Pause-Knopf nicht mehr.
