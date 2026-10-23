@@ -6,26 +6,26 @@ extends Node2D
 #            E = Haus betreten/verlassen, R = neustart
 
 # ---------- Konstanten ----------
-const MAP_SIZE := Vector2(2400, 1800)
+const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BOT_COUNT := 14
-const LOOT_COUNT := 45
-const CHEST_COUNT := 16
+const BOT_COUNT := 49
+const LOOT_COUNT := 190
+const CHEST_COUNT := 64
 const BASE_SPEED := 260.0
 const BOT_SPEED := 150.0
 const BOARD_SPEED_MULT := 1.6
 const BOARD_DURATION := 8.0
 const DASH_DISTANCE := 160.0
 const MAX_DASH_CHARGES := 3
-const FALL_TIME := 4.0
-const FALL_SPEED := 180.0
+const FALL_TIME := 6.0
+const FALL_SPEED := 260.0
 const BULLET_LIFE := 1.0
 const TREE_RADIUS := 26.0
-const ZONE_CENTER := Vector2(1200, 900)
-const ZONE_START_RADIUS := 1300.0
-const ZONE_END_RADIUS := 150.0
-const ZONE_SHRINK_TIME := 180.0
+const ZONE_CENTER := Vector2(2400, 1800)
+const ZONE_START_RADIUS := 2950.0
+const ZONE_END_RADIUS := 200.0
+const ZONE_SHRINK_TIME := 330.0
 const ZONE_DAMAGE_PER_SEC := 0.5
 const PICKUP_RANGE := 34.0
 const DOOR_RANGE := 45.0
@@ -37,7 +37,7 @@ const ART := "res://assets/art/"
 const VIEW_ANGLE := 0.55
 const VIEW_TILT := 0.72
 const HOUSE_H := 74.0
-const ROADS := [Rect2(0, 820, 2400, 160), Rect2(500, 0, 160, 1800), Rect2(1700, 0, 160, 1800)]
+const ROADS := [Rect2(0, 820, 4800, 160), Rect2(0, 2620, 4800, 160), Rect2(500, 0, 160, 3600), Rect2(1700, 0, 160, 3600), Rect2(2900, 0, 160, 3600), Rect2(4100, 0, 160, 3600)]
 const TouchControlsScript := preload("res://touch_controls.gd")
 
 const OUTLINE := Color(0.15, 0.1, 0.1)
@@ -139,7 +139,7 @@ var menu_title: Label
 var menu_play: Button
 var menu_help: Label
 var fall_timer := FALL_TIME
-var player_pos := Vector2(1200, 1650)
+var player_pos := Vector2(2400, 3300)
 var outside_pos := Vector2.ZERO      # Position im Freien, solange man im Haus ist
 var inside := -1                     # -1 = draußen, sonst Index des Hauses
 var facing := Vector2.UP
@@ -188,6 +188,11 @@ var xp_mult := 1.0
 var mode_btn: Button
 var map_btn: Button
 var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee
+var team_size := 1   # 1 Solo, 2 Duo, 3 Trio, 4 Quattro
+var team_btn: Button
+var total_teams := 50
+var grid_obs: Dictionary = {}
+var grid_trees: Dictionary = {}
 var popups: Array[Dictionary] = []
 var kill_feed: Array = []
 var fx: Control
@@ -324,17 +329,32 @@ func _build_menu() -> void:
 	menu_play = _menu_button("SPIELEN", Color(0.25, 0.75, 0.35))
 	menu_play.pressed.connect(_on_menu_play)
 	box.add_child(menu_play)
+	var row_h := HBoxContainer.new()
+	row_h.add_theme_constant_override("separation", 12)
+	box.add_child(row_h)
 	var help_btn := _menu_button("STEUERUNG", Color(0.25, 0.5, 0.9))
+	help_btn.custom_minimum_size = Vector2(194, 64)
+	help_btn.add_theme_font_size_override("font_size", 22)
 	help_btn.pressed.connect(func():
 		menu_help.visible = not menu_help.visible
 		pass_label.visible = false)
-	box.add_child(help_btn)
+	row_h.add_child(help_btn)
 	var pass_btn := _menu_button("SAISON-PASS", Color(0.55, 0.4, 0.8))
+	pass_btn.custom_minimum_size = Vector2(194, 64)
+	pass_btn.add_theme_font_size_override("font_size", 22)
 	pass_btn.pressed.connect(func():
 		_update_pass_label()
 		pass_label.visible = not pass_label.visible
 		menu_help.visible = false)
-	box.add_child(pass_btn)
+	row_h.add_child(pass_btn)
+	team_btn = _menu_button("", Color(0.2, 0.55, 0.75))
+	team_btn.custom_minimum_size = Vector2(400, 64)
+	team_btn.add_theme_font_size_override("font_size", 26)
+	team_btn.pressed.connect(func():
+		team_size = team_size % 4 + 1
+		_write_save()
+		_update_menu_buttons())
+	box.add_child(team_btn)
 	mode_btn = _menu_button("", Color(0.85, 0.35, 0.3))
 	mode_btn.custom_minimum_size = Vector2(400, 64)
 	mode_btn.add_theme_font_size_override("font_size", 28)
@@ -492,10 +512,10 @@ func _draw_fx() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
-	if phase == "play" and inside < 0 and _living_bots() <= 3:
+	if phase == "play" and inside < 0 and _enemies_alive() <= 3:
 		var cc := vs * 0.5
 		for b in bots:
-			if not b["alive"]:
+			if not b["alive"] or int(b["team"]) == 0:
 				continue
 			var sp := _fx_screen(b["pos"])
 			if Rect2(Vector2(40, 40), vs - Vector2(80, 80)).has_point(sp):
@@ -529,7 +549,8 @@ func _draw_fx() -> void:
 		if inside < 0:
 			for b in bots:
 				if b["alive"]:
-					_fx_bar2(_fx_screen(b["pos"]), b["health"], Color(0.95, 0.35, 0.3), hb)
+					if _fx_screen(b["pos"]).distance_squared_to(vs * 0.5) < 1500.0 * 1500.0:
+						_fx_bar2(_fx_screen(b["pos"]), b["health"], Color(0.3, 0.7, 1.0) if int(b["team"]) == 0 else Color(0.95, 0.35, 0.3), hb)
 	# Kugeln
 	for bl in bullets:
 		var sp := _fx_screen(bl["pos"]) + Vector2(0, -30.0 * ZOOM)
@@ -662,7 +683,7 @@ func _style_for(col: Color) -> StyleBoxFlat:
 func _apply_difficulty() -> void:
 	if hardcore:
 		zone_dmg = 2.0
-		zone_time = 130.0
+		zone_time = 230.0
 		bot_dmg_mult = 1.0
 		bot_cd_mult = 0.6
 		xp_mult = 2.0
@@ -711,6 +732,7 @@ func _on_menu_play() -> void:
 	menu_layer.visible = false
 	touch.visible = true
 	_apply_difficulty()
+	_assign_teams()
 	phase = "fall"
 	if music_player and not music_player.playing:
 		music_player.play()
@@ -736,6 +758,7 @@ func _load_save() -> void:
 		muted = bool(cfg.get_value("settings", "muted", false))
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
 		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 3
+		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
 	if not _skin_unlocked(save_skin):
 		save_skin = "char_player"
@@ -747,6 +770,7 @@ func _write_save() -> void:
 	cfg.set_value("settings", "muted", muted)
 	cfg.set_value("settings", "hardcore", hardcore)
 	cfg.set_value("settings", "map_theme", map_theme)
+	cfg.set_value("settings", "team_size", team_size)
 	cfg.set_value("settings", "tut_done", tut_done)
 	cfg.save(SAVE_PATH)
 
@@ -788,6 +812,8 @@ func _update_menu_buttons() -> void:
 		sound_btn.text = "TON AUS" if muted else "TON AN"
 	if mode_btn:
 		mode_btn.text = "HARDCORE" if hardcore else "NORMAL"
+	if team_btn:
+		team_btn.text = "TEAM: " + ["SOLO", "DUO", "TRIO", "QUATTRO"][team_size - 1] + "  (50 Spieler)"
 	if map_btn:
 		map_btn.text = ["WIESE", "WÜSTE", "SCHNEE"][map_theme]
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
@@ -808,7 +834,7 @@ func _update_pass_label() -> void:
 
 func _award_xp() -> String:
 	var before := _level()
-	var total := bots.size()
+	var total := maxi(1, total_teams - 1)
 	var gained := int((20 + kills * 50 + int(300.0 * float(total + 1 - placement) / float(total))) * xp_mult)
 	save_xp += gained
 	_write_save()
@@ -871,7 +897,7 @@ func _draw_minimap() -> void:
 	var m := minimap
 	var center_pos := player_pos if inside < 0 else _door_of(inside)
 	m.draw_rect(Rect2(Vector2.ZERO, m.size), Color(0.2, 0.42, 0.6, 0.9))
-	var sc := 0.065
+	var sc := 0.04
 	var basis := Transform2D(Vector2(1, 0), Vector2(0, VIEW_TILT), Vector2.ZERO) * Transform2D(VIEW_ANGLE, Vector2.ZERO)
 	var mt := Transform2D(0.0, Vector2(sc, sc), 0.0, m.size / 2.0) * basis * Transform2D(0.0, -center_pos)
 	m.draw_set_transform_matrix(mt)
@@ -882,12 +908,15 @@ func _draw_minimap() -> void:
 		m.draw_rect(r, Color(0.85, 0.4, 0.3))
 	m.draw_arc(ZONE_CENTER, zone_radius, 0.0, TAU, 64, Color(1, 0.6, 0.1), 30.0)
 	m.draw_set_transform_matrix(Transform2D.IDENTITY)
-	if _living_bots() <= 3:
-		for b in bots:
-			if b["alive"]:
-				var mp: Vector2 = mt * (b["pos"] as Vector2)
-				m.draw_circle(mp, 5.0, Color(1, 0.2, 0.2))
-				m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
+	var few := _enemies_alive() <= 3
+	for b in bots:
+		if not b["alive"]:
+			continue
+		var is_mate := int(b["team"]) == 0
+		if is_mate or few:
+			var mp: Vector2 = mt * (b["pos"] as Vector2)
+			m.draw_circle(mp, 5.0, Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2))
+			m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
 	m.draw_circle(m.size / 2.0, 5.0, Color.WHITE)
 	m.draw_arc(m.size / 2.0, 6.0, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 2.0)
 	m.draw_rect(Rect2(Vector2.ZERO, m.size), Color(0.1, 0.08, 0.12), false, 3.0)
@@ -997,14 +1026,17 @@ func _radial_texture(inner: Color, outer: Color) -> GradientTexture2D:
 
 # ---------- Generierung ----------
 func _generate_trees() -> void:
-	for i in 220:
+	_tile_world()
+	_build_obstacle_grid()
+	for i in 900:
 		var p := Vector2(randf_range(30, MAP_SIZE.x - 30), randf_range(30, MAP_SIZE.y - 30))
-		if _is_free(p, TREE_RADIUS + 40.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(1200, 1650)) > 120:
+		if _is_free(p, TREE_RADIUS + 40.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(2400, 3300)) > 120:
 			trees.append(p)
+			_grid_add_tree(p)
 
 func _generate_decor() -> void:
 	var placed: Array[Dictionary] = []
-	for i in 520:
+	for i in 2100:
 		var p := Vector2(randf_range(10, MAP_SIZE.x - 10), randf_range(10, MAP_SIZE.y - 10))
 		if not _is_free(p, 8.0) or _on_road(p, 20.0):
 			continue
@@ -1023,7 +1055,7 @@ func _generate_decor() -> void:
 	decor_list = placed
 
 func _generate_grass() -> void:
-	for i in 260:
+	for i in 100:
 		grass_spots.append(Vector2(randf_range(0, MAP_SIZE.x), randf_range(0, MAP_SIZE.y)))
 
 func _random_rarity(weights: Array) -> int:
@@ -1064,6 +1096,7 @@ func _spawn_bots() -> void:
 	for i in BOT_COUNT:
 		bots.append({
 			"pos": _spread_spawn(),
+			"team": i + 1,
 			"health": 100.0,
 			"alive": true,
 			"color": Color(0.9, 0.5, 0.5),
@@ -1118,12 +1151,18 @@ func _set_camera_limits(_outdoor: bool) -> void:
 func _is_free(p: Vector2, r: float) -> bool:
 	if p.x < r or p.y < r or p.x > MAP_SIZE.x - r or p.y > MAP_SIZE.y - r:
 		return false
-	for o in obstacles:
-		if o.grow(r).has_point(p):
-			return false
-	for t in trees:
-		if p.distance_to(t) < r + TREE_RADIUS:
-			return false
+	var k := _grid_key(p)
+	if grid_obs.has(k):
+		for o in grid_obs[k]:
+			if o.grow(r).has_point(p):
+				return false
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var kk := Vector2i(k.x + dx, k.y + dy)
+			if grid_trees.has(kk):
+				for t in grid_trees[kk]:
+					if p.distance_to(t) < r + TREE_RADIUS:
+						return false
 	return true
 
 func _on_road(p: Vector2, margin: float) -> bool:
@@ -1235,13 +1274,89 @@ func _current_loot() -> Array[Dictionary]:
 func _bullet_blocked(p: Vector2) -> bool:
 	if p.x < 0 or p.y < 0 or p.x > MAP_SIZE.x or p.y > MAP_SIZE.y:
 		return true
-	for o in obstacles:
-		if o.has_point(p):
-			return true
-	for t in trees:
-		if p.distance_to(t) < TREE_RADIUS * 0.8:
-			return true
+	var k := _grid_key(p)
+	if grid_obs.has(k):
+		for o in grid_obs[k]:
+			if o.has_point(p):
+				return true
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var kk := Vector2i(k.x + dx, k.y + dy)
+			if grid_trees.has(kk):
+				for t in grid_trees[kk]:
+					if p.distance_to(t) < TREE_RADIUS * 0.8:
+						return true
 	return false
+
+func _player_world() -> Vector2:
+	return player_pos if inside < 0 else outside_pos
+
+func _enemies_alive() -> int:
+	var n := 0
+	for b in bots:
+		if b["alive"] and int(b["team"]) != 0:
+			n += 1
+	return n
+
+func _alive_team_count() -> int:
+	var seen := {0: true}
+	for b in bots:
+		if b["alive"]:
+			seen[int(b["team"])] = true
+	return seen.size()
+
+func _assign_teams() -> void:
+	var mates := team_size - 1
+	var leader_pos := Vector2.ZERO
+	for i in bots.size():
+		var b: Dictionary = bots[i]
+		if i < mates:
+			b["team"] = 0
+			b["pos"] = _nearest_free(player_pos + Vector2.from_angle(TAU * i / maxf(1.0, mates)) * 90.0, BOT_RADIUS)
+		else:
+			var k := i - mates
+			b["team"] = 1 + k / team_size
+			if k % team_size == 0:
+				leader_pos = b["pos"]
+			else:
+				b["pos"] = _nearest_free(leader_pos + Vector2.from_angle(randf() * TAU) * 80.0, BOT_RADIUS)
+	total_teams = 1 + int(ceil(float(bots.size() - mates) / float(team_size)))
+
+func _gather_teammates() -> void:
+	var n := 0
+	for b in bots:
+		if int(b["team"]) == 0 and b["alive"]:
+			n += 1
+			b["pos"] = _nearest_free(player_pos + Vector2.from_angle(TAU * n / 4.0 + 0.7) * 80.0, BOT_RADIUS)
+
+func _grid_key(p: Vector2) -> Vector2i:
+	return Vector2i(int(floor(p.x / 128.0)), int(floor(p.y / 128.0)))
+
+func _grid_add_tree(p: Vector2) -> void:
+	var k := _grid_key(p)
+	if not grid_trees.has(k):
+		grid_trees[k] = []
+	grid_trees[k].append(p)
+
+func _build_obstacle_grid() -> void:
+	grid_obs.clear()
+	for o in obstacles:
+		var g := o.grow(110.0)
+		for gx in range(int(floor(g.position.x / 128.0)), int(floor(g.end.x / 128.0)) + 1):
+			for gy in range(int(floor(g.position.y / 128.0)), int(floor(g.end.y / 128.0)) + 1):
+				var k := Vector2i(gx, gy)
+				if not grid_obs.has(k):
+					grid_obs[k] = []
+				grid_obs[k].append(o)
+
+func _tile_world() -> void:
+	var base: Array[Rect2] = obstacles.duplicate()
+	var tiled: Array[Rect2] = []
+	for ox in 2:
+		for oy in 2:
+			for r in base:
+				tiled.append(Rect2(r.position + Vector2(2400.0 * ox, 1800.0 * oy), r.size))
+	obstacles = tiled
 
 func _living_bots() -> int:
 	var n := 0
@@ -1347,7 +1462,7 @@ func _nearest_enemy_dir() -> Vector2:
 	var best := 560.0
 	var dir := Vector2.ZERO
 	for b in bots:
-		if not b["alive"]:
+		if not b["alive"] or int(b["team"]) == 0:
 			continue
 		var d: float = b["pos"].distance_to(player_pos)
 		if d < best:
@@ -1413,6 +1528,7 @@ func _update_fall(delta: float) -> void:
 	if fall_timer <= 0.0:
 		player_pos = _nearest_free(player_pos, PLAYER_RADIUS)
 		phase = "play"
+		_gather_teammates()
 		_show_message("Gelandet! Sammle Loot und überlebe!", 2.5)
 
 func _update_play(delta: float) -> void:
@@ -1609,64 +1725,107 @@ func _explode(pos: Vector2, bl: Dictionary) -> void:
 	var radius: float = bl["explode"]
 	explosions.append({"pos": pos, "t": 0.0, "r": radius})
 	_play_sfx("explosion", -2.0)
+	var ow: int = bl["owner"]
+	var oteam: int = 0 if ow == -1 else int(bots[ow]["team"])
 	for i in bots.size():
 		var b: Dictionary = bots[i]
-		if b["alive"] and b["pos"].distance_to(pos) < radius + BOT_RADIUS:
-			b["health"] -= bl["damage"]
+		if b["alive"] and i != ow and int(b["team"]) != oteam and b["pos"].distance_to(pos) < radius + BOT_RADIUS:
+			b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
 			if b["health"] <= 0.0:
-				_kill_bot(i, bl["owner"] == -1)
-	if bl["owner"] != -1 and inside < 0 and player_pos.distance_to(pos) < radius + PLAYER_RADIUS:
+				_kill_bot(i, ow == -1)
+	if ow != -1 and oteam != 0 and inside < 0 and player_pos.distance_to(pos) < radius + PLAYER_RADIUS:
 		_damage_player(bl["damage"] * 0.6)
 
 func _player_died() -> void:
 	health = 0.0
 	phase = "over"
-	placement = _living_bots() + 1
+	placement = _alive_team_count()
 	_show_message("", 0.0)
 	var xp_msg := _award_xp()
-	_show_end_menu("PLATZ %d VON %d   %s" % [placement, bots.size() + 1, xp_msg])
+	_show_end_menu("PLATZ %d VON %d   %s" % [placement, total_teams, xp_msg])
 
 func _update_bots(delta: float) -> void:
+	var pw := _player_world()
+	var player_targetable := phase == "play" and inside < 0
 	for i in bots.size():
 		var b: Dictionary = bots[i]
 		if not b["alive"]:
 			continue
 		b["think"] -= delta
 		b["cd"] -= delta
-		var to_player: Vector2 = player_pos - b["pos"]
-		var dist := to_player.length()
+		b["tsc"] = float(b.get("tsc", 0.0)) - delta
+		var team: int = int(b["team"])
+		if b["tsc"] <= 0.0:
+			# Ziel suchen: nächster Gegner (Spieler oder fremdes Team) im Sichtbereich
+			b["tsc"] = randf_range(0.25, 0.45)
+			var best := 520.0
+			var bt := -2
+			if player_targetable and team != 0:
+				var dp: float = pw.distance_to(b["pos"])
+				if dp < best:
+					best = dp
+					bt = -1
+			for j in bots.size():
+				if j == i:
+					continue
+				var o: Dictionary = bots[j]
+				if not o["alive"] or int(o["team"]) == team:
+					continue
+				var dd: float = o["pos"].distance_to(b["pos"])
+				if dd < best:
+					best = dd
+					bt = j
+			b["tid"] = bt
+		var tid: int = int(b.get("tid", -2))
+		var has_target := false
+		var tpos := Vector2.ZERO
+		if tid == -1 and player_targetable and team != 0:
+			tpos = pw
+			has_target = true
+		elif tid >= 0 and bots[tid]["alive"]:
+			tpos = bots[tid]["pos"]
+			has_target = true
+		var to_t: Vector2 = tpos - b["pos"]
+		var dist := to_t.length() if has_target else 99999.0
 		var step := Vector2.ZERO
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
 			# außerhalb der Zone: zurück zur Mitte
 			step = ZONE_CENTER - b["pos"]
-		elif dist < 280.0 and elapsed > 10.0 and MELEE.has(b["weapon"]):
-			# Nur Nahkampf: direkt auf den Spieler zu
-			step = to_player
+		elif has_target and dist < 280.0 and elapsed > 10.0 and MELEE.has(b["weapon"]):
+			# Nur Nahkampf: direkt auf das Ziel zu
+			step = to_t
 			if b["cd"] <= 0.0 and dist < MELEE[b["weapon"]]["range"] + PLAYER_RADIUS:
-				_melee_attack(i, b["pos"], to_player, b["weapon"])
+				if tid == -1:
+					_melee_attack(i, b["pos"], to_t, b["weapon"])
+				else:
+					atk_t[i] = Time.get_ticks_msec()
+					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"])
+					_spark_burst(bots[tid]["pos"], Color(1, 0.9, 0.5), 4, 120.0)
+					if bots[tid]["health"] <= 0.0:
+						_kill_bot(tid, false)
 				b["cd"] = randf_range(0.7, 1.1)
-		elif dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]):
-			# Spieler gesehen: angreifen oder seitlich ausweichen
+		elif has_target and dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]):
+			# Ziel gesehen: angreifen oder seitlich ausweichen
 			if dist > 320.0:
-				step = to_player
+				step = to_t
 			else:
-				step = to_player.rotated(PI / 2.0) * 0.7
+				step = to_t.rotated(PI / 2.0) * 0.7
 			if b["cd"] <= 0.0 and dist < 480.0:
-				var aim := to_player.normalized().rotated(randf_range(-0.15, 0.15))
+				var aim := to_t.normalized().rotated(randf_range(-0.15, 0.15))
 				_fire(i, b["pos"], aim, b["weapon"])
 				b["cd"] = randf_range(1.2, 2.0) * bot_cd_mult
 		else:
-			# ohne Waffe: zur nächsten Waffe laufen, sonst ziellos herumlaufen
+			# ohne Waffe: zur nächsten Waffe laufen, sonst Team folgen oder herumlaufen
 			var target := -1
 			if MELEE.has(b["weapon"]):
-				var best := 420.0
+				var best2 := 420.0
 				for li in loot.size():
 					var it: Dictionary = loot[li]
 					if WEAPONS.has(it["kind"]):
 						var dl: float = it["pos"].distance_to(b["pos"])
-						if dl < best:
-							best = dl
+						if dl < best2:
+							best2 = dl
 							target = li
 			if target >= 0:
 				var it2: Dictionary = loot[target]
@@ -1676,14 +1835,18 @@ func _update_bots(delta: float) -> void:
 					b["rar"] = int(it2.get("rar", 0))
 					b["gun"] = tex_guns.get(it2["kind"], null)
 					loot.remove_at(target)
+			elif team == 0:
+				# Teamkollege: dem Spieler folgen
+				if pw.distance_to(b["pos"]) > 170.0:
+					step = pw - b["pos"]
 			else:
 				if b["think"] <= 0.0:
 					b["dir"] = Vector2.from_angle(randf() * TAU)
 					b["think"] = randf_range(1.0, 3.0)
 				step = b["dir"]
 
-		if dist < 520.0 and phase == "play":
-			b["aim"] = to_player.normalized()
+		if has_target and dist < 520.0 and phase == "play":
+			b["aim"] = to_t.normalized()
 		elif step != Vector2.ZERO:
 			b["aim"] = step.normalized()
 		b["moving"] = step != Vector2.ZERO
@@ -1712,13 +1875,15 @@ func _kill_bot(i: int, by_player := false) -> void:
 	bots[i]["alive"] = false
 	bots[i]["dead_at"] = Time.get_ticks_msec()
 	_spark_burst(bots[i]["pos"], Color(1, 1, 1), 16, 260.0)
-	if by_player:
+	if by_player and int(bots[i]["team"]) != 0:
 		kills += 1
 		_show_message("Gegner erledigt! (%d)" % kills, 1.2)
 		kill_feed.append({"text": "DU  ›  %s" % str(bots[i].get("skin", "Gegner")).replace("char_", "").capitalize(), "t": 0.0})
 		if kill_feed.size() > 4:
 			kill_feed.pop_front()
-	if phase == "play" and _living_bots() == 0:
+	if not by_player and int(bots[i]["team"]) == 0 and phase == "play":
+		_show_message("Teamkollege ausgeschaltet!", 1.8)
+	if phase == "play" and _enemies_alive() == 0:
 		phase = "won"
 		placement = 1
 		_show_message("", 0.0)
@@ -1747,18 +1912,22 @@ func _update_bullets(delta: float) -> void:
 			continue
 
 		var hit := false
-		if bl["owner"] == -1:
-			for i in bots.size():
-				var b: Dictionary = bots[i]
-				if b["alive"] and b["pos"].distance_to(bl["pos"]) < BOT_RADIUS:
-					hit = true
-					if not explodes:
-						b["health"] -= bl["damage"]
+		var ow: int = bl["owner"]
+		var oteam: int = 0 if ow == -1 else int(bots[ow]["team"])
+		for i in bots.size():
+			var b: Dictionary = bots[i]
+			if not b["alive"] or i == ow or int(b["team"]) == oteam:
+				continue
+			if b["pos"].distance_to(bl["pos"]) < BOT_RADIUS:
+				hit = true
+				if not explodes:
+					b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
+					if ow == -1:
 						_popup(b["pos"], bl["damage"], Color(1, 0.95, 0.5))
-						if b["health"] <= 0.0:
-							_kill_bot(i, true)
-					break
-		elif phase == "play" and inside < 0 and player_pos.distance_to(bl["pos"]) < PLAYER_RADIUS:
+					if b["health"] <= 0.0:
+						_kill_bot(i, ow == -1)
+				break
+		if not hit and ow != -1 and oteam != 0 and phase == "play" and inside < 0 and player_pos.distance_to(bl["pos"]) < PLAYER_RADIUS:
 			_damage_player(bl["damage"])
 			hit = true
 		if hit:
@@ -1817,9 +1986,11 @@ func _draw_outdoor() -> void:
 	if grass_blobs.is_empty():
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
-		for k in 160:
+		for k in 560:
 			grass_blobs.append([Vector2(rng.randf() * MAP_SIZE.x, rng.randf() * MAP_SIZE.y), rng.randf_range(60, 190), rng.randf() < 0.5])
 	for gb in grass_blobs:
+		if (gb[0] as Vector2).distance_squared_to(player_pos) > 1300.0 * 1300.0:
+			continue
 		var gc := Color(0.75, 1, 0.5, 0.10) if gb[2] else Color(0.1, 0.4, 0.2, 0.10)
 		if map_theme == 1:
 			gc = Color(1, 0.9, 0.6, 0.18) if gb[2] else Color(0.75, 0.5, 0.2, 0.16)
@@ -1847,12 +2018,15 @@ func _draw_outdoor() -> void:
 				draw_rect(Rect2(cx - 4, y, 8, 45), Color(1, 1, 1, 0.75))
 
 	# Deko am Boden (Blumen, Steine, Büsche)
+	var cc2: Vector2 = player_pos
 	for dd in decor_list:
+		if (dd["pos"] as Vector2).distance_squared_to(cc2) > 1100.0 * 1100.0:
+			continue
 		var sz: Vector2 = dd["size"]
 		draw_texture_rect(dd["tex"], Rect2(dd["pos"] - sz / 2.0, sz), false)
 
 	# Wolkenschatten ziehen langsam über die Karte
-	for ci in 7:
+	for ci in 18:
 		var cx := fposmod(float(ci) * 677.0 + t_now * 24.0, MAP_SIZE.x + 800.0) - 400.0
 		var cy := fposmod(float(ci) * 431.0 + t_now * 9.0 + sin(float(ci)) * 300.0, MAP_SIZE.y + 600.0) - 300.0
 		for part in 4:
@@ -1860,12 +2034,18 @@ func _draw_outdoor() -> void:
 
 	# Schatten von Häusern und Bäumen
 	for r in obstacles:
+		if r.get_center().distance_squared_to(cc2) > 1300.0 * 1300.0:
+			continue
 		draw_rect(Rect2(r.position + Vector2(26, 26), r.size), Color(0, 0, 0, 0.22))
 	for t in trees:
+		if t.distance_squared_to(cc2) > 1100.0 * 1100.0:
+			continue
 		draw_circle(t + Vector2(16, 16), TREE_RADIUS * 1.2, Color(0, 0, 0, 0.2))
 
 	# Ringe unter dem Loot
 	for item in loot:
+		if (item["pos"] as Vector2).distance_squared_to(cc2) > 1100.0 * 1100.0:
+			continue
 		var col := _ring_color(item)
 		var rad := 40.0 if item["kind"] == "chest" else 30.0
 		draw_circle(item["pos"], rad, Color(col.r, col.g, col.b, 0.22))
@@ -2287,6 +2467,8 @@ func _sync_units3d() -> void:
 		if outdoor:
 			for i in bots.size():
 				var b: Dictionary = bots[i]
+				if (b["pos"] as Vector2).distance_squared_to(player_pos) > 1150.0 * 1150.0:
+					continue
 				if not b["alive"]:
 					if now - int(b.get("dead_at", -99999)) < 1800:
 						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": true})

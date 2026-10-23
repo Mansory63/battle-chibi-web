@@ -45,3 +45,6 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Grafik: Comic-Umrandung an allen Figuren, ziehende Wolkenschatten ueber der Karte.
 - Grafik: Baum-Umrandung.
 - Inhalt: neue Waffen Revolver, Armbrust, Laserkanone; Nahkampf Katana, Vorschlaghammer (Modelle, Beute, Kisten, Bots).
+- Grosse Karte: 4800x3600 (4x Flaeche), 50 Spieler (1 Mensch + 49 Computer-Spieler). Echte Online-Mitspieler sind NICHT moeglich (braeuchte Server).
+- Teams: Solo/Duo/Trio/Quattro im Menue; Teamkollegen sind Bots (blau), folgen dem Spieler. Bots kaempfen auch gegeneinander. Sieg = alle Gegnerteams ausgeschaltet.
+- Performance: Raster-Kollision, gemeinsame Baum-Meshes, Culling von 2D-Deko, 3D-Figuren nur in Reichweite.

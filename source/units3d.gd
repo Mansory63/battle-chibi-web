@@ -576,21 +576,25 @@ func build_world(obstacles: Array, trees: Array, roofs: Array) -> void:
 		rm.material_override = roof_mat
 		world_root.add_child(rm)
 		houses.append({"rect": r, "wall_mat": wall_mat, "roof_mat": roof_mat, "faded": false})
-	for i in trees.size():
-		var p: Vector2 = trees[i]
+	var tree_meshes: Array = []
+	for gi in TREE_GREENS.size():
 		var st2 := SurfaceTool.new()
 		st2.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var g: Color = TREE_GREENS[i % TREE_GREENS.size()]
+		var g: Color = TREE_GREENS[gi]
 		_add_cyl(st2, Vector3(0, 0, 0), 7.0, 46.0, Color(0.45, 0.28, 0.16))
 		_add_sphere(st2, Vector3(0, 70, 0), 36.0, g)
 		_add_sphere(st2, Vector3(16, 98, 8), 22.0, g.lightened(0.1))
 		_add_sphere(st2, Vector3(-18, 90, -8), 20.0, g.darkened(0.05))
+		tree_meshes.append(st2.commit())
+	for i in trees.size():
+		var p: Vector2 = trees[i]
 		var tm := MeshInstance3D.new()
-		tm.mesh = st2.commit()
+		tm.mesh = tree_meshes[i % tree_meshes.size()]
 		tm.material_override = mat_tree_solid
 		tm.material_overlay = _tree_outline
 		tm.position = Vector3(p.x, 0, p.y)
 		tm.rotation.y = float(i) * 1.7
+		tm.scale = Vector3.ONE * (0.85 + 0.3 * fposmod(float(i) * 0.37, 1.0))
 		world_root.add_child(tm)
 		tree_nodes.append({"pos": p, "node": tm, "faded": false})
 
