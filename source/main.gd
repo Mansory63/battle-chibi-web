@@ -185,6 +185,7 @@ var popups: Array[Dictionary] = []
 var kill_feed: Array = []
 var fx: Control
 var damage_flash := 0.0
+var hit_marker := 0.0
 const ZOOM := 1.3
 const ONLINE := false   # Online-Multiplayer gibt es noch nicht; Pause verhält sich dann anders
 var paused_away := false
@@ -484,6 +485,12 @@ func _draw_fx() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
+	if hit_marker > 0.0:
+		var hc := vs * 0.5 + Vector2(0, -20)
+		var ha := hit_marker / 0.18
+		for sx in [-1.0, 1.0]:
+			for sy in [-1.0, 1.0]:
+				fx.draw_line(hc + Vector2(sx, sy) * 8.0, hc + Vector2(sx, sy) * (16.0 + 6.0 * (1.0 - ha)), Color(1, 1, 1, ha), 4.0)
 	if damage_flash > 0.0:
 		var a := damage_flash / 0.35 * 0.3
 		for k in 6:
@@ -1338,6 +1345,7 @@ func _process(delta: float) -> void:
 		p["t"] += delta
 	popups = popups.filter(func(p): return p["t"] < 0.9)
 	damage_flash = maxf(0.0, damage_flash - delta)
+	hit_marker = maxf(0.0, hit_marker - delta)
 	shake = maxf(0.0, shake - delta * 2.2)
 	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake * 16.0
 	for f in flashes:
@@ -1668,6 +1676,8 @@ func _spark_burst(pos: Vector2, col: Color, n: int, speed: float) -> void:
 
 func _popup(pos: Vector2, amount: float, col: Color) -> void:
 	_spark_burst(pos, col, 6, 150.0)
+	if col.g > 0.9:
+		hit_marker = 0.18
 	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col})
 
 func _kill_bot(i: int, by_player := false) -> void:
