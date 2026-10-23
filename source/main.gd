@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261023082502"
+const BUILD := "20261023093729"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -40,6 +40,7 @@ const VIEW_TILT := 0.72
 const HOUSE_H := 74.0
 const ROADS := [Rect2(0, 820, 4800, 160), Rect2(0, 2620, 4800, 160), Rect2(500, 0, 160, 3600), Rect2(1700, 0, 160, 3600), Rect2(2900, 0, 160, 3600), Rect2(4100, 0, 160, 3600)]
 const TouchControlsScript := preload("res://touch_controls.gd")
+const HubScript := preload("res://hub.gd")
 
 const OUTLINE := Color(0.15, 0.1, 0.1)
 const SKIN := Color(1, 0.86, 0.72)
@@ -137,6 +138,11 @@ const SKINS := [
 	[8, "char_purple", "Roboter"], [10, "char_orange", "Feuerwehr"], [13, "char_cyan", "Wikinger"], [16, "char_pink", "Cowboy"],
 ]
 var menu_title: Label
+var hub: Control
+var hub_tab := 2
+var hub_data := {"coins": 0, "gems": 0, "wins": 0, "matches": 0, "best_place": 0, "best_kills": 0, "inv": {"shield": 0, "pistol": 0, "xp": 0}, "mday": "", "mprog": [0, 0, 0], "mclaim": [false, false, false]}
+var start_shield := false
+var start_pistol := false
 var menu_play: Button
 var menu_help: Label
 var fall_timer := FALL_TIME
@@ -334,106 +340,15 @@ func _build_menu() -> void:
 	menu_layer.add_child(bg)
 	var stage := _make_stage(menu_layer)
 
-	menu_title = Label.new()
-	menu_title.text = "BATTLECHIBI"
-	menu_title.position = Vector2(0, 40)
-	menu_title.size = Vector2(1280, 120)
-	menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_title.add_theme_font_size_override("font_size", 96)
-	menu_title.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	menu_title.add_theme_color_override("font_outline_color", Color(0.15, 0.1, 0.1))
-	menu_title.add_theme_constant_override("outline_size", 14)
-	stage.add_child(menu_title)
-
-	var box := VBoxContainer.new()
-	box.position = Vector2(440, 185)
-	box.size = Vector2(400, 420)
-	box.add_theme_constant_override("separation", 18)
-	stage.add_child(box)
-
-	menu_play = _menu_button("SPIELEN", Color(0.25, 0.75, 0.35))
-	menu_play.pressed.connect(_on_menu_play)
-	box.add_child(menu_play)
-	var row_h := HBoxContainer.new()
-	row_h.add_theme_constant_override("separation", 12)
-	box.add_child(row_h)
-	var help_btn := _menu_button("STEUERUNG", Color(0.25, 0.5, 0.9))
-	help_btn.custom_minimum_size = Vector2(194, 64)
-	help_btn.add_theme_font_size_override("font_size", 22)
-	help_btn.pressed.connect(func():
-		menu_help.visible = not menu_help.visible
-		pass_label.visible = false)
-	row_h.add_child(help_btn)
-	var pass_btn := _menu_button("SAISON-PASS", Color(0.55, 0.4, 0.8))
-	pass_btn.custom_minimum_size = Vector2(194, 64)
-	pass_btn.add_theme_font_size_override("font_size", 22)
-	pass_btn.pressed.connect(func():
-		_update_pass_label()
-		pass_label.visible = not pass_label.visible
-		menu_help.visible = false)
-	row_h.add_child(pass_btn)
-	team_btn = _menu_button("", Color(0.2, 0.55, 0.75))
-	team_btn.custom_minimum_size = Vector2(400, 64)
-	team_btn.add_theme_font_size_override("font_size", 26)
-	team_btn.pressed.connect(func():
-		team_size = team_size % 4 + 1
-		_write_save()
-		_update_menu_buttons())
-	box.add_child(team_btn)
-	mode_btn = _menu_button("", Color(0.85, 0.35, 0.3))
-	mode_btn.custom_minimum_size = Vector2(400, 64)
-	mode_btn.add_theme_font_size_override("font_size", 28)
-	mode_btn.pressed.connect(func():
-		hardcore = not hardcore
-		_write_save()
-		_update_menu_buttons())
-	var row0 := HBoxContainer.new()
-	row0.add_theme_constant_override("separation", 12)
-	box.add_child(row0)
-	mode_btn.custom_minimum_size = Vector2(250, 64)
-	mode_btn.add_theme_font_size_override("font_size", 24)
-	row0.add_child(mode_btn)
-	map_btn = _menu_button("", Color(0.3, 0.5, 0.7))
-	map_btn.custom_minimum_size = Vector2(138, 64)
-	map_btn.add_theme_font_size_override("font_size", 22)
-	map_btn.pressed.connect(func():
-		map_theme = (map_theme + 1) % 3
-		_write_save()
-		_update_menu_buttons())
-	row0.add_child(map_btn)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	box.add_child(row)
-	skin_btn = _menu_button("", Color(0.9, 0.55, 0.2))
-	skin_btn.custom_minimum_size = Vector2(250, 64)
-	skin_btn.add_theme_font_size_override("font_size", 26)
-	skin_btn.pressed.connect(_next_skin)
-	row.add_child(skin_btn)
-	sound_btn = _menu_button("", Color(0.3, 0.3, 0.4))
-	sound_btn.custom_minimum_size = Vector2(138, 64)
-	sound_btn.add_theme_font_size_override("font_size", 26)
-	sound_btn.pressed.connect(_toggle_sound)
-	row.add_child(sound_btn)
-	_update_menu_buttons()
-
-	menu_help = Label.new()
-	menu_help.text = "Joystick links: laufen   |   FEUER halten: schießen, Daumen ziehen: zielen   |   Blitz: Sprung/Dash   |   II oben: Pause\nPC: WASD laufen, Maus zielen, Leertaste/Maus schießen, Shift Fähigkeit\nBlau = Schild   Rot = Sprung   Gelb = Power   Grün = Speed\nDie Feuerzone kostet 0,5 Leben pro Sekunde, Häuser betrittst du einfach durch die Tür."
-	menu_help.position = Vector2(0, 590)
-	menu_help.size = Vector2(1280, 120)
-	menu_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_help.add_theme_font_size_override("font_size", 20)
-	menu_help.visible = false
-	stage.add_child(menu_help)
-
 	pass_label = Label.new()
-	pass_label.position = Vector2(870, 200)
-	pass_label.size = Vector2(380, 420)
-	pass_label.add_theme_font_size_override("font_size", 20)
-	pass_label.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.12))
-	pass_label.add_theme_constant_override("outline_size", 6)
-	pass_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pass_label.visible = false
 	stage.add_child(pass_label)
+	menu_help = Label.new()
+	menu_help.visible = false
+	stage.add_child(menu_help)
+	hub = HubScript.new()
+	hub.setup(self, stage)
+	_update_menu_buttons()
 
 # ---------- Pause ----------
 # 1280x720-Bühne, die bei jeder Bildschirmgröße in der Mitte sitzt
@@ -757,6 +672,8 @@ func _on_menu_play() -> void:
 	menu_layer.visible = false
 	touch.visible = true
 	_apply_difficulty()
+	_check_mission_day()
+	_apply_inventory()
 	_assign_teams()
 	phase = "fall"
 	if music_player and not music_player.playing:
@@ -766,8 +683,11 @@ func _on_menu_play() -> void:
 func _show_end_menu(title: String) -> void:
 	_play_sfx("win" if title.begins_with("SIEG") else "lose", -4.0)
 	menu_title.text = title
-	menu_title.add_theme_font_size_override("font_size", 54)
+	menu_title.add_theme_font_size_override("font_size", 30)
+	menu_title.size = Vector2(700, 72)
+	menu_title.position = Vector2(290, 6)
 	menu_play.text = "NOCHMAL"
+	hub.set_tab(2)
 	menu_layer.visible = true
 	touch.visible = false
 
@@ -785,6 +705,10 @@ func _load_save() -> void:
 		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 3
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
+		var hd = cfg.get_value("hub", "data", {})
+		if hd is Dictionary:
+			for k in hd:
+				hub_data[k] = hd[k]
 	if not _skin_unlocked(save_skin):
 		save_skin = "char_player"
 
@@ -797,6 +721,7 @@ func _write_save() -> void:
 	cfg.set_value("settings", "map_theme", map_theme)
 	cfg.set_value("settings", "team_size", team_size)
 	cfg.set_value("settings", "tut_done", tut_done)
+	cfg.set_value("hub", "data", hub_data)
 	cfg.save(SAVE_PATH)
 
 func _skin_unlocked(skin: String) -> bool:
@@ -830,20 +755,21 @@ func _skin_name() -> String:
 			return e[2]
 	return "Astronaut"
 
+func _set_side(b: Button, t: String) -> void:
+	if b and b.has_meta("lbl"):
+		(b.get_meta("lbl") as Label).text = t
+
 func _update_menu_buttons() -> void:
-	if skin_btn:
-		skin_btn.text = "SKIN: " + _skin_name()
-	if sound_btn:
-		sound_btn.text = "TON AUS" if muted else "TON AN"
+	_set_side(sound_btn, "TON\nAUS" if muted else "TON\nAN")
+	_set_side(mode_btn, "HARDCORE" if hardcore else "NORMAL")
+	_set_side(team_btn, "TEAM\n" + ["SOLO", "DUO", "TRIO", "QUATTRO"][team_size - 1])
+	_set_side(map_btn, "KARTE\n" + ["WIESE", "WÜSTE", "SCHNEE"][map_theme])
 	if mode_btn:
-		mode_btn.text = "HARDCORE" if hardcore else "NORMAL"
-	if team_btn:
-		team_btn.text = "TEAM: " + ["SOLO", "DUO", "TRIO", "QUATTRO"][team_size - 1] + "  (50 Spieler)"
-	if map_btn:
-		map_btn.text = ["WIESE", "WÜSTE", "SCHNEE"][map_theme]
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
 		pause_sound_btn.text = "TON AUS" if muted else "TON AN"
+	if hub:
+		hub.refresh()
 
 func _update_pass_label() -> void:
 	var lvl := _level()
@@ -862,12 +788,53 @@ func _award_xp() -> String:
 	var total := maxi(1, total_teams - 1)
 	var gained := int((20 + kills * 50 + int(300.0 * float(total + 1 - placement) / float(total))) * xp_mult)
 	save_xp += gained
+	var coins := 10 + kills * 8 + maxi(0, 20 - placement) * 3 + (50 if placement == 1 else 0)
+	_record_match(coins)
+	var msg := "+%d XP  +%d Münzen" % [gained, coins]
+	if _level() > before:
+		hub_data["gems"] = int(hub_data["gems"]) + 2
+		msg += "   STUFE %d! +2 Edelsteine" % _level()
 	_write_save()
 	_update_menu_buttons()
-	var msg := "+%d XP" % gained
-	if _level() > before:
-		msg += "   STUFE %d!" % _level()
 	return msg
+
+func _check_mission_day() -> void:
+	var today := Time.get_date_string_from_system()
+	if str(hub_data["mday"]) != today:
+		hub_data["mday"] = today
+		hub_data["mprog"] = [0, 0, 0]
+		hub_data["mclaim"] = [false, false, false]
+
+func _record_match(coins: int) -> void:
+	_check_mission_day()
+	hub_data["coins"] = int(hub_data["coins"]) + coins
+	hub_data["matches"] = int(hub_data["matches"]) + 1
+	if placement == 1:
+		hub_data["wins"] = int(hub_data["wins"]) + 1
+	var bp := int(hub_data["best_place"])
+	if bp <= 0 or placement < bp:
+		hub_data["best_place"] = placement
+	hub_data["best_kills"] = maxi(int(hub_data["best_kills"]), kills)
+	var mp: Array = hub_data["mprog"]
+	mp[0] = int(mp[0]) + 1
+	mp[1] = int(mp[1]) + kills
+	if placement <= 10:
+		mp[2] = int(mp[2]) + 1
+
+func _apply_inventory() -> void:
+	start_shield = false
+	start_pistol = false
+	var inv: Dictionary = hub_data["inv"]
+	if int(inv.get("shield", 0)) > 0:
+		inv["shield"] = int(inv["shield"]) - 1
+		start_shield = true
+	if int(inv.get("pistol", 0)) > 0:
+		inv["pistol"] = int(inv["pistol"]) - 1
+		start_pistol = true
+	if int(inv.get("xp", 0)) > 0:
+		inv["xp"] = int(inv["xp"]) - 1
+		xp_mult *= 2.0
+	_write_save()
 
 # ---------- Sound ----------
 func _setup_audio() -> void:
@@ -1568,6 +1535,11 @@ func _update_fall(delta: float) -> void:
 	if fall_timer <= 0.0:
 		player_pos = _nearest_free(player_pos, PLAYER_RADIUS)
 		phase = "play"
+		if start_shield:
+			shield = 50.0
+		if start_pistol:
+			weapon = "pistol"
+			ammo = WEAPONS["pistol"]["ammo"]
 		_gather_teammates()
 		_show_message("Gelandet! Sammle Loot und überlebe!", 2.5)
 
@@ -2472,16 +2444,15 @@ func _sync_units3d() -> void:
 	units3d.zoom = ZOOM
 	units3d.set_mode(outdoor, view.affine_inverse() * cam_center)
 	if menu_layer != null and menu_layer.visible and phase in ["menu", "over", "won"]:
-		# Menü: zwei Figuren links und rechts
+		# Menü: ein Held in der Mitte (nur im Kampf-Tab)
 		units3d.layer.layer = 7
 		units3d.zoom = 1.0
 		units3d.set_mode(false, Vector2.ZERO)
 		units3d.begin_frame()
 		var tt := Time.get_ticks_msec() / 1000.0
-		units3d.update_unit("hero1", {"skin": save_skin, "screen": Vector2(vsize.x * 0.5 - 520.0 if vsize.x < 1500.0 else vsize.x * 0.17, vsize.y * 0.88), "aim": Vector2(sin(tt * 0.8) * 0.6, 1.0),
-			"weapon": "ak", "alive": true, "scale": 2.6})
-		units3d.update_unit("hero2", {"skin": "char_red", "screen": Vector2(vsize.x * 0.5 + 520.0 if vsize.x < 1500.0 else vsize.x * 0.83, vsize.y * 0.88), "aim": Vector2(-sin(tt * 0.7) * 0.6, 1.0),
-			"weapon": "shotgun", "alive": true, "scale": 2.6})
+		if hub_tab == 2:
+			units3d.update_unit("hero1", {"skin": save_skin, "screen": Vector2(vsize.x * 0.5, vsize.y * 0.5 + 95.0), "aim": Vector2(sin(tt * 0.8) * 0.6, 1.0),
+				"weapon": "ak", "alive": true, "scale": 2.3})
 		units3d.end_frame()
 		return
 	units3d.layer.layer = 1

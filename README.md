@@ -51,3 +51,6 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Adaptive Qualitaet: faellt die Bildrate unter 30 FPS, sinkt die 3D-Renderaufloesung automatisch.
 - Balance: Bots spawnen nicht mehr direkt am Landeplatz (min. 800 px).
 - Auto-Update: Spiel prueft alle 45 s version.json und laedt im Menue selbst neu; Reparatur-Knopf bei Startproblemen/Fehlerflut; release.sh baut+veroeffentlicht.
+
+## Block 11 – Hub-Menü
+Neues Hauptmenü (hub.gd): Kopfleiste mit Avatar/Stufe/XP, Münzen, Edelsteine, Siege; Seitenbuttons (Team, Karte, Modus, Ton); Tabs Shop (Startschild, Start-Pistole, Doppel-XP), Skins (Raster mit Seltenheit), Kampf, Tägliche Aufgaben, Mehr (Rekorde/Steuerung/Pass). Daten in `hub_data` im Speicherstand.
