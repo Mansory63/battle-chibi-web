@@ -485,6 +485,19 @@ func _draw_fx() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
+	if phase == "play" and inside < 0 and _living_bots() <= 3:
+		var cc := vs * 0.5
+		for b in bots:
+			if not b["alive"]:
+				continue
+			var sp := _fx_screen(b["pos"])
+			if Rect2(Vector2(40, 40), vs - Vector2(80, 80)).has_point(sp):
+				continue
+			var dv := (sp - cc).normalized()
+			var edge := Vector2(clampf(cc.x + dv.x * 4000.0, 50.0, vs.x - 50.0), clampf(cc.y + dv.y * 4000.0, 130.0, vs.y - 130.0))
+			var tip := edge
+			var pa := PackedVector2Array([tip + dv * 18.0, tip - dv * 12.0 + dv.orthogonal() * 14.0, tip - dv * 12.0 - dv.orthogonal() * 14.0])
+			fx.draw_colored_polygon(pa, Color(1, 0.25, 0.25, 0.9))
 	if hit_marker > 0.0:
 		var hc := vs * 0.5 + Vector2(0, -20)
 		var ha := hit_marker / 0.18
@@ -862,6 +875,12 @@ func _draw_minimap() -> void:
 		m.draw_rect(r, Color(0.85, 0.4, 0.3))
 	m.draw_arc(ZONE_CENTER, zone_radius, 0.0, TAU, 64, Color(1, 0.6, 0.1), 30.0)
 	m.draw_set_transform_matrix(Transform2D.IDENTITY)
+	if _living_bots() <= 3:
+		for b in bots:
+			if b["alive"]:
+				var mp: Vector2 = mt * (b["pos"] as Vector2)
+				m.draw_circle(mp, 5.0, Color(1, 0.2, 0.2))
+				m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
 	m.draw_circle(m.size / 2.0, 5.0, Color.WHITE)
 	m.draw_arc(m.size / 2.0, 6.0, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 2.0)
 	m.draw_rect(Rect2(Vector2.ZERO, m.size), Color(0.1, 0.08, 0.12), false, 3.0)
@@ -1665,7 +1684,7 @@ func _update_bots(delta: float) -> void:
 			b["pos"] = _move(b["pos"], step.normalized() * BOT_SPEED * delta, BOT_RADIUS)
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
-			b["health"] -= ZONE_DAMAGE_PER_SEC * delta
+			b["health"] -= ZONE_DAMAGE_PER_SEC * delta * (1.0 + 5.0 * clampf(elapsed / zone_time, 0.0, 1.0))
 			if b["health"] <= 0.0:
 				_kill_bot(i)
 
