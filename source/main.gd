@@ -9,6 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
+const BUILD := "20261023082329"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -233,7 +234,31 @@ var tex_path: Texture2D
 var decor: Array[Dictionary] = []   # Textur-Vorlagen für Deko
 var decor_list: Array[Dictionary] = []  # Deko-Stellen ohne Kollision: {pos, tex, size}
 
+# ---------- Auto-Update / Selbstreparatur (nur Web) ----------
+var update_timer := 20.0
+var update_pending := false
+
+func _web_started() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.__bc_started = true;", true)
+
+func _poll_update(delta: float) -> void:
+	if not OS.has_feature("web") or BUILD == "dev":
+		return
+	update_timer -= delta
+	if update_timer > 0.0:
+		return
+	update_timer = 45.0
+	var latest = JavaScriptBridge.eval("(window.__bcv||'')", true)
+	JavaScriptBridge.eval("fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){window.__bcv=String(j.v)}).catch(function(){})", true)
+	if str(latest) != "" and str(latest) != BUILD:
+		update_pending = true
+		if phase in ["menu", "over", "won"]:
+			# Nur im Menü neu laden, nie mitten in einer Runde
+			JavaScriptBridge.eval("if(window.__bcfix){window.__bcfix();}else{location.reload();}", true)
+
 func _ready() -> void:
+	_web_started()
 	randomize()
 	units3d = load("res://units3d.gd").new()
 	add_child(units3d)
@@ -1481,6 +1506,7 @@ func _wants_fire() -> bool:
 var perf_t := 0.0
 var perf_frames := 0
 func _process(delta: float) -> void:
+	_poll_update(delta)
 	# Adaptive Qualitaet: im Spiel messen, bei < 30 FPS Aufloesung der 3D-Ebene senken
 	if phase == "play" and units3d != null:
 		perf_t += delta
