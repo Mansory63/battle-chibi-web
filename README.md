@@ -43,3 +43,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Block 10: Live-Spieltest ok; Landungs-Anzeige ueberdeckt Pause-Knopf nicht mehr.
 - Fix (Nutzerhinweis): Letzte Gegner schwer zu finden -> bei <=3 Gegnern rote Punkte auf Minikarte + rote Pfeile am Bildschirmrand; Zonenschaden fuer Bots steigt im Spielverlauf.
 - Grafik: Comic-Umrandung an allen Figuren, ziehende Wolkenschatten ueber der Karte.
+- Grafik: Baum-Umrandung.

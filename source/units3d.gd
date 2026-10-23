@@ -197,6 +197,8 @@ func _add_outline(node: Node, mat: Material) -> void:
 	for ch in node.find_children("*", "MeshInstance3D", true, false):
 		(ch as MeshInstance3D).material_overlay = mat
 
+var _tree_outline: StandardMaterial3D = _outline_mat(1.2, Color(0.06, 0.16, 0.1))
+
 func _make_unit(skin: String) -> Dictionary:
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()
@@ -371,6 +373,7 @@ func update_fades(player: Vector2) -> void:
 		if t["faded"] != hid2:
 			t["faded"] = hid2
 			t["node"].material_override = mat_tree_fade if hid2 else mat_tree_solid
+			t["node"].material_overlay = null if hid2 else _tree_outline
 
 func _set_house_fade(h: Dictionary, hid: bool) -> void:
 	if h["faded"] == hid:
@@ -567,6 +570,7 @@ func build_world(obstacles: Array, trees: Array, roofs: Array) -> void:
 		var tm := MeshInstance3D.new()
 		tm.mesh = st2.commit()
 		tm.material_override = mat_tree_solid
+		tm.material_overlay = _tree_outline
 		tm.position = Vector3(p.x, 0, p.y)
 		tm.rotation.y = float(i) * 1.7
 		world_root.add_child(tm)
