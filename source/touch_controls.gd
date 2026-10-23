@@ -23,6 +23,10 @@ var fire_held := false
 var aim_vec := Vector2.ZERO        # Zielrichtung in Bildschirm-Richtung (Länge 0..1)
 var aim_active := false            # Daumen wurde über die Totzone hinaus gezogen
 var action_visible := false
+var sprint_held := false
+var sprint_energy := 1.0
+var sprint_locked := false
+var _sprint_id := NO_ID
 var size := Vector2(1280, 720)
 var _joy_id := NO_ID
 var _fire_id := NO_ID
@@ -55,6 +59,9 @@ func _fire_center() -> Vector2:
 
 func _ability_center() -> Vector2:
 	return _fire_home() + Vector2(-FIRE_RADIUS - ABILITY_RADIUS - 8.0, 30.0)
+
+func _sprint_center() -> Vector2:
+	return _ability_center() + Vector2(0, -ABILITY_RADIUS * 2.0 - 14.0)
 
 func _pause_center() -> Vector2:
 	return Vector2(size.x * 0.5, 14.0 + PAUSE_RADIUS)
@@ -91,6 +98,15 @@ func _draw_controls() -> void:
 		ac + Vector2(-6, 28), ac + Vector2(14, -4), ac + Vector2(1, -4),
 	])
 	v.draw_colored_polygon(bolt, Color(1, 0.95, 0.4, 0.95))
+	# Sprint (hält gedrückt, lädt sich wieder auf)
+	var sc := _sprint_center()
+	var scol := Color(1, 0.6, 0.2, 0.6 if sprint_held else 0.38) if not sprint_locked else Color(0.5, 0.5, 0.55, 0.35)
+	v.draw_circle(sc, ABILITY_RADIUS, scol)
+	v.draw_arc(sc, ABILITY_RADIUS + 5.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(sprint_energy, 0.0, 1.0), 48, Color(0.5, 1, 0.5, 0.9) if not sprint_locked else Color(1, 0.4, 0.3, 0.9), 6.0)
+	v.draw_arc(sc, ABILITY_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.65), 3.0)
+	for i in 3:
+		var o := Vector2(-14 + i * 14, 0)
+		v.draw_colored_polygon(PackedVector2Array([sc + o + Vector2(-8, -18), sc + o + Vector2(6, 0), sc + o + Vector2(-8, 18), sc + o + Vector2(-2, 0)]), Color(1, 0.95, 0.8, 0.95))
 	# Pause (zwei Balken)
 	var pc := _pause_center()
 	v.draw_circle(pc, PAUSE_RADIUS, Color(0, 0, 0, 0.35))
@@ -116,6 +132,9 @@ func _handle_press(pos: Vector2, pressed: bool, id: int) -> void:
 			pause_pressed.emit()
 		elif pos.distance_to(_ability_center()) <= ABILITY_RADIUS * 1.2:
 			ability_pressed.emit()
+		elif pos.distance_to(_sprint_center()) <= ABILITY_RADIUS * 1.25:
+			_sprint_id = id
+			sprint_held = true
 		elif _fire_id == NO_ID and (pos.distance_to(_fire_home()) <= FIRE_RADIUS * 1.25 or (id != MOUSE_ID and pos.x > size.x * 0.5 and pos.y > size.y * 0.22)):
 			# Feuer-/Zielstick: am Knopf oder frei irgendwo rechts auf dem Bildschirm
 			_fire_id = id
@@ -133,6 +152,9 @@ func _handle_press(pos: Vector2, pressed: bool, id: int) -> void:
 				clampf(pos.y, size.y * 0.4, size.y - JOY_RADIUS - 10.0))
 			_handle_move(pos, id)
 	else:
+		if id == _sprint_id:
+			_sprint_id = NO_ID
+			sprint_held = false
 		if id == _joy_id:
 			_joy_id = NO_ID
 			move_vec = Vector2.ZERO

@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261023093729"
+const BUILD := "20261023094144"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -169,6 +169,11 @@ var jump_charges := 0
 var jump_timer := 0.0
 var power_timer := 0.0
 var speed_timer := 0.0
+var sprint_energy := 1.0
+var sprint_locked := false
+var sprint_pause := 0.0
+var sprinting := false
+const SPRINT_MULT := 1.55
 var explosions: Array[Dictionary] = []   # {pos, t, r}
 var elapsed := 0.0
 var zone_radius := ZONE_START_RADIUS
@@ -205,7 +210,7 @@ var kill_feed: Array = []
 var fx: Control
 var damage_flash := 0.0
 var hit_marker := 0.0
-const ZOOM := 1.3
+const ZOOM := 0.92
 const ONLINE := false   # Online-Multiplayer gibt es noch nicht; Pause verhält sich dann anders
 var paused_away := false
 var pause_layer: CanvasLayer
@@ -442,6 +447,9 @@ func _draw_hud(vs: Vector2) -> void:
 	for i in dash_charges:
 		fx.draw_circle(Vector2(x0 + w + 22 + i * 22, y0 + 13), 8, Color(0.3, 0.9, 1.0))
 		fx.draw_arc(Vector2(x0 + w + 22 + i * 22, y0 + 13), 8, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
+	# Ausdauer-Leiste (Sprint)
+	if sprint_energy < 0.999 or sprinting:
+		_bar(Rect2(x0, y0 + 30, w, 8), sprint_energy, Color(1, 0.55, 0.2) if sprint_locked else Color(0.5, 0.95, 0.4))
 	var ty := y0 - 74.0
 	if power_timer > 0.0:
 		_text(Vector2(x0 + 14, ty), "POWER %d" % int(ceil(power_timer)), 18, Color(1, 0.85, 0.2))
@@ -1558,8 +1566,26 @@ func _update_play(delta: float) -> void:
 	if paused_away:
 		dir = Vector2.ZERO
 	player_moving = dir != Vector2.ZERO
+	# Sprint: kostet Ausdauer, lädt sich nach kurzer Pause wieder auf
+	var want: bool = (touch.sprint_held or Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C)) and dir != Vector2.ZERO and not sprint_locked
+	sprinting = want and sprint_energy > 0.0
+	if sprinting:
+		sprint_energy = maxf(0.0, sprint_energy - delta / 3.2)
+		sprint_pause = 0.8
+		if sprint_energy <= 0.0:
+			sprint_locked = true
+	else:
+		sprint_pause = maxf(0.0, sprint_pause - delta)
+		if sprint_pause <= 0.0:
+			sprint_energy = minf(1.0, sprint_energy + delta / 5.0)
+		if sprint_locked and sprint_energy >= 0.3:
+			sprint_locked = false
+	touch.sprint_energy = sprint_energy
+	touch.sprint_locked = sprint_locked
 	if dir != Vector2.ZERO:
 		var speed := BASE_SPEED * (BOARD_SPEED_MULT if board_timer > 0.0 else 1.0) * (1.4 if speed_timer > 0.0 else 1.0)
+		if sprinting:
+			speed *= SPRINT_MULT
 		_step_player(dir.normalized() * speed * delta)
 
 	# Zielen: Waffe zeigt zur Maus (wenn die Maus im Fenster ist), sonst in Laufrichtung
@@ -2469,7 +2495,7 @@ func _sync_units3d() -> void:
 			"skin": save_skin, "screen": (_w(player_pos) - cam_center) * ZOOM + vsize * 0.5 + (Vector2(0, -110 * ZOOM) if falling else Vector2.ZERO), "scale": ZOOM,
 			"world": player_pos, "aimw": facing if not falling else Vector2(0, 1),
 			"lift": lift, "aim": _screen_dir(facing) if not falling else Vector2.DOWN,
-			"moving": player_moving, "fast": board_timer > 0.0 or speed_timer > 0.0, "weapon": wk,
+			"moving": player_moving, "fast": board_timer > 0.0 or speed_timer > 0.0 or sprinting, "weapon": wk,
 			"firing": now - int(flash_t.get(-1, -9999)) < 260,
 			"attacking": now - int(atk_t.get(-1, -9999)) < 260,
 			"jumping": jump_timer > 0.0, "falling": falling, "alive": phase != "over" or health > 0.0,

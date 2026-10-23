@@ -54,3 +54,6 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 
 ## Block 11 – Hub-Menü
 Neues Hauptmenü (hub.gd): Kopfleiste mit Avatar/Stufe/XP, Münzen, Edelsteine, Siege; Seitenbuttons (Team, Karte, Modus, Ton); Tabs Shop (Startschild, Start-Pistole, Doppel-XP), Skins (Raster mit Seltenheit), Kampf, Tägliche Aufgaben, Mehr (Rekorde/Steuerung/Pass). Daten in `hub_data` im Speicherstand.
+
+## Block 12 – Sprint + Ansicht
+Sprint-Knopf (Touch) bzw. Strg/C (PC): 1,55x Tempo, 3,2 s Ausdauer, lädt nach 0,8 s Pause in 5 s wieder auf; bei 0 gesperrt bis 30 %. Kamera weiter weg (ZOOM 0.92).
