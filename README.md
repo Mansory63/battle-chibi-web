@@ -49,3 +49,4 @@ Häuser mit Innenraum, 14 Bots (Hardcore: 20, schnellere Zone, stärkere Bots, 2
 - Teams: Solo/Duo/Trio/Quattro im Menue; Teamkollegen sind Bots (blau), folgen dem Spieler. Bots kaempfen auch gegeneinander. Sieg = alle Gegnerteams ausgeschaltet.
 - Performance: Raster-Kollision, gemeinsame Baum-Meshes, Culling von 2D-Deko, 3D-Figuren nur in Reichweite.
 - Adaptive Qualitaet: faellt die Bildrate unter 30 FPS, sinkt die 3D-Renderaufloesung automatisch.
+- Balance: Bots spawnen nicht mehr direkt am Landeplatz (min. 800 px).

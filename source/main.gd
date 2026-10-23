@@ -1084,6 +1084,8 @@ func _spread_spawn() -> Vector2:
 	var best_d := -1.0
 	for k in 12:
 		var p := _random_free(BOT_RADIUS)
+		if p.distance_to(player_pos) < 800.0:
+			continue   # nicht direkt am Landeplatz des Spielers
 		var d := 99999.0
 		for b in bots:
 			d = minf(d, p.distance_to(b["pos"]))
