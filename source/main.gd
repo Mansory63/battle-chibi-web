@@ -54,6 +54,9 @@ const WEAPONS := {
 	"shotgun": {"name": "Pumpgun", "damage": 12.0, "cooldown": 0.9, "speed": 620.0, "ammo": 10, "spread": 0.28, "pellets": 6},
 	"sniper": {"name": "Scharfschützengewehr", "damage": 65.0, "cooldown": 1.3, "speed": 1200.0, "ammo": 5, "spread": 0.0, "pellets": 1},
 	"rocket": {"name": "Raketenwerfer", "damage": 60.0, "cooldown": 1.6, "speed": 480.0, "ammo": 3, "spread": 0.0, "pellets": 1, "explode": 95.0},
+	"revolver": {"name": "Revolver", "damage": 34.0, "cooldown": 0.62, "speed": 850.0, "ammo": 6, "spread": 0.02, "pellets": 1},
+	"crossbow": {"name": "Armbrust", "damage": 52.0, "cooldown": 1.05, "speed": 1050.0, "ammo": 6, "spread": 0.0, "pellets": 1},
+	"laser": {"name": "Laserkanone", "damage": 11.0, "cooldown": 0.085, "speed": 1500.0, "ammo": 160, "spread": 0.025, "pellets": 1},
 	"bot": {"name": "Bot", "damage": 5.0, "cooldown": 1.0, "speed": 600.0, "ammo": 999, "spread": 0.18, "pellets": 1},
 }
 const LOOT_NAMES := {
@@ -62,6 +65,7 @@ const LOOT_NAMES := {
 	"shield": "Schild klein", "jump": "Sprung", "power": "Power", "speed": "Speed",
 	"board": "Skateboard", "dash": "Dash",
 	"bat": "Baseballschläger", "pan": "Pfanne", "extinguisher": "Feuerlöscher", "chest": "Kiste",
+	"revolver": "Revolver", "crossbow": "Armbrust", "laser": "Laserkanone", "katana": "Katana", "hammer": "Vorschlaghammer",
 }
 const LOOT_COLORS := {
 	"heal": Color(1, 0.3, 0.4), "heal_big": Color(1, 0.3, 0.4), "shield_big": Color(0.3, 0.6, 1.0), "pistol": Color(0.35, 0.35, 0.4), "smg": Color(0.4, 0.8, 0.3),
@@ -70,18 +74,21 @@ const LOOT_COLORS := {
 	"shield": Color(0.3, 0.6, 1.0), "jump": Color(0.95, 0.3, 0.3), "power": Color(1.0, 0.85, 0.2), "speed": Color(0.35, 0.85, 0.35),
 	"board": Color(0.6, 0.3, 0.9), "dash": Color(0.2, 0.9, 0.9),
 	"bat": Color(0.8, 0.8, 0.8), "pan": Color(0.8, 0.8, 0.8), "extinguisher": Color(0.8, 0.8, 0.8), "chest": Color(1, 1, 1),
+	"revolver": Color(0.6, 0.6, 0.65), "crossbow": Color(0.7, 0.5, 0.3), "laser": Color(0.3, 0.95, 0.95), "katana": Color(0.85, 0.9, 1.0), "hammer": Color(0.8, 0.6, 0.3),
 }
 # Bodenloot: wenig, vor allem Heilung, Nahkampf und einfache Waffen. Die guten Sachen sind in Kisten.
-const LOOT_WEIGHTED := ["heal", "heal", "heal", "shield", "shield", "bat", "pan", "extinguisher", "bat", "pistol", "pistol", "smg", "shotgun", "jump", "power", "speed"]
+const LOOT_WEIGHTED := ["heal", "heal", "heal", "shield", "shield", "bat", "pan", "extinguisher", "bat", "pistol", "pistol", "smg", "shotgun", "jump", "power", "speed", "revolver", "katana", "hammer"]
 const RARITY_NAMES := ["Gewöhnlich", "Selten", "Episch", "Legendär"]
 const RARITY_COLORS := [Color(0.35, 0.85, 0.4), Color(0.3, 0.6, 1.0), Color(0.7, 0.4, 1.0), Color(1.0, 0.78, 0.15)]
 const RARITY_MULT := [1.0, 1.15, 1.3, 1.5]
-const CHEST_WEAPONS := [["pistol", "smg", "shotgun"], ["smg", "shotgun", "ak"], ["ak", "shotgun", "sniper", "minigun"], ["minigun", "rocket", "sniper", "ak"]]
+const CHEST_WEAPONS := [["pistol", "smg", "shotgun", "revolver"], ["smg", "shotgun", "ak", "revolver", "crossbow"], ["ak", "shotgun", "sniper", "minigun", "crossbow", "laser"], ["minigun", "rocket", "sniper", "ak", "laser"]]
 const MELEE := {
 	"fist": {"name": "Fäuste", "damage": 10.0, "cooldown": 0.45, "range": 58.0},
 	"bat": {"name": "Baseballschläger", "damage": 24.0, "cooldown": 0.6, "range": 72.0},
 	"pan": {"name": "Pfanne", "damage": 20.0, "cooldown": 0.5, "range": 64.0},
 	"extinguisher": {"name": "Feuerlöscher", "damage": 15.0, "cooldown": 0.32, "range": 68.0},
+	"katana": {"name": "Katana", "damage": 30.0, "cooldown": 0.5, "range": 80.0},
+	"hammer": {"name": "Vorschlaghammer", "damage": 45.0, "cooldown": 0.95, "range": 70.0},
 }
 const ROOM_FURNITURE := [
 	Rect2(60, 60, 150, 80),    # Bett
@@ -1532,10 +1539,10 @@ func _apply_loot(kind: String) -> void:
 			health = minf(100.0, health + 60.0)
 		"shield_big":
 			shield = minf(100.0, shield + 60.0)
-		"pistol", "smg", "ak", "minigun", "shotgun", "sniper", "rocket":
+		"pistol", "smg", "ak", "minigun", "shotgun", "sniper", "rocket", "revolver", "crossbow", "laser":
 			weapon = kind
 			ammo = WEAPONS[kind]["ammo"]
-		"bat", "pan", "extinguisher":
+		"bat", "pan", "extinguisher", "katana", "hammer":
 			melee = kind
 		"shield":
 			shield = minf(100.0, shield + 25.0)

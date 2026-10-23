@@ -171,6 +171,24 @@ func _build_weapon(kind: String) -> Node3D:
 			n.add_child(_cyl(0.07, 0.6, Color(0.4, 0.55, 0.4), Vector3(0, 0.02, 0.3)))
 			n.add_child(_cyl(0.085, 0.1, dark, Vector3(0, 0.02, 0.62)))
 			n.add_child(_box(Vector3(0.04, 0.1, 0.06), dark, Vector3(0, -0.07, 0.25)))
+		"revolver":
+			n.add_child(_box(Vector3(0.05, 0.08, 0.26), Color(0.6, 0.6, 0.66), Vector3(0, 0, 0.14)))
+			n.add_child(_cyl(0.045, 0.07, metal, Vector3(0, 0.0, 0.1), PI / 2.0))
+			n.add_child(_box(Vector3(0.045, 0.1, 0.06), Color(0.4, 0.25, 0.12), Vector3(0, -0.08, 0.03)))
+		"crossbow":
+			n.add_child(_box(Vector3(0.05, 0.06, 0.5), Color(0.5, 0.32, 0.16), Vector3(0, 0, 0.25)))
+			n.add_child(_box(Vector3(0.5, 0.03, 0.04), Color(0.35, 0.22, 0.1), Vector3(0, 0.0, 0.45)))
+			n.add_child(_cyl(0.008, 0.45, Color(0.9, 0.9, 0.9), Vector3(0, 0.04, 0.3)))
+		"laser":
+			n.add_child(_box(Vector3(0.09, 0.11, 0.45), Color(0.3, 0.9, 0.95), Vector3(0, 0, 0.22)))
+			n.add_child(_cyl(0.03, 0.2, Color(0.9, 0.2, 0.9), Vector3(0, 0.0, 0.52)))
+			n.add_child(_box(Vector3(0.05, 0.12, 0.06), dark, Vector3(0, -0.1, 0.18)))
+		"katana":
+			n.add_child(_cyl(0.012, 0.7, Color(0.9, 0.93, 1.0), Vector3(0, 0.12, 0.25), 0.0))
+			n.add_child(_cyl(0.03, 0.04, Color(0.8, 0.6, 0.2), Vector3(0, 0.12, -0.08), 0.0))
+		"hammer":
+			n.add_child(_cyl(0.025, 0.6, Color(0.6, 0.42, 0.22), Vector3(0, 0.12, 0.1), 0.0))
+			n.add_child(_box(Vector3(0.16, 0.14, 0.22), Color(0.5, 0.5, 0.55), Vector3(0, 0.38, 0.1)))
 		"bat":
 			n.add_child(_cyl(0.035, 0.55, Color(0.8, 0.62, 0.38), Vector3(0, 0.12, 0.1), 0.0))
 		"pan":
@@ -277,7 +295,7 @@ func update_unit(id: String, e: Dictionary) -> void:
 	d["yaw"].rotation.y = d["yaw_t"]
 	var weapon: String = e.get("weapon", "")
 	_set_weapon(d, weapon)
-	var armed: bool = weapon != "" and weapon != "fist" and not (weapon in ["bat", "pan", "extinguisher"])
+	var armed: bool = weapon != "" and weapon != "fist" and not (weapon in ["bat", "pan", "extinguisher", "katana", "hammer"])
 	var anim := "idle"
 	var spd := 1.0
 	if not e.get("alive", true):
@@ -694,7 +712,7 @@ func _make_item(kind: String, rar: int) -> Node3D:
 			w.position = Vector3(0, 0, -0.1)
 			wrap.scale = Vector3.ONE * 105.0
 			wrap.position = Vector3(0, 20, 0)
-			if kind in ["bat", "pan", "extinguisher"]:
+			if kind in ["bat", "pan", "extinguisher", "katana", "hammer"]:
 				wrap.scale = Vector3.ONE * 95.0
 			root.add_child(wrap)
 	return root
