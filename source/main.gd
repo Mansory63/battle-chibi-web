@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024110957"
+const BUILD := "20261024151201"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -213,7 +213,7 @@ var kill_feed: Array = []
 var fx: Control
 var damage_flash := 0.0
 var hit_marker := 0.0
-const ZOOM := 0.92
+var ZOOM := 0.92
 const ONLINE := false   # Online-Multiplayer gibt es noch nicht; Pause verhält sich dann anders
 var paused_away := false
 var pause_layer: CanvasLayer
@@ -731,6 +731,8 @@ func _check_live_args() -> void:
 			go = true
 		elif a == "demo":
 			opts["demo"] = true
+		elif a == "arena=small":
+			opts["arena"] = "small"
 	if OS.has_feature("web"):
 		var q = JavaScriptBridge.eval("location.search", true)
 		for part in str(q).trim_prefix("?").split("&"):
@@ -741,6 +743,8 @@ func _check_live_args() -> void:
 				opts["demo"] = true
 			elif kv[0] == "ws" and kv.size() > 1:
 				opts["ws"] = kv[1].uri_decode()
+			elif kv[0] == "arena" and kv.size() > 1:
+				opts["arena"] = kv[1].uri_decode()
 	if go:
 		start_live(opts)
 
@@ -1525,6 +1529,8 @@ func _outbreak() -> void:
 		return
 	prison_open = true
 	var door := _prison_door()
+	if live_mode and live != null and live.arena_small:
+		door = _nearest_free(ZONE_CENTER + Vector2(-420.0, 100.0), BOT_RADIUS)
 	var n := 0
 	for i in range(BOT_COUNT, bots.size()):
 		if bots[i].get("zombie", false):
@@ -2075,8 +2081,10 @@ func _update_bots(delta: float) -> void:
 						_kill_bot(tid, false)
 				b["cd"] = randf_range(0.7, 1.1)
 		elif has_target and dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]):
-			# Ziel gesehen: angreifen oder seitlich ausweichen
-			if dist > 320.0:
+			# Teamtaktik nur im Live-Modus: Angriff, Flanke, Deckung, Rueckzug.
+			if live_mode and team >= 1 and team <= 4 and not zomb:
+				step = _live_tactical_step(i, b, tpos, dist, delta)
+			elif dist > 320.0:
 				step = to_t
 			else:
 				step = to_t.rotated(PI / 2.0) * 0.7
@@ -2113,13 +2121,17 @@ func _update_bots(delta: float) -> void:
 					b["dir"] = Vector2.from_angle(randf() * TAU)
 					b["think"] = randf_range(1.0, 3.0)
 				step = b["dir"]
-				if live_mode and b["pos"].distance_to(ZONE_CENTER) > 250.0:
+				if live_mode and team >= 1 and team <= 4 and not zomb:
+					step = _live_rally_step(i, b, step)
+				elif live_mode and b["pos"].distance_to(ZONE_CENTER) > 250.0:
 					step = (ZONE_CENTER - b["pos"]).normalized() * 0.7 + (b["dir"] as Vector2) * 0.3
 
 		if has_target and dist < 520.0 and phase == "play":
 			b["aim"] = to_t.normalized()
 		elif step != Vector2.ZERO:
 			b["aim"] = step.normalized()
+		if live_mode and team >= 1 and team <= 4 and not zomb and step != Vector2.ZERO:
+			step = _live_keep_formation(i, b, step)
 		b["moving"] = step != Vector2.ZERO
 		if step != Vector2.ZERO:
 			b["pos"] = _move(b["pos"], step.normalized() * BOT_SPEED * (0.85 if zomb else 1.0) * delta, BOT_RADIUS)
@@ -2129,6 +2141,97 @@ func _update_bots(delta: float) -> void:
 			b["lh"] = -2
 			if b["health"] <= 0.0:
 				_kill_bot(i)
+
+# ---------- Einfache Live-Taktik: ohne Navmesh, mit seltenem Deckungs-Scan ----------
+func _live_cover_goal(b: Dictionary, threat: Vector2, delta: float) -> Vector2:
+	b["cover_refresh"] = float(b.get("cover_refresh", 0.0)) - delta
+	if b["cover_refresh"] > 0.0:
+		return b.get("cover_goal", Vector2.ZERO)
+	b["cover_refresh"] = randf_range(1.3, 2.1)
+	var pos: Vector2 = b["pos"]
+	var best := Vector2.ZERO
+	var score := 99999999.0
+	for wall in obstacles:
+		var center: Vector2 = wall.get_center()
+		if pos.distance_squared_to(center) > 440.0 * 440.0:
+			continue
+		var away: Vector2 = (center - threat).normalized()
+		if away == Vector2.ZERO:
+			continue
+		var candidate: Vector2 = center + away * (maxf(wall.size.x, wall.size.y) * 0.55 + BOT_RADIUS + 28.0)
+		if candidate.distance_to(ZONE_CENTER) > zone_radius - 55.0 or not _is_free(candidate, BOT_RADIUS + 4.0):
+			continue
+		var s := pos.distance_squared_to(candidate)
+		if s < score:
+			score = s
+			best = candidate
+	b["cover_goal"] = best
+	return best
+
+func _live_tactical_step(i: int, b: Dictionary, threat: Vector2, dist: float, delta: float) -> Vector2:
+	var pos: Vector2 = b["pos"]
+	var toward: Vector2 = (threat - pos).normalized()
+	if toward == Vector2.ZERO:
+		return Vector2.ZERO
+	var side: Vector2 = Vector2(-toward.y, toward.x) * (1.0 if i % 8 < 4 else -1.0)
+	var role := i % 4   # 0: Sturm, 1: Flanke, 2: Feuerunterstuetzung, 3: Deckung
+	var hp_ratio := float(b["health"]) / maxf(1.0, float(b.get("maxhp", 170.0)))
+	var step := Vector2.ZERO
+	if hp_ratio < 0.32:
+		step = -toward + side * 0.2
+		var safe: Vector2 = _live_cover_goal(b, threat, delta)
+		if safe != Vector2.ZERO and pos.distance_to(safe) > 38.0:
+			step = safe - pos
+	elif role == 0:
+		step = toward + side * 0.18 if dist > 265.0 else (-toward + side * 0.4 if dist < 155.0 else side * 0.65)
+	elif role == 1:
+		step = side * 0.85 + toward * clampf((dist - 245.0) / 160.0, -0.4, 0.7)
+	elif role == 2:
+		step = toward if dist > 400.0 else (-toward if dist < 260.0 else side * 0.5)
+	else:
+		var cover: Vector2 = _live_cover_goal(b, threat, delta)
+		step = cover - pos if cover != Vector2.ZERO and pos.distance_to(cover) > 38.0 else (side * 0.5 + toward * 0.15)
+	# Keine Flucht in die Feuerzone. Bei engem Ring wird die Deckung aufgegeben.
+	if pos.distance_to(ZONE_CENTER) > zone_radius - 100.0:
+		step = (ZONE_CENTER - pos).normalized() * 1.3 + step.normalized() * 0.25
+	return step
+
+func _live_rally_step(i: int, b: Dictionary, roam: Vector2) -> Vector2:
+	var pos: Vector2 = b["pos"]
+	var team: int = int(b["team"])
+	var anchor := Vector2.ZERO
+	var count := 0
+	for n in 12:
+		var ally: Dictionary = bots[(team - 1) * 12 + n]
+		if ally["alive"]:
+			anchor += ally["pos"]
+			count += 1
+	if count > 1:
+		anchor /= float(count)
+		if pos.distance_to(anchor) > 350.0:
+			return anchor - pos  # Versprengte Einheiten sammeln sich zuerst.
+	# Nach Boss-Spawn ruecken Angriffs- und Flankentrupps zum Ziel vor.
+	if bots.size() > 48 and bots[48]["alive"] and bots[48].get("boss", false) and i % 4 < 2:
+		var objective: Vector2 = bots[48]["pos"]
+		if pos.distance_to(objective) > 300.0:
+			return objective - pos
+	if pos.distance_to(ZONE_CENTER) > 300.0:
+		return (ZONE_CENTER - pos).normalized() * 0.7 + roam.normalized() * 0.3
+	return roam
+
+func _live_keep_formation(i: int, b: Dictionary, step: Vector2) -> Vector2:
+	var pos: Vector2 = b["pos"]
+	var team: int = int(b["team"])
+	var repel := Vector2.ZERO
+	for n in 12:
+		var j := (team - 1) * 12 + n
+		if j == i or not bots[j]["alive"]:
+			continue
+		var gap: Vector2 = pos - (bots[j]["pos"] as Vector2)
+		var distance := gap.length()
+		if distance > 1.0 and distance < 115.0:
+			repel += gap / distance * (1.0 - distance / 115.0)
+	return step.normalized() + repel * 1.2
 
 func _spark_burst(pos: Vector2, col: Color, n: int, speed: float) -> void:
 	for i in n:

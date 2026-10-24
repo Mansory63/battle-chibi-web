@@ -9,6 +9,8 @@ const HP := 170.0
 const START_R := 1500.0
 const END_R := 120.0
 const CORNER_R := 1050.0
+const SMALL_START_R := 850.0      # opt-in 1700px-Durchmesser
+const SMALL_CORNER_R := 540.0
 const LIKE_GOAL := 100
 const TEAM_NAMES := ["ROT", "BLAU", "GRÜN", "GELB"]
 const TEAM_COLORS := [Color(1.0, 0.3, 0.3), Color(0.35, 0.6, 1.0), Color(0.3, 0.85, 0.4), Color(1.0, 0.85, 0.25), Color(0.75, 0.3, 0.95)]
@@ -49,6 +51,8 @@ var winner := -1
 var topsup: Array = [{}, {}, {}, {}]
 var splats: Array = []
 # Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
+const BOSS_SPAWN_AT := 100.0
+const BOSS_WARNING := 8.0
 const NUKE_WARN := 3.0
 const NUKE_COINS := 40000
 var nuke_t := -1.0
@@ -62,6 +66,9 @@ var say_t := 0.0
 var ws: WebSocketPeer = null
 var ws_url := ""
 var ws_open := false
+var arena_small := false
+var arena_r := START_R
+var corner_r := CORNER_R
 var demo := false
 var demo_t := 0.0
 var demo_gift_t := 20.0
@@ -70,12 +77,17 @@ var js_cb = null
 var check_t := 0.0
 var fn_i := 0
 var boss_done := false
+var boss_spawn_pos := Vector2.ZERO
+var zombie_kills := 0
 
 # ---------- Start ----------
 func begin(main, opts := {}) -> void:
 	m = main
 	on = true
 	demo = bool(opts.get("demo", false))
+	arena_small = str(opts.get("arena", "")) == "small"
+	arena_r = SMALL_START_R if arena_small else START_R
+	corner_r = SMALL_CORNER_R if arena_small else CORNER_R
 	ws_url = str(opts.get("ws", ""))
 	if ws_url != "":
 		ws = WebSocketPeer.new()
@@ -291,7 +303,7 @@ func _team_bots(k: int) -> Array:
 	return out
 
 func _corner(k: int) -> Vector2:
-	return m.ZONE_CENTER + Vector2.from_angle(PI / 4.0 + k * PI / 2.0) * CORNER_R
+	return m.ZONE_CENTER + Vector2.from_angle(PI / 4.0 + k * PI / 2.0) * corner_r
 
 func _centroid(k: int) -> Vector2:
 	var sum := Vector2.ZERO
@@ -328,6 +340,8 @@ func _reset_bot(b: Dictionary, k: int, nm: String, viewer: bool, pos: Vector2) -
 	b["scale"] = 1.0
 	b["boss"] = false
 	b["maxhp"] = HP
+	b["cover_goal"] = Vector2.ZERO
+	b["cover_refresh"] = 0.0
 
 func _spawn_pos(k: int, spread := 150.0) -> Vector2:
 	return m._nearest_free(_corner(k) + Vector2.from_angle(randf() * TAU) * randf_range(30.0, spread), m.BOT_RADIUS)
@@ -376,7 +390,8 @@ func _give_weapon(nm: String, wk: String, rar: int) -> void:
 
 func _spawn_boss() -> void:
 	var b: Dictionary = m.bots[SLOTS * 4]
-	_reset_bot(b, 4, "BOSS", false, m._nearest_free(m.ZONE_CENTER, m.BOT_RADIUS))
+	# Boss auf dem markierten, freien Punkt nahe dem Kartenmittelpunkt spawnen.
+	_reset_bot(b, 4, "BOSS", false, boss_spawn_pos)
 	b["health"] = 700.0
 	b["maxhp"] = 700.0
 	b["scale"] = 2.1
@@ -392,7 +407,7 @@ func _spawn_boss() -> void:
 	_say("Der Boss erscheint. Besiegt ihn für legendäre Waffen")
 
 func _drop_crate(k: int, tier_bias: int) -> void:
-	var pos: Vector2 = m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * randf_range(120.0, 260.0), 24.0)
+	var pos: Vector2 = m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * randf_range(80.0 if arena_small else 120.0, 150.0 if arena_small else 260.0), 24.0)
 	var rar := clampi(1 + m._random_rarity([55, 33, 12]) + (tier_bias - 1 if tier_bias > 1 else 0), 1, 3)
 	var kinds := ["pistol", "smg", "ak", "shotgun", "sniper", "rocket", "minigun"]
 	for n in 2:
@@ -412,6 +427,8 @@ func start_round() -> void:
 	crate_t = 30.0
 	crate_next = randi() % 4
 	boss_done = false
+	boss_spawn_pos = m._nearest_free(m.ZONE_CENTER, m.BOT_RADIUS)
+	zombie_kills = 0
 	splats.clear()
 	bones.clear()
 	nuke_t = -1.0
@@ -419,7 +436,7 @@ func start_round() -> void:
 	topsup = [{}, {}, {}, {}]
 	m.elapsed = 0.0
 	m.zone_time = ROUND_TIME
-	m.zone_radius = START_R
+	m.zone_radius = arena_r
 	m.bullets.clear()
 	m.kill_feed.clear()
 	m.loot.clear()
@@ -463,14 +480,10 @@ func start_round() -> void:
 func _spawn_loot() -> void:
 	for k in 4:
 		for i in 6:
-			_add_loot(m._nearest_free(_corner(k) + Vector2.from_angle(randf() * TAU) * randf_range(60.0, 380.0), 20.0))
-	for i in 28:
-		var p := Vector2.ZERO
-		for tries in 30:
-			p = m._random_free(20.0)
-			if p.distance_to(m.ZONE_CENTER) < 1350.0:
-				break
-		_add_loot(p)
+			_add_loot(m._nearest_free(_corner(k) + Vector2.from_angle(randf() * TAU) * randf_range(60.0, 210.0 if arena_small else 380.0), 20.0))
+	for i in (20 if arena_small else 28):
+		var p: Vector2 = m.ZONE_CENTER + Vector2.from_angle(randf() * TAU) * sqrt(randf()) * (arena_r - 100.0)
+		_add_loot(m._nearest_free(p, 20.0))
 
 func _add_loot(p: Vector2) -> void:
 	m.loot.append({"pos": p, "kind": LOOT_KINDS[randi() % LOOT_KINDS.size()], "rar": 1 + m._random_rarity([65, 27, 8])})
@@ -524,14 +537,14 @@ func update(delta: float) -> void:
 	if state == "round":
 		t += delta
 		m.elapsed = t
-		var r := lerpf(START_R, END_R, clampf(t / ROUND_TIME, 0.0, 1.0)) if t < ROUND_TIME else maxf(0.0, END_R * (1.0 - (t - ROUND_TIME) / 30.0))
+		var r := lerpf(arena_r, END_R, clampf(t / ROUND_TIME, 0.0, 1.0)) if t < ROUND_TIME else maxf(0.0, END_R * (1.0 - (t - ROUND_TIME) / 30.0))
 		m.zone_radius = r
 		crate_t -= delta
 		if crate_t <= 0.0:
 			crate_t = 30.0
 			_drop_crate(crate_next, 1)
 			crate_next = (crate_next + 1) % 4
-		if not boss_done and t >= 100.0:
+		if not boss_done and t >= BOSS_SPAWN_AT:
 			boss_done = true
 			_spawn_boss()
 		m._update_bots(delta)
@@ -564,6 +577,18 @@ func update(delta: float) -> void:
 			Engine.time_scale = 1.0
 			start_round()
 	_update_focus(delta)
+	_update_zoom(delta)
+
+# Grobe Übersicht bei großer Zone, lesbare Nahansicht zum Rundenende.
+# Kamera, 2D-HUD und 3D-Einheiten nutzen dieselbe ZOOM-Variable.
+func _update_zoom(delta: float) -> void:
+	var progress := clampf((arena_r - m.zone_radius) / maxf(1.0, arena_r - END_R), 0.0, 1.0)
+	var start_zoom := 0.80 if arena_small else 0.70
+	var target := lerpf(start_zoom, 1.30, pow(progress, 0.8))
+	if state == "pause":
+		target = 1.0
+	m.ZOOM = lerpf(m.ZOOM, target, 1.0 - exp(-2.2 * delta))
+	m.cam.zoom = Vector2(m.ZOOM, m.ZOOM)
 
 func _update_focus(delta: float) -> void:
 	focus_t -= delta
@@ -574,6 +599,8 @@ func _update_focus(delta: float) -> void:
 	var target: Vector2 = m.player_pos
 	if nuke_t >= 0.0:
 		target = nuke_pos
+	elif state == "round" and not boss_done and t >= BOSS_SPAWN_AT - BOSS_WARNING:
+		target = boss_spawn_pos  # Kamera zeigt den Einschlagspunkt fruehzeitig.
 	elif state == "pause" and winner >= 0:
 		target = _centroid(winner)
 	elif focus >= 0:
@@ -612,7 +639,22 @@ func on_kill(i: int) -> void:
 	if k < 0:
 		return
 	if k == 5:
-		m._spark_burst(b["pos"], Color(0.5, 1, 0.4), 14, 220.0)
+		# Team 6 = Zombies: normale Treffer koennen sie endgueltig ausschalten.
+		m._spark_burst(b["pos"], Color(0.4, 1.0, 0.3), 28, 330.0)
+		m._spark_burst(b["pos"], Color(0.95, 1.0, 0.8), 8, 180.0)
+		var zk: int = int(b.get("lh", -2))
+		if zk >= 0 and zk < SLOTS * 4:
+			zombie_kills += 1
+			var killer: Dictionary = m.bots[zk]
+			if killer["viewer"]:
+				var vn := str(killer["name"])
+				if viewers.has(vn):
+					viewers[vn]["kills"] = int(viewers[vn]["kills"]) + 1
+			m.kill_feed.append({"text": "%s besiegt ZOMBIE" % str(killer["name"]), "t": 0.0})
+		else:
+			m.kill_feed.append({"text": "ZOMBIE ausgeschaltet", "t": 0.0})
+		if m.kill_feed.size() > 5:
+			m.kill_feed.pop_front()
 		return
 	if k == 4:
 		_boss_dead(b)
@@ -737,8 +779,34 @@ func handle_key(code: int) -> void:
 			if viewers.size() > 0:
 				show_queue.append(viewers.keys()[randi() % viewers.size()])
 
+# ---------- Boss-Zielzone, im Weltkoordinatensystem (unter den Figuren) ----------
+func _draw_boss_signal() -> void:
+	if state != "round" or boss_done or t < BOSS_SPAWN_AT - BOSS_WARNING:
+		return
+	var center: Vector2 = boss_spawn_pos
+	var remain := maxf(0.0, BOSS_SPAWN_AT - t)
+	var pulse := 0.5 + 0.5 * sin(t * 9.0)
+	var rad := 125.0 + pulse * 23.0
+	m.draw_circle(center, rad + 25.0, Color(0.7, 0.02, 0.02, 0.15 + 0.14 * pulse))
+	m.draw_arc(center, rad, 0.0, TAU, 72, Color(1.0, 0.16, 0.04, 0.9), 12.0)
+	m.draw_arc(center, 85.0, 0.0, TAU, 64, Color(1.0, 0.75, 0.2, 0.8), 5.0)
+	# Warnsymbol am Boden: Schaedel + gekreuzte Schwerter.
+	var color := Color(1.0, 0.86, 0.28)
+	m.draw_circle(center + Vector2(0, -14), 32.0, color)
+	m.draw_rect(Rect2(center + Vector2(-19, 10), Vector2(38, 19)), color)
+	m.draw_circle(center + Vector2(-13, -20), 7.0, Color(0.14, 0.03, 0.04))
+	m.draw_circle(center + Vector2(13, -20), 7.0, Color(0.14, 0.03, 0.04))
+	m.draw_line(center + Vector2(-60, 65), center + Vector2(60, -55), Color.WHITE, 7.0)
+	m.draw_line(center + Vector2(60, 65), center + Vector2(-60, -55), Color.WHITE, 7.0)
+	var font: Font = ThemeDB.fallback_font
+	m.draw_string_outline(font, center + Vector2(-125, 120), "BOSS IN %d" % int(ceil(remain)), HORIZONTAL_ALIGNMENT_CENTER, 250, 30, 7, Color(0.13, 0.02, 0.04))
+	m.draw_string(font, center + Vector2(-125, 120), "BOSS IN %d" % int(ceil(remain)), HORIZONTAL_ALIGNMENT_CENTER, 250, 30, Color.WHITE)
+
 # ---------- Zeichnen ----------
 func draw_ground() -> void:
+	if arena_small:
+		m.draw_arc(m.ZONE_CENTER, arena_r, 0.0, TAU, 128, Color(1.0, 0.85, 0.25, 0.78), 12.0)
+	_draw_boss_signal()
 	if nuke_t >= NUKE_WARN:
 		var rr := minf(2100.0, (nuke_t - NUKE_WARN) * 950.0)
 		m.draw_circle(nuke_pos, rr, Color(0.06, 0.04, 0.03, 0.6))
@@ -801,6 +869,15 @@ func draw_hud(vs: Vector2) -> void:
 		m.fx.draw_string(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, nc)
 		if i == focus:
 			m.fx.draw_string(f, Vector2(sp.x - 90, ty - 22 * ui), "★", HORIZONTAL_ALIGNMENT_CENTER, 180, int(22 * ui), Color(1, 0.9, 0.3))
+	# Gesundheitsleiste aller sichtbaren Zombies; gruen = feindlich, nicht unsterblich.
+	for zi in range(SLOTS * 4 + 1, m.bots.size()):
+		var z: Dictionary = m.bots[zi]
+		if not z.get("zombie", false) or not z["alive"]:
+			continue
+		var zp: Vector2 = m._fx_screen(z["pos"])
+		if not Rect2(Vector2(-50, -50), vs + Vector2(100, 100)).has_point(zp):
+			continue
+		m._fx_bar2(zp, minf(100.0, float(z["health"]) / 60.0 * 100.0), Color(0.4, 1.0, 0.3), 56.0 * m.ZOOM)
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2(ui, ui))
 	vs = vs / ui
 	# Kopfleiste: Countdown + Teams
@@ -810,7 +887,7 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(vs.x * 0.5 - 130, 10, 260, 54), Color(0.05, 0.06, 0.12, 0.8), 27)
 	var tcol := Color(1, 0.9, 0.5) if left > 30.0 else Color(1, 0.4, 0.3)
 	m._text(Vector2(vs.x * 0.5 - 130, 50), (_fmt_time(left) if state == "round" else "PAUSE %d" % int(ceil(pause_t))), 38, tcol, 260.0, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(vs.x * 0.5 - 130, 84), "RUNDE %d" % round_no, 16, Color(0.8, 0.9, 1.0), 260.0, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(vs.x * 0.5 - 130, 84), ("RUNDE %d · MINI" % round_no) if arena_small else ("RUNDE %d" % round_no), 16, Color(0.8, 0.9, 1.0), 260.0, HORIZONTAL_ALIGNMENT_CENTER)
 	var cw := w / 4.0 - 6.0
 	for k in 4:
 		var cx := x0 + k * (cw + 8.0)
@@ -818,7 +895,8 @@ func draw_hud(vs: Vector2) -> void:
 		var col: Color = TEAM_COLORS[k]
 		m._pill(Rect2(cx, cy, cw, 44), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
 		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
-		m._text(Vector2(cx + 10, cy + 39), "%d lebt · %d Pkt%s" % [alive_t[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""], 14, Color.WHITE, cw - 12.0)
+		var score_line := ("%d · %d P" % [alive_t[k], team_points[k]]) if vs.x < 620.0 else ("%d lebt · %d Pkt%s" % [alive_t[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
+		m._text(Vector2(cx + 10, cy + 39), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
 		# Like-Leiste
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw * clampf(float(team_likes[k]) / LIKE_GOAL, 0.0, 1.0), 6), col)
@@ -829,17 +907,29 @@ func draw_hud(vs: Vector2) -> void:
 		m._pill(Rect2(bx - 4, 150, bw + 8, 22), Color(0.05, 0.03, 0.1, 0.85), 11)
 		m.fx.draw_rect(Rect2(bx, 154, bw * clampf(float(boss["health"]) / 700.0, 0.0, 1.0), 14), TEAM_COLORS[4])
 		m._text(Vector2(bx, 168), "BOSS", 13, Color.WHITE, bw, HORIZONTAL_ALIGNMENT_CENTER)
+	# Boss-Countdown zusätzlich sichtbar, wenn der Bodenmarker verdeckt ist.
+	if state == "round" and not boss_done and t >= BOSS_SPAWN_AT - BOSS_WARNING:
+		var remaining := maxi(0, int(ceil(BOSS_SPAWN_AT - t)))
+		m._text(Vector2(vs.x * 0.5 - 160, 195), "BOSS IN %d" % remaining, 27, Color(1.0, 0.3, 0.16), 320, HORIZONTAL_ALIGNMENT_CENTER)
+	# Zombie-Hinweis: Zombies sind verwundbar und koennen sterben.
+	if m.prison_open:
+		var remaining_z := 0
+		for z in range(SLOTS * 4 + 1, m.bots.size()):
+			if m.bots[z].get("zombie", false) and m.bots[z]["alive"]:
+				remaining_z += 1
+		m._text(Vector2(12, 162), "ZOMBIES: %d | KILLS: %d" % [remaining_z, zombie_kills], 14, Color(0.5, 1.0, 0.35), minf(260.0, vs.x - 20.0))
 	# Kill-Feed links
-	var fy := 170.0
+	var fy := 192.0 if boss["alive"] and boss["boss"] else 170.0
 	for kf in m.kill_feed:
 		var fa := clampf(1.0 - (float(kf["t"]) - 4.0), 0.0, 1.0)
 		if fa <= 0.0:
 			continue
-		m._pill(Rect2(12, fy - 20, 250, 28), Color(0.05, 0.06, 0.12, 0.6 * fa), 14)
-		m._text(Vector2(22, fy), str(kf["text"]), 16, Color(1, 0.9, 0.6, fa), 236.0)
+		var feed_w := minf(250.0, vs.x - 24.0)
+		m._pill(Rect2(12, fy - 20, feed_w, 28), Color(0.05, 0.06, 0.12, 0.6 * fa), 14)
+		m._text(Vector2(22, fy), str(kf["text"]), 15 if vs.x < 620.0 else 16, Color(1, 0.9, 0.6, fa), feed_w - 14.0)
 		fy += 32.0
 	# Top-Unterstützer rechts
-	var ry := 170.0
+	var ry := maxf(170.0, fy + 12.0) if vs.x < 620.0 else 170.0
 	for k in 4:
 		var top_n := ""
 		var top_c := 0
@@ -848,23 +938,30 @@ func draw_hud(vs: Vector2) -> void:
 				top_c = int(topsup[k][nm])
 				top_n = nm
 		if top_n != "":
-			m._pill(Rect2(vs.x - 190, ry - 20, 178, 28), Color(0.05, 0.06, 0.12, 0.6), 14)
-			m._text(Vector2(vs.x - 180, ry), "♛ %s" % top_n, 16, TEAM_COLORS[k], 160.0)
+			var sx := 12.0 if vs.x < 620.0 else vs.x - 190.0
+			m._pill(Rect2(sx, ry - 20, 178, 28), Color(0.05, 0.06, 0.12, 0.6), 14)
+			m._text(Vector2(sx + 10, ry), "♛ %s" % top_n, 16, TEAM_COLORS[k], 160.0)
 			ry += 32.0
 	# Banner
 	if banner_t > 0.0:
 		var a := clampf(banner_t, 0.0, 1.0)
 		var bc := banner_col
 		bc.a = a
-		m._text(Vector2(0, vs.y * 0.32), banner, 52, bc, vs.x, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(0, vs.y * 0.32), banner, 32 if vs.x < 620.0 else 52, bc, vs.x, HORIZONTAL_ALIGNMENT_CENTER)
 	if toast_t > 0.0:
 		var ta := clampf(toast_t, 0.0, 1.0)
-		m._pill(Rect2(vs.x * 0.5 - 260, vs.y - 142, 520, 38), Color(0.05, 0.06, 0.12, 0.75 * ta), 19)
-		m._text(Vector2(vs.x * 0.5 - 260, vs.y - 116), toast, 20, Color(1, 1, 1, ta), 520.0, HORIZONTAL_ALIGNMENT_CENTER)
-	# Anleitung unten
-	m._pill(Rect2(vs.x * 0.5 - 340, vs.y - 90, 680, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
-	m._text(Vector2(vs.x * 0.5 - 340, vs.y - 57), "Schreib ROT · BLAU · GRÜN · GELB zum Mitmachen!", 24, Color(1, 0.95, 0.7), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(vs.x * 0.5 - 340, vs.y - 24), "Likes = Kiste für dein Team · Geschenke = Waffe/Comeback · Warteschlange: %d" % queued, 16, Color(0.85, 0.92, 1.0), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
+		var toast_w := minf(vs.x - 24.0, 520.0)
+		var toast_x := (vs.x - toast_w) * 0.5
+		m._pill(Rect2(toast_x, vs.y - 142, toast_w, 38), Color(0.05, 0.06, 0.12, 0.75 * ta), 19)
+		m._text(Vector2(toast_x, vs.y - 116), toast, 16 if vs.x < 620.0 else 20, Color(1, 1, 1, ta), toast_w, HORIZONTAL_ALIGNMENT_CENTER)
+	# Kompakte Anleitung, damit Text im Hochformat nicht abgeschnitten wird.
+	var foot_w := minf(vs.x - 20.0, 680.0)
+	var foot_x := (vs.x - foot_w) * 0.5
+	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
+	var join_hint := "ROT · BLAU · GRÜN · GELB" if vs.x < 620.0 else "Schreib ROT · BLAU · GRÜN · GELB zum Mitmachen!"
+	var bonus_hint := ("Likes: Kisten · Geschenke: Waffen") if vs.x < 620.0 else ("Likes = Kiste für dein Team · Geschenke = Waffe/Comeback · Warteschlange: %d" % queued)
+	m._text(Vector2(foot_x, vs.y - 57), join_hint, 19 if vs.x < 620.0 else 24, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x, vs.y - 24), bonus_hint, 14 if vs.x < 620.0 else 16, Color(0.85, 0.92, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
 		_draw_results(vs)
 	if help:
