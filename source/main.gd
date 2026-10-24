@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024094744"
+const BUILD := "20261024095226"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2573,7 +2573,7 @@ func _sync_units3d() -> void:
 				units3d.update_unit("bot%d" % i, {
 					"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "moving": b.get("moving", false),
 					"weapon": b["weapon"], "firing": now - int(flash_t.get(i, -9999)) < 260,
-					"attacking": now - int(atk_t.get(i, -9999)) < 260, "alive": true, "visible": true,
+					"attacking": now - int(atk_t.get(i, -9999)) < 260, "alive": true, "visible": true, "scale": float(b.get("scale", 1.0)),
 				})
 	units3d.end_frame()
 	units3d.update_fades(player_pos)

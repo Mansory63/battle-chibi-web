@@ -20,5 +20,8 @@ Das Spiel nimmt JSON-Ereignisse an: `{"event":"chat|like|gift|follow|share","dat
 - Per Browser-Konsole: `bcLive({event:'gift',data:{nickname:'Max',giftName:'Rose',diamondCount:1}})`.
 Nichts davon wurde mit echtem TikTok getestet.
 
+## Zusätzlich
+Boss ab 1:40 (besiegen = 3 legendäre Waffen), Krone für den Top-Unterstützer je Team, Siegesserie in der Teamleiste.
+
 ## Offen
-Boss-Event, Siegesserie-Fahne und Kronen auf den Kämpfern, Kamera-Zoom nach Zonengröße, Kill-Wiederholung, 100+ Kämpfer. Geschenk-Zuordnung (GIFT_WEAPONS in live.gd) ist ein Vorschlag.
+Kamera-Zoom nach Zonengröße, Kill-Wiederholung, 100+ Kämpfer. Geschenk-Zuordnung (GIFT_WEAPONS in live.gd) ist ein Vorschlag.

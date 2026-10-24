@@ -11,7 +11,7 @@ const END_R := 120.0
 const CORNER_R := 1050.0
 const LIKE_GOAL := 100
 const TEAM_NAMES := ["ROT", "BLAU", "GRÜN", "GELB"]
-const TEAM_COLORS := [Color(1.0, 0.3, 0.3), Color(0.35, 0.6, 1.0), Color(0.3, 0.85, 0.4), Color(1.0, 0.85, 0.25)]
+const TEAM_COLORS := [Color(1.0, 0.3, 0.3), Color(0.35, 0.6, 1.0), Color(0.3, 0.85, 0.4), Color(1.0, 0.85, 0.25), Color(0.75, 0.3, 0.95)]
 const TIER_NAMES := ["", "SELTEN", "EPISCH", "LEGENDÄR"]
 const LOOT_KINDS := ["pistol", "pistol", "smg", "smg", "ak", "ak", "shotgun", "shotgun", "sniper", "sniper", "rocket", "minigun"]
 # Geschenk-Name (klein geschrieben) -> Waffe. Anpassbar; unbekannte Geschenke werden nach Münzwert zugeordnet.
@@ -61,6 +61,7 @@ var help := false
 var js_cb = null
 var check_t := 0.0
 var fn_i := 0
+var boss_done := false
 
 # ---------- Start ----------
 func begin(main, opts := {}) -> void:
@@ -75,8 +76,8 @@ func begin(main, opts := {}) -> void:
 	m.menu_layer.visible = false
 	m.touch.visible = false
 	m.phase = "play"
-	m.bot_dmg_mult = 0.17
-	m.bot_cd_mult = 0.8
+	m.bot_dmg_mult = 0.1
+	m.bot_cd_mult = 1.3
 	m.zone_dmg = 0.5
 	m.xp_mult = 0.0
 	if OS.has_feature("web"):
@@ -272,6 +273,9 @@ func _reset_bot(b: Dictionary, k: int, nm: String, viewer: bool, pos: Vector2) -
 	b["dead_at"] = -99999
 	b["lh"] = -2
 	b["moving"] = false
+	b["scale"] = 1.0
+	b["boss"] = false
+	b["maxhp"] = HP
 
 func _spawn_pos(k: int, spread := 150.0) -> Vector2:
 	return m._nearest_free(_corner(k) + Vector2.from_angle(randf() * TAU) * randf_range(30.0, spread), m.BOT_RADIUS)
@@ -318,6 +322,23 @@ func _give_weapon(nm: String, wk: String, rar: int) -> void:
 	_banner("%s%s: %s (%s)" % [nm, " ist zurück" if revived else "", wn, TIER_NAMES[rar]], TEAM_COLORS[tm], 3.5)
 	_say("%s bekommt %s" % [nm, wn])
 
+func _spawn_boss() -> void:
+	var b: Dictionary = m.bots[SLOTS * 4]
+	_reset_bot(b, 4, "BOSS", false, m._nearest_free(m.ZONE_CENTER, m.BOT_RADIUS))
+	b["health"] = 700.0
+	b["maxhp"] = 700.0
+	b["scale"] = 2.1
+	b["boss"] = true
+	b["skin"] = "char_red"
+	_equip(b, "minigun", 3)
+	focus = SLOTS * 4
+	focus_lock = 4.0
+	focus_t = 4.0
+	m.shake = 0.8
+	m._spark_burst(b["pos"], TEAM_COLORS[4], 40, 480.0)
+	_banner("BOSS ERSCHEINT!", TEAM_COLORS[4], 4.0)
+	_say("Der Boss erscheint. Besiegt ihn für legendäre Waffen")
+
 func _drop_crate(k: int, tier_bias: int) -> void:
 	var pos: Vector2 = m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * randf_range(120.0, 260.0), 24.0)
 	var rar := clampi(1 + m._random_rarity([55, 33, 12]) + (tier_bias - 1 if tier_bias > 1 else 0), 1, 3)
@@ -338,6 +359,7 @@ func start_round() -> void:
 	round_kills = [0, 0, 0, 0]
 	crate_t = 30.0
 	crate_next = randi() % 4
+	boss_done = false
 	splats.clear()
 	topsup = [{}, {}, {}, {}]
 	m.elapsed = 0.0
@@ -447,6 +469,9 @@ func update(delta: float) -> void:
 			crate_t = 30.0
 			_drop_crate(crate_next, 1)
 			crate_next = (crate_next + 1) % 4
+		if not boss_done and t >= 100.0:
+			boss_done = true
+			_spawn_boss()
 		m._update_bots(delta)
 		if t > 240.0:
 			for i in SLOTS * 4:
@@ -522,9 +547,12 @@ func on_kill(i: int) -> void:
 	var k := int(b["team"]) - 1
 	if k < 0:
 		return
+	if k == 4:
+		_boss_dead(b)
+		return
 	var kl := int(b.get("lh", -2))
 	var kname := ""
-	if kl >= 0 and kl < m.bots.size() and int(m.bots[kl]["team"]) != int(b["team"]):
+	if kl >= 0 and kl < m.bots.size() and int(m.bots[kl]["team"]) != int(b["team"]) and int(m.bots[kl]["team"]) <= 4:
 		round_kills[int(m.bots[kl]["team"]) - 1] += 1
 		kname = str(m.bots[kl]["name"])
 		if m.bots[kl]["viewer"]:
@@ -545,8 +573,24 @@ func on_kill(i: int) -> void:
 	var wk: String = b["weapon"]
 	if m.WEAPONS.has(wk) or wk == "katana":
 		m.loot.append({"pos": b["pos"], "kind": wk, "rar": int(b["rar"])})
-	if b["viewer"] and kname != "":
+	if b["viewer"] and kname != "" and int(m.bots[kl]["team"]) <= 4:
 		_toast("%s hat %s zerplatzt!" % [kname, b["name"]], TEAM_COLORS[int(m.bots[kl]["team"]) - 1])
+
+func _boss_dead(b: Dictionary) -> void:
+	var kl := int(b.get("lh", -2))
+	m._spark_burst(b["pos"], TEAM_COLORS[4], 50, 520.0)
+	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 30, 420.0)
+	m.shake = 1.0
+	var kinds := ["ak", "sniper", "rocket", "minigun", "shotgun"]
+	for n in 3:
+		m.loot.append({"pos": m._nearest_free(b["pos"] + Vector2.from_angle(TAU * n / 3.0) * 70.0, 24.0), "kind": kinds[randi() % kinds.size()], "rar": 3})
+	if kl >= 0 and kl < SLOTS * 4:
+		var kt := int(m.bots[kl]["team"]) - 1
+		round_kills[kt] += 2
+		_banner("BOSS BESIEGT von %s!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
+		_say("Team %s besiegt den Boss" % TEAM_NAMES[kt])
+	else:
+		_banner("BOSS BESIEGT!", TEAM_COLORS[4], 3.0)
 
 func _banner(txt: String, col: Color, secs: float) -> void:
 	banner = txt
@@ -644,7 +688,7 @@ func draw_hud(vs: Vector2) -> void:
 	var f: Font = ThemeDB.fallback_font
 	var ui := 1.0 if vs.x >= vs.y else 1.75   # Hochformat: Anzeigen größer
 	# Teamfarben-Ringe, Namen und Lebensbalken
-	for i in SLOTS * 4:
+	for i in SLOTS * 4 + 1:
 		var b: Dictionary = m.bots[i]
 		if not b["alive"]:
 			continue
@@ -658,8 +702,10 @@ func draw_hud(vs: Vector2) -> void:
 			pts.append(sp + Vector2(cos(TAU * q / 20.0) * 28.0 * z, sin(TAU * q / 20.0) * 28.0 * z * m.VIEW_TILT + 8.0))
 		m.fx.draw_polyline(pts, col, 4.0)
 		var hb: float = 112.0 * z / 1.15
-		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / HP), col, hb)
+		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / float(b.get("maxhp", HP))), col, hb)
 		var nm: String = b["name"]
+		if b["viewer"] and _is_top(nm, int(b["team"]) - 1):
+			nm = "♛ " + nm
 		var nc := Color.WHITE if b["viewer"] else Color(0.8, 0.85, 0.9, 0.85)
 		var ty := sp.y - hb - 12.0
 		var nfs := int(17 * ui)
@@ -684,10 +730,17 @@ func draw_hud(vs: Vector2) -> void:
 		var col: Color = TEAM_COLORS[k]
 		m._pill(Rect2(cx, cy, cw, 44), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
 		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
-		m._text(Vector2(cx + 10, cy + 39), "%d lebt · %d Pkt" % [alive_t[k], team_points[k]], 14, Color.WHITE, cw - 12.0)
+		m._text(Vector2(cx + 10, cy + 39), "%d lebt · %d Pkt%s" % [alive_t[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""], 14, Color.WHITE, cw - 12.0)
 		# Like-Leiste
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw * clampf(float(team_likes[k]) / LIKE_GOAL, 0.0, 1.0), 6), col)
+	var boss: Dictionary = m.bots[SLOTS * 4]
+	if boss["alive"] and boss["boss"]:
+		var bw := minf(vs.x - 40.0, 420.0)
+		var bx := vs.x * 0.5 - bw * 0.5
+		m._pill(Rect2(bx - 4, 150, bw + 8, 22), Color(0.05, 0.03, 0.1, 0.85), 11)
+		m.fx.draw_rect(Rect2(bx, 154, bw * clampf(float(boss["health"]) / 700.0, 0.0, 1.0), 14), TEAM_COLORS[4])
+		m._text(Vector2(bx, 168), "BOSS", 13, Color.WHITE, bw, HORIZONTAL_ALIGNMENT_CENTER)
 	# Kill-Feed links
 	var fy := 170.0
 	for kf in m.kill_feed:
@@ -729,6 +782,14 @@ func draw_hud(vs: Vector2) -> void:
 	if help:
 		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · Z zeig mich · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _is_top(nm: String, k: int) -> bool:
+	if k < 0 or k > 3 or not topsup[k].has(nm):
+		return false
+	for o in topsup[k]:
+		if int(topsup[k][o]) > int(topsup[k][nm]):
+			return false
+	return true
 
 func _draw_results(vs: Vector2) -> void:
 	var pw := minf(vs.x - 40.0, 520.0)
