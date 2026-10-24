@@ -58,6 +58,7 @@ const NUKE_COINS := 40000
 var nuke_t := -1.0
 var nuke_by := ""
 var nuke_done := false
+var nuke_survivor := ""
 var nuke_pos := Vector2.ZERO
 var bones: Array = []
 var events: Array = []
@@ -272,7 +273,8 @@ func _nuke_blast() -> void:
 			continue
 		if i == spare:
 			b["health"] = float(HP)
-			_toast("%s überlebt im Bunker!" % (nuke_by if str(b.get("name", "")) == nuke_by else str(b.get("name", "?"))), Color(1, 0.9, 0.3))
+			nuke_survivor = str(b.get("name", nuke_by))
+			_toast("%s überlebt im Bunker!" % nuke_survivor, Color(1, 0.9, 0.3))
 			continue
 		b["alive"] = false
 		b["dead_at"] = now
@@ -1018,7 +1020,7 @@ func _draw_nuke(vs: Vector2) -> void:
 	if tb < 1.4:
 		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 1, 0.9, clampf(1.0 - tb / 1.4, 0.0, 1.0)))
 	if tb > 1.0 and tb < 7.0:
-		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "NUR %s HAT ÜBERLEBT" % nuke_by.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "NUR %s HAT ÜBERLEBT" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _is_top(nm: String, k: int) -> bool:
 	if k < 0 or k > 3 or not topsup[k].has(nm):
