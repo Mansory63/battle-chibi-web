@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024104042"
+const BUILD := "20261024110317"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -969,7 +969,7 @@ func _draw_minimap() -> void:
 		var is_mate := int(b["team"]) == 0
 		if is_mate or few or live_mode:
 			var mp: Vector2 = mt * (b["pos"] as Vector2)
-			m.draw_circle(mp, 5.0, live.TEAM_COLORS[int(b["team"]) - 1] if live_mode else (Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2)))
+			m.draw_circle(mp, 5.0, (Color(0.4, 1.0, 0.3) if b.get("zombie", false) else live.TEAM_COLORS[int(b["team"]) - 1]) if live_mode else (Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2)))
 			m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
 	m.draw_circle(m.size / 2.0, 5.0, Color.WHITE)
 	m.draw_arc(m.size / 2.0, 6.0, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 2.0)
@@ -1356,12 +1356,16 @@ func _step_player(step: Vector2) -> void:
 
 func _door_entered() -> int:
 	for i in obstacles.size():
+		if specials.has(i):
+			continue
 		if _door_of(i).distance_to(player_pos) < 34.0:
 			return i
 	return -1
 
 func _nearest_door() -> int:
 	for i in obstacles.size():
+		if specials.has(i):
+			continue
 		if _door_of(i).distance_to(player_pos) < DOOR_RANGE:
 			return i
 	return -1
@@ -1413,14 +1417,14 @@ func _player_world() -> Vector2:
 func _enemies_alive() -> int:
 	var n := 0
 	for b in bots:
-		if b["alive"] and int(b["team"]) != 0:
+		if b["alive"] and int(b["team"]) != 0 and not b.get("zombie", false):
 			n += 1
 	return n
 
 func _alive_team_count() -> int:
 	var seen := {0: true}
 	for b in bots:
-		if b["alive"]:
+		if b["alive"] and not b.get("zombie", false):
 			seen[int(b["team"])] = true
 	return seen.size()
 
@@ -1468,6 +1472,20 @@ func _build_obstacle_grid() -> void:
 					grid_obs[k] = []
 				grid_obs[k].append(o)
 
+# Spezialbauten: Knast mit Zombies und Wahrzeichen Europas. kind -> Rect2
+const SPECIAL_SPOTS := [
+	["prison", Rect2(1000, 1640, 300, 170)],
+	["eiffel", Rect2(3420, 1420, 160, 160)],
+	["bigben", Rect2(3455, 2205, 90, 90)],
+	["pisa", Rect2(755, 2255, 90, 90)],
+	["brandenburg", Rect2(2270, 2265, 260, 70)],
+	["colosseum", Rect2(4380, 1580, 240, 240)],
+]
+var specials: Dictionary = {}   # Hindernis-Index -> Art
+var prison_idx := -1
+var prison_open := false
+var zombie_total := 0
+
 func _tile_world() -> void:
 	var base: Array[Rect2] = obstacles.duplicate()
 	var tiled: Array[Rect2] = []
@@ -1475,7 +1493,80 @@ func _tile_world() -> void:
 		for oy in 2:
 			for r in base:
 				tiled.append(Rect2(r.position + Vector2(2400.0 * ox, 1800.0 * oy), r.size))
-	obstacles = tiled
+	# Weniger Häuser: jedes zweite bis dritte fällt weg, Platz für Sonderbauten
+	var kept: Array[Rect2] = []
+	for i in tiled.size():
+		if i % 5 == 1 or i % 5 == 3:
+			continue
+		var blocked := false
+		for sp in SPECIAL_SPOTS:
+			if tiled[i].intersects((sp[1] as Rect2).grow(70.0)):
+				blocked = true
+		if not blocked:
+			kept.append(tiled[i])
+	specials.clear()
+	for sp in SPECIAL_SPOTS:
+		specials[kept.size()] = sp[0]
+		if sp[0] == "prison":
+			prison_idx = kept.size()
+		kept.append(sp[1])
+	obstacles = kept
+
+func _is_special(i: int) -> bool:
+	return specials.has(i)
+
+func _prison_door() -> Vector2:
+	return _door_of(prison_idx) + Vector2(0, 46)
+
+func _outbreak() -> void:
+	if prison_open or prison_idx < 0:
+		return
+	prison_open = true
+	var door := _prison_door()
+	var n := 0
+	for i in range(BOT_COUNT, bots.size()):
+		if bots[i].get("zombie", false):
+			_revive_zombie(bots[i], door, n)
+			n += 1
+	while n < 14:
+		var z := {"pos": door, "team": 6, "health": 60.0, "alive": true, "color": Color(0.5, 0.9, 0.4), "dir": Vector2.DOWN, "think": 1.0, "cd": 1.0,
+			"tex": null, "skin": "char_green", "gun": null, "weapon": "fist", "rar": 0, "aim": Vector2.DOWN, "zombie": true, "name": "Zombie", "viewer": false, "scale": 0.95}
+		bots.append(z)
+		_revive_zombie(z, door, n)
+		n += 1
+	zombie_total = n
+	shake = maxf(shake, 0.5)
+	_play_sfx("rocket", -6.0)
+	if live_mode:
+		live._toast("AUSBRUCH! Zombies sind aus dem Knast!", Color(0.5, 1, 0.4))
+	else:
+		_show_message("AUSBRUCH! Zombies sind aus dem Knast!", 4.0)
+
+func _revive_zombie(z: Dictionary, door: Vector2, n: int) -> void:
+	z["pos"] = _nearest_free(door + Vector2(randf_range(-70, 70), randf_range(0, 60)), BOT_RADIUS)
+	z["alive"] = true
+	z["health"] = 60.0
+	z["tsc"] = 0.0
+	z["cd"] = randf_range(0.5, 1.5)
+	z["dead_at"] = -99999
+	z["lh"] = -2
+
+func reset_prison() -> void:
+	prison_open = false
+	for i in range(BOT_COUNT, bots.size()):
+		if bots[i].get("zombie", false):
+			bots[i]["alive"] = false
+			bots[i]["dead_at"] = -99999
+			bots[i]["pos"] = Vector2(-500, -500)
+
+func _check_outbreak(pw: Vector2) -> void:
+	if prison_open or prison_idx < 0:
+		return
+	var pr: Rect2 = obstacles[prison_idx]
+	if elapsed > 45.0 and (live_mode or phase == "play"):
+		_outbreak()
+	elif phase == "play" and not live_mode and inside < 0 and pr.grow(260.0).has_point(pw):
+		_outbreak()
 
 func _living_bots() -> int:
 	var n := 0
@@ -1917,6 +2008,7 @@ func _player_died() -> void:
 func _update_bots(delta: float) -> void:
 	var pw := _player_world()
 	var player_targetable := phase == "play" and inside < 0 and not live_mode
+	_check_outbreak(pw)
 	for i in bots.size():
 		var b: Dictionary = bots[i]
 		if not b["alive"]:
@@ -1925,10 +2017,11 @@ func _update_bots(delta: float) -> void:
 		b["cd"] -= delta
 		b["tsc"] = float(b.get("tsc", 0.0)) - delta
 		var team: int = int(b["team"])
+		var zomb: bool = b.get("zombie", false)
 		if b["tsc"] <= 0.0:
 			# Ziel suchen: nächster Gegner (Spieler oder fremdes Team) im Sichtbereich
 			b["tsc"] = randf_range(0.25, 0.45)
-			var best := 520.0
+			var best := 900.0 if zomb else 520.0
 			var bt := -2
 			if player_targetable and team != 0:
 				var dp: float = pw.distance_to(b["pos"])
@@ -1959,10 +2052,10 @@ func _update_bots(delta: float) -> void:
 		var dist := to_t.length() if has_target else 99999.0
 		var step := Vector2.ZERO
 
-		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
+		if b["pos"].distance_to(ZONE_CENTER) > zone_radius and not zomb:
 			# außerhalb der Zone: zurück zur Mitte
 			step = ZONE_CENTER - b["pos"]
-		elif has_target and dist < 280.0 and elapsed > 10.0 and MELEE.has(b["weapon"]):
+		elif has_target and dist < (900.0 if zomb else 280.0) and elapsed > 10.0 and MELEE.has(b["weapon"]):
 			# Nur Nahkampf: direkt auf das Ziel zu
 			step = to_t
 			if b["cd"] <= 0.0 and dist < MELEE[b["weapon"]]["range"] + PLAYER_RADIUS:
@@ -1971,7 +2064,10 @@ func _update_bots(delta: float) -> void:
 				else:
 					atk_t[i] = Time.get_ticks_msec()
 					bots[tid]["lh"] = i
-					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"]) * (bot_dmg_mult * 1.5 if live_mode else 1.0)
+					var dmm: float = (bot_dmg_mult * 1.5 if live_mode else 1.0)
+					if zomb:
+						dmm = 0.45 if live_mode else 0.7
+					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"]) * dmm
 					_spark_burst(bots[tid]["pos"], Color(1, 0.9, 0.5), 4, 120.0)
 					if bots[tid]["health"] <= 0.0:
 						_kill_bot(tid, false)
@@ -1989,7 +2085,7 @@ func _update_bots(delta: float) -> void:
 		else:
 			# ohne Waffe: zur nächsten Waffe laufen, sonst Team folgen oder herumlaufen
 			var target := -1
-			if MELEE.has(b["weapon"]):
+			if MELEE.has(b["weapon"]) and not zomb:
 				var best2 := 420.0
 				for li in loot.size():
 					var it: Dictionary = loot[li]
@@ -2024,7 +2120,7 @@ func _update_bots(delta: float) -> void:
 			b["aim"] = step.normalized()
 		b["moving"] = step != Vector2.ZERO
 		if step != Vector2.ZERO:
-			b["pos"] = _move(b["pos"], step.normalized() * BOT_SPEED * delta, BOT_RADIUS)
+			b["pos"] = _move(b["pos"], step.normalized() * BOT_SPEED * (0.85 if zomb else 1.0) * delta, BOT_RADIUS)
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
 			b["health"] -= ZONE_DAMAGE_PER_SEC * delta * (1.0 + 5.0 * clampf(elapsed / zone_time, 0.0, 1.0))

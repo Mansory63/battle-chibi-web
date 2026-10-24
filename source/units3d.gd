@@ -36,7 +36,10 @@ var layer: CanvasLayer
 var units: Dictionary = {}   # id -> Dictionary
 var scenes: Dictionary = {}
 
+var host_main: Node
+
 func setup(host: Node, layer_index := 1) -> void:
+	host_main = host
 	layer = CanvasLayer.new()
 	layer.layer = layer_index
 	host.add_child(layer)
@@ -501,8 +504,12 @@ func build_world(obstacles: Array, trees: Array, roofs: Array) -> void:
 	mat_tree_fade = _vc_material()
 	mat_tree_fade.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat_tree_fade.albedo_color = Color(1, 1, 1, 0.38)
+	var specials: Dictionary = host_main.specials
 	for i in obstacles.size():
 		var r: Rect2 = obstacles[i]
+		if specials.has(i):
+			_build_special(str(specials[i]), r)
+			continue
 		var wall_col: Color = WALL_TINTS[i % WALL_TINTS.size()]
 		var H := HOUSE_WALL_H
 		var st := SurfaceTool.new()
@@ -757,3 +764,130 @@ func update_loot(key: int, pos: Vector2, kind: String, rar: int, t: float, open_
 		var bob := 8.0 + 3.0 * sin(t * 3.0 + d["phase"])
 		n.position.y = bob
 		n.rotation.y = t * 1.6 + d["phase"]
+
+
+# ---------- Sonderbauten: Knast und Wahrzeichen Europas ----------
+func _add_frustum(st: SurfaceTool, base: Vector3, r0: float, r1: float, h: float, col: Color, segs := 12) -> void:
+	for j in segs:
+		var a0 := TAU * j / segs
+		var a1 := TAU * (j + 1) / segs
+		var p0 := base + Vector3(cos(a0) * r0, 0, sin(a0) * r0)
+		var p1 := base + Vector3(cos(a1) * r0, 0, sin(a1) * r0)
+		var q0 := base + Vector3(cos(a0) * r1, h, sin(a0) * r1)
+		var q1 := base + Vector3(cos(a1) * r1, h, sin(a1) * r1)
+		var shade := 0.85 + 0.15 * cos((a0 + a1) * 0.5 - 0.8)
+		_quad(st, p1, p0, q0, q1, Color(col.r * shade, col.g * shade, col.b * shade), Vector2.ZERO, base + Vector3(0, h * 0.5, 0))
+
+func _build_special(kind: String, r: Rect2) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var c := r.get_center()
+	match kind:
+		"prison":
+			var wall := Color(0.6, 0.6, 0.64)
+			var dark := Color(0.25, 0.25, 0.3)
+			_add_box(st, Vector3(c.x, 45, c.y), Vector3(r.size.x, 90, r.size.y), wall)
+			_add_box(st, Vector3(c.x, 8, c.y), Vector3(r.size.x + 8, 16, r.size.y + 8), wall.darkened(0.3))
+			_add_box(st, Vector3(c.x, 94, c.y), Vector3(r.size.x + 10, 10, r.size.y + 10), dark)
+			for sx in [-1, 1]:
+				for sz in [-1, 1]:
+					var tp := Vector3(c.x + sx * (r.size.x * 0.5), 0, c.y + sz * (r.size.y * 0.5))
+					_add_box(st, tp + Vector3(0, 70, 0), Vector3(40, 140, 40), wall.darkened(0.1))
+					_add_box(st, tp + Vector3(0, 148, 0), Vector3(52, 14, 52), dark)
+					_add_box(st, tp + Vector3(0, 160, 0), Vector3(14, 14, 14), Color(1.0, 0.2, 0.15))
+			# vergitterte Fenster
+			for k in 5:
+				var wx := r.position.x + r.size.x * (0.14 + 0.18 * k)
+				_add_box(st, Vector3(wx, 58, r.end.y + 1.5), Vector3(24, 22, 3), Color(0.05, 0.05, 0.08))
+				for b in 3:
+					_add_box(st, Vector3(wx - 8 + b * 8, 58, r.end.y + 3), Vector3(2, 22, 2), Color(0.7, 0.7, 0.72))
+			# Tor (Süd)
+			_add_box(st, Vector3(c.x, 30, r.end.y + 2), Vector3(64, 60, 4), Color(0.18, 0.18, 0.22))
+			for b in 7:
+				_add_box(st, Vector3(c.x - 27 + b * 9, 30, r.end.y + 4.5), Vector3(3, 60, 3), Color(0.55, 0.55, 0.58))
+			_add_box(st, Vector3(c.x, 76, r.end.y + 3), Vector3(70, 14, 5), Color(0.9, 0.25, 0.2))
+		"eiffel":
+			var iron := Color(0.5, 0.42, 0.34)
+			for sx in [-1, 1]:
+				for sz in [-1, 1]:
+					for j in 5:
+						var f: float = j / 4.0
+						var off := lerpf(66.0, 30.0, f)
+						_add_box(st, Vector3(c.x + sx * off, 18 + j * 30, c.y + sz * off), Vector3(16 - f * 4, 32, 16 - f * 4), iron)
+			_add_box(st, Vector3(c.x, 120, c.y), Vector3(110, 10, 110), iron.lightened(0.1))
+			for j in 8:
+				var f2: float = j / 7.0
+				var w := lerpf(60.0, 22.0, f2)
+				_add_box(st, Vector3(c.x, 128 + j * 24, c.y), Vector3(w, 26, w), iron)
+			_add_box(st, Vector3(c.x, 232, c.y), Vector3(46, 8, 46), iron.lightened(0.1))
+			_add_frustum(st, Vector3(c.x, 300, c.y), 14, 3, 120, iron.lightened(0.15), 8)
+			_add_sphere(st, Vector3(c.x, 428, c.y), 4, Color(1, 0.9, 0.4))
+		"bigben":
+			var stone := Color(0.85, 0.74, 0.5)
+			_add_box(st, Vector3(c.x, 120, c.y), Vector3(44, 240, 44), stone)
+			_add_box(st, Vector3(c.x, 10, c.y), Vector3(60, 20, 60), stone.darkened(0.2))
+			_add_box(st, Vector3(c.x, 252, c.y), Vector3(54, 34, 54), stone.darkened(0.1))
+			_add_frustum(st, Vector3(c.x, 269, c.y), 40, 4, 70, Color(0.3, 0.5, 0.45), 4)
+			for k in 4:
+				var nrm: Vector3 = [Vector3.BACK, Vector3.FORWARD, Vector3.RIGHT, Vector3.LEFT][k]
+				var cp: Vector3 = Vector3(c.x, 252, c.y) + nrm * 28.0
+				var sz2 := Vector3(34, 34, 3) if k < 2 else Vector3(3, 34, 34)
+				_add_box(st, cp, sz2, Color(1, 1, 0.95))
+				_add_box(st, cp + nrm * 1.5, sz2 * Vector3(0.12, 0.12, 0.12) + Vector3(2, 2, 2) * (Vector3(1, 1, 0) if k < 2 else Vector3(0, 1, 1)), Color(0.1, 0.1, 0.1))
+		"pisa":
+			var marble := Color(0.95, 0.93, 0.86)
+			for j in 8:
+				var off2 := j * 4.5
+				_add_cyl(st, Vector3(c.x + off2, j * 24, c.y), 34 - j * 0.6, 24, marble if j % 2 == 0 else marble.darkened(0.12))
+				_add_cyl(st, Vector3(c.x + off2, j * 24 + 20, c.y), 36 - j * 0.6, 4, marble.darkened(0.3))
+			_add_cyl(st, Vector3(c.x + 36, 192, c.y), 22, 24, marble.darkened(0.05))
+			_add_frustum(st, Vector3(c.x + 36, 216, c.y), 22, 6, 12, Color(0.7, 0.4, 0.3), 10)
+		"brandenburg":
+			var sand := Color(0.88, 0.82, 0.68)
+			for k in 6:
+				_add_cyl(st, Vector3(r.position.x + 22 + k * ((r.size.x - 44) / 5.0), 0, c.y), 11, 96, sand)
+			_add_box(st, Vector3(c.x, 108, c.y), Vector3(r.size.x, 24, r.size.y * 0.8), sand.darkened(0.08))
+			_add_box(st, Vector3(c.x, 126, c.y), Vector3(r.size.x - 20, 14, r.size.y * 0.6), sand)
+			_add_box(st, Vector3(c.x, 142, c.y), Vector3(60, 18, 22), Color(0.75, 0.62, 0.2))
+			for k in 4:
+				_add_sphere(st, Vector3(c.x - 24 + k * 16, 164, c.y), 9, Color(0.85, 0.7, 0.25))
+			_add_box(st, Vector3(c.x, 170, c.y), Vector3(8, 28, 8), Color(0.85, 0.7, 0.25))
+		"colosseum":
+			var sand2 := Color(0.82, 0.68, 0.5)
+			var ro := 112.0
+			var segs := 28
+			for tier in 3:
+				var y0 := tier * 38.0
+				var y1 := y0 + 38.0
+				var rr := ro - tier * 6.0
+				for j in segs:
+					var a0 := TAU * j / segs
+					var a1 := TAU * (j + 1) / segs
+					var p0 := Vector3(c.x + cos(a0) * rr, y0, c.y + sin(a0) * rr)
+					var p1 := Vector3(c.x + cos(a1) * rr, y0, c.y + sin(a1) * rr)
+					var ctr := Vector3(c.x, y0 + 19, c.y)
+					_quad(st, p1, p0, p0 + Vector3(0, 38, 0), p1 + Vector3(0, 38, 0), sand2.darkened(0.06 * tier), Vector2.ZERO, ctr)
+					# Bogen
+					var am0 := a0 + (a1 - a0) * 0.22
+					var am1 := a0 + (a1 - a0) * 0.78
+					var b0 := Vector3(c.x + cos(am0) * (rr + 0.8), y0 + 6, c.y + sin(am0) * (rr + 0.8))
+					var b1 := Vector3(c.x + cos(am1) * (rr + 0.8), y0 + 6, c.y + sin(am1) * (rr + 0.8))
+					_quad(st, b1, b0, b0 + Vector3(0, 24, 0), b1 + Vector3(0, 24, 0), Color(0.15, 0.1, 0.08), Vector2.ZERO, ctr)
+					# Zinnenband
+					var top0 := p0 + Vector3(0, 38, 0)
+					var top1 := p1 + Vector3(0, 38, 0)
+					var in0 := Vector3(c.x + cos(a0) * (rr - 8), y1, c.y + sin(a0) * (rr - 8))
+					var in1 := Vector3(c.x + cos(a1) * (rr - 8), y1, c.y + sin(a1) * (rr - 8))
+					_quad(st, top0, top1, in1, in0, sand2.lightened(0.1))
+			# Innen: Arena
+			for j in segs:
+				var a0 := TAU * j / segs
+				var a1 := TAU * (j + 1) / segs
+				var rr2 := ro - 20.0
+				var i0 := Vector3(c.x + cos(a0) * rr2, 0, c.y + sin(a0) * rr2)
+				var i1 := Vector3(c.x + cos(a1) * rr2, 0, c.y + sin(a1) * rr2)
+				_quad(st, i1, i0, i0 + Vector3(0, 90, 0), i1 + Vector3(0, 90, 0), sand2.darkened(0.2), Vector2.ZERO, Vector3(c.x, 45, c.y) * 1.0 + Vector3(0, 0, 0))
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = _vc_material()
+	world_root.add_child(mi)

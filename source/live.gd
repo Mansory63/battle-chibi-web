@@ -398,6 +398,7 @@ func start_round() -> void:
 		m.bots[i]["alive"] = false
 		m.bots[i]["dead_at"] = -99999
 		m.bots[i]["pos"] = Vector2(-500, -500)
+	m.prison_open = false
 	_spawn_loot()
 	focus = -1
 	focus_t = 0.0
@@ -546,6 +547,9 @@ func on_kill(i: int) -> void:
 	var b: Dictionary = m.bots[i]
 	var k := int(b["team"]) - 1
 	if k < 0:
+		return
+	if k == 5:
+		m._spark_burst(b["pos"], Color(0.5, 1, 0.4), 14, 220.0)
 		return
 	if k == 4:
 		_boss_dead(b)
