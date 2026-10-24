@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024170255"
+const BUILD := "20261024170705"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -425,8 +425,14 @@ func _text(p: Vector2, t: String, size: int, col := Color.WHITE, width := -1.0, 
 	fx.draw_string_outline(f, p, t, align, width, size, 7, Color(0.06, 0.05, 0.1, 0.95))
 	fx.draw_string(f, p, t, align, width, size, col)
 
+var show_fps := false
+var fps_shown := 0
+var fps_t := 0.0
+
 func _draw_hud(vs: Vector2) -> void:
 	var alive := _living_bots() + 1
+	if show_fps:
+		_text(Vector2(vs.x - 150, 40), "FPS %d" % fps_shown, 22, Color(0.4, 1.0, 0.4), 140.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	_pill(Rect2(16, 14, 170, 40), Color(0.05, 0.06, 0.12, 0.7), 20)
 	_text(Vector2(30, 43), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
 	_pill(Rect2(16, 60, 130, 34), Color(0.05, 0.06, 0.12, 0.7), 17)
@@ -517,6 +523,8 @@ func _draw_fx_inner() -> void:
 		_text(Vector2(vs.x * 0.5 - 150, 116), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if live_mode:
 		live.draw_hud(vs)
+	if show_fps:
+		_text(Vector2(vs.x - 150, 40), "FPS %d" % fps_shown, 22, Color(0.4, 1.0, 0.4), 140.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	elif phase == "play":
 		_draw_hud(vs)
 		var hb := 112.0 * ZOOM / 1.15
@@ -737,6 +745,8 @@ func _check_live_args() -> void:
 		var q = JavaScriptBridge.eval("location.search", true)
 		for part in str(q).trim_prefix("?").split("&"):
 			var kv := part.split("=")
+			if kv[0] == "fps":
+				show_fps = true
 			if kv[0] == "live":
 				go = true
 			elif kv[0] == "demo":
@@ -1704,6 +1714,10 @@ var perf_t := 0.0
 var perf_frames := 0
 func _process(delta: float) -> void:
 	_poll_update(delta)
+	fps_t += delta
+	if fps_t >= 0.5:
+		fps_t = 0.0
+		fps_shown = int(Engine.get_frames_per_second())
 	# Adaptive Qualitaet: im Spiel messen, bei < 30 FPS Aufloesung der 3D-Ebene senken
 	if phase == "play" and units3d != null:
 		perf_t += delta
