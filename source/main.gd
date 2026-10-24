@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024161359"
+const BUILD := "20261024170255"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2147,6 +2147,8 @@ func _update_bots(delta: float) -> void:
 			if b["health"] <= 0.0:
 				_kill_bot(i)
 
+	_separate_bots()
+
 # ---------- Einfache Live-Taktik: ohne Navmesh, mit seltenem Deckungs-Scan ----------
 func _live_cover_goal(b: Dictionary, threat: Vector2, delta: float) -> Vector2:
 	b["cover_refresh"] = float(b.get("cover_refresh", 0.0)) - delta
@@ -2223,6 +2225,26 @@ func _live_rally_step(i: int, b: Dictionary, roam: Vector2) -> Vector2:
 	if pos.distance_to(ZONE_CENTER) > 300.0:
 		return (ZONE_CENTER - pos).normalized() * 0.7 + roam.normalized() * 0.3
 	return roam
+
+# Körperabstand: Kämpfer und Zombies schieben sich gegenseitig auseinander (kein Ineinanderkleben)
+func _separate_bots() -> void:
+	var n := bots.size()
+	var mind := BOT_RADIUS * 2.0 * 0.92
+	for i in n:
+		var a: Dictionary = bots[i]
+		if not a["alive"]:
+			continue
+		for j in range(i + 1, n):
+			var c: Dictionary = bots[j]
+			if not c["alive"]:
+				continue
+			var gap: Vector2 = (c["pos"] as Vector2) - (a["pos"] as Vector2)
+			var dd := gap.length()
+			if dd >= mind or dd < 0.001:
+				continue
+			var push := gap / dd * ((mind - dd) * 0.5)
+			a["pos"] = (a["pos"] as Vector2) - push
+			c["pos"] = (c["pos"] as Vector2) + push
 
 func _live_keep_formation(i: int, b: Dictionary, step: Vector2) -> Vector2:
 	var pos: Vector2 = b["pos"]
