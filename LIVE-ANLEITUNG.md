@@ -25,3 +25,10 @@ Boss ab 1:40 (besiegen = 3 legendäre Waffen), Krone für den Top-Unterstützer 
 
 ## Offen
 Kamera-Zoom nach Zonengröße, Kill-Wiederholung, 100+ Kämpfer. Geschenk-Zuordnung (GIFT_WEAPONS in live.gd) ist ein Vorschlag.
+
+## Stand 24.10. (Handoff für ChatGPT/Claude)
+- Performance: 2D-Draw-Calls ca. 1.240 → ca. 600 (Textur-Discs, Zonen-Shader).
+- Hinzugekommen: Knast mit 14 Zombies (Ausbruch nach 45 s bzw. wenn man nahe kommt; Zombies zählen nicht für Sieg), Wahrzeichen (Eiffelturm, Big Ben, Pisa, Brandenburger Tor, Kolosseum), weniger Häuser (51 Gebäude).
+- Atombombe: Geschenk „Universe“ oder ab 40.000 Münzen. 3 s Warnung, dann Druckwelle, Pilzwolke, nur Spender überlebt (Bunker), Rest wird zu Knochen. Testtaste B.
+- Wake Lock für Dauerbetrieb.
+- Offen: runde Figuren/bessere Effekte, Probelauf auf iPhone, TikTok-Geschenkdaten verifizieren (Name + Münzen), Dauertest, Sonderfall Einsturz/Ausbruch-Feinschliff.
