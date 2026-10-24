@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024170705"
+const BUILD := "20261024171305"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2243,7 +2243,7 @@ func _live_rally_step(i: int, b: Dictionary, roam: Vector2) -> Vector2:
 # Körperabstand: Kämpfer und Zombies schieben sich gegenseitig auseinander (kein Ineinanderkleben)
 func _separate_bots() -> void:
 	var n := bots.size()
-	var mind := BOT_RADIUS * 2.0 * 0.92
+	var mind := BOT_RADIUS * 2.0 * 1.2   # Figuren sind optisch größer als ihr Körper
 	for i in n:
 		var a: Dictionary = bots[i]
 		if not a["alive"]:
@@ -2257,8 +2257,12 @@ func _separate_bots() -> void:
 			if dd >= mind or dd < 0.001:
 				continue
 			var push := gap / dd * ((mind - dd) * 0.5)
-			a["pos"] = (a["pos"] as Vector2) - push
-			c["pos"] = (c["pos"] as Vector2) + push
+			var na: Vector2 = (a["pos"] as Vector2) - push
+			var nc: Vector2 = (c["pos"] as Vector2) + push
+			# Nie in Häuser oder Bäume schieben
+			if _is_free(na, BOT_RADIUS) and _is_free(nc, BOT_RADIUS):
+				a["pos"] = na
+				c["pos"] = nc
 
 func _live_keep_formation(i: int, b: Dictionary, step: Vector2) -> Vector2:
 	var pos: Vector2 = b["pos"]
