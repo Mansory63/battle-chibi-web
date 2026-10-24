@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024110317"
+const BUILD := "20261024110540"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -262,6 +262,8 @@ var update_pending := false
 func _web_started() -> void:
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.__bc_started = true;", true)
+		# Bildschirm wach halten (Dauerbetrieb, z.B. TikTok-Live)
+		JavaScriptBridge.eval("(function(){var wl=null;function req(){try{if(navigator.wakeLock&&document.visibilityState==='visible'){navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}}catch(e){}}req();document.addEventListener('visibilitychange',req);document.addEventListener('pointerdown',function(){if(!wl||wl.released)req()});window.__bc_wl=1;})();", true)
 
 func _poll_update(delta: float) -> void:
 	if not OS.has_feature("web") or BUILD == "dev":
