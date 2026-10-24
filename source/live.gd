@@ -6,7 +6,7 @@ const ROUND_TIME := 300.0
 const PAUSE_TIME := 20.0
 const SLOTS := 12                  # Kämpfer pro Team (4 x 12 = 48)
 const HP := 170.0
-const START_R := 1500.0
+const START_R := 3400.0   # Startkreis liegt außerhalb der Karte und schrumpft ins Spielfeld
 const END_R := 120.0
 const CORNER_R := 1050.0
 const SMALL_START_R := 850.0      # opt-in 1700px-Durchmesser
@@ -69,6 +69,7 @@ var ws_url := ""
 var ws_open := false
 var arena_small := false
 var arena_r := START_R
+var zone_speed := 1.0   # Schrumpf-Tempo: 0.5 = halb so schnell, 2.0 = doppelt so schnell
 var corner_r := CORNER_R
 var demo := false
 var demo_t := 0.0
@@ -86,6 +87,7 @@ func begin(main, opts := {}) -> void:
 	m = main
 	on = true
 	demo = bool(opts.get("demo", false))
+	zone_speed = clampf(float(opts.get("zone_speed", 1.0)), 0.25, 3.0)
 	arena_small = str(opts.get("arena", "")) == "small"
 	arena_r = SMALL_START_R if arena_small else START_R
 	corner_r = SMALL_CORNER_R if arena_small else CORNER_R
@@ -539,7 +541,8 @@ func update(delta: float) -> void:
 	if state == "round":
 		t += delta
 		m.elapsed = t
-		var r := lerpf(arena_r, END_R, clampf(t / ROUND_TIME, 0.0, 1.0)) if t < ROUND_TIME else maxf(0.0, END_R * (1.0 - (t - ROUND_TIME) / 30.0))
+		var zt := t * zone_speed
+		var r := lerpf(arena_r, END_R, clampf(zt / ROUND_TIME, 0.0, 1.0)) if zt < ROUND_TIME else maxf(0.0, END_R * (1.0 - (zt - ROUND_TIME) / 30.0))
 		m.zone_radius = r
 		crate_t -= delta
 		if crate_t <= 0.0:
@@ -768,6 +771,12 @@ func handle_key(code: int) -> void:
 		KEY_S:
 			if viewers.size() > 0:
 				share(viewers.keys()[randi() % viewers.size()])
+		KEY_BRACKETLEFT:
+			zone_speed = maxf(0.25, zone_speed - 0.25)
+			_toast("Zonen-Tempo %.2f" % zone_speed)
+		KEY_BRACKETRIGHT:
+			zone_speed = minf(3.0, zone_speed + 0.25)
+			_toast("Zonen-Tempo %.2f" % zone_speed)
 		KEY_B:
 			nuke(viewers.keys()[randi() % viewers.size()] if viewers.size() > 0 else "Fan")
 		KEY_N:
@@ -967,7 +976,7 @@ func draw_hud(vs: Vector2) -> void:
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
 		_draw_results(vs)
 	if help:
-		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · Z zeig mich · B ATOMBOMBE · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
+		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · [ ] Zonen-Tempo · Z zeig mich · B ATOMBOMBE · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if nuke_t >= 0.0:
 		_draw_nuke(vs)

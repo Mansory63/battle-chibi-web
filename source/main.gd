@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024160952"
+const BUILD := "20261024161359"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -745,6 +745,8 @@ func _check_live_args() -> void:
 				opts["ws"] = kv[1].uri_decode()
 			elif kv[0] == "arena" and kv.size() > 1:
 				opts["arena"] = kv[1].uri_decode()
+			elif kv[0] == "zone" and kv.size() > 1:
+				opts["zone_speed"] = float(kv[1].uri_decode())
 	if go:
 		start_live(opts)
 
@@ -1105,6 +1107,7 @@ uniform vec2 center = vec2(2400.0, 1800.0);
 uniform vec2 origin = vec2(-2500.0, -2500.0);
 uniform vec2 rsize = vec2(9800.0, 8600.0);
 uniform float radius = 2950.0;
+uniform float strength = 1.0;
 void fragment() {
 	vec2 w = origin + UV * rsize;
 	float d = distance(w, center);
@@ -1116,7 +1119,7 @@ void fragment() {
 	float edge2 = exp(-abs(d - radius) / 5.0);
 	vec3 col = mix(vec3(1.0, 0.35 + 0.1 * flick, 0.05), vec3(1.0, 0.9, 0.45), clamp(edge * pulse + edge2, 0.0, 1.0));
 	float a = outside * (0.30 + 0.12 * flick) + edge * 0.45 * pulse + edge2 * 0.35;
-	COLOR = vec4(col, clamp(a, 0.0, 0.92));
+	COLOR = vec4(col, clamp(a, 0.0, 0.92) * strength);
 }
 """
 
@@ -1754,6 +1757,8 @@ func _process(delta: float) -> void:
 	if zone_node.visible:
 		zone_node.transform = view
 		zone_mat.set_shader_parameter("radius", zone_radius)
+		# Feuer erst zeigen, wenn der Kreis die Karte wirklich berührt
+		zone_mat.set_shader_parameter("strength", clampf(1.0 - (zone_radius - 2000.0) / 1000.0, 0.0, 1.0))
 	cam.position = _w(player_pos)
 	light.position = _w(player_pos)
 	var _t2 := Time.get_ticks_usec()
