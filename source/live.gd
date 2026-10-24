@@ -48,6 +48,14 @@ var toast_t := 0.0
 var winner := -1
 var topsup: Array = [{}, {}, {}, {}]
 var splats: Array = []
+# Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
+const NUKE_WARN := 3.0
+const NUKE_COINS := 40000
+var nuke_t := -1.0
+var nuke_by := ""
+var nuke_done := false
+var nuke_pos := Vector2.ZERO
+var bones: Array = []
 var events: Array = []
 var slow_until := 0
 var say_t := 0.0
@@ -209,12 +217,56 @@ func gift(nm: String, gname: String, coins: int) -> void:
 	v["coins"] = int(v["coins"]) + coins
 	var tm: int = v["team"]
 	topsup[tm][nm] = int(topsup[tm].get(nm, 0)) + coins
+	if gname.to_lower().contains("universe") or coins >= NUKE_COINS:
+		nuke(nm)
+		return
 	var wk: String = GIFT_WEAPONS.get(gname.to_lower(), "")
 	if wk == "":
 		var pool: Array = ["pistol", "smg", "ak", "shotgun", "sniper", "minigun", "rocket"]
 		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 6)]
 	var rar := 1 if coins < 10 else (2 if coins < 100 else 3)
 	_give_weapon(nm, wk, rar)
+
+func nuke(nm: String) -> void:
+	if state != "round" or nuke_t >= 0.0:
+		_toast("%s schenkt die Atombombe – nächste Runde!" % nm, Color(1, 0.5, 0.1))
+		return
+	nuke_t = 0.0
+	nuke_by = nm
+	nuke_done = false
+	nuke_pos = m.ZONE_CENTER
+	_banner("ATOMBOMBE von %s!" % nm, Color(1, 0.35, 0.1), 5.0)
+	_say("Achtung! Atombombe von %s!" % nm)
+
+func _nuke_blast() -> void:
+	nuke_done = true
+	m.shake = 2.0
+	slow_until = Time.get_ticks_msec() + 1400
+	m.bullets.clear()
+	var now := Time.get_ticks_msec()
+	var spare := -1
+	for i in SLOTS * 4:
+		if m.bots[i]["alive"] and m.bots[i].get("viewer", false) and str(m.bots[i].get("name", "")) == nuke_by:
+			spare = i
+	if spare < 0 and viewers.has(nuke_by):
+		var tk: int = viewers[nuke_by]["team"]
+		for s2 in SLOTS:
+			if m.bots[tk * SLOTS + s2]["alive"]:
+				spare = tk * SLOTS + s2
+				break
+	for i in m.bots.size():
+		var b: Dictionary = m.bots[i]
+		if not b["alive"]:
+			continue
+		if i == spare:
+			b["health"] = float(HP)
+			_toast("%s überlebt im Bunker!" % (nuke_by if str(b.get("name", "")) == nuke_by else str(b.get("name", "?"))), Color(1, 0.9, 0.3))
+			continue
+		b["alive"] = false
+		b["dead_at"] = now
+		bones.append({"pos": b["pos"], "seed": randf() * TAU})
+	m._play_sfx("rocket", 0.0)
+	m._play_sfx("rocket", 0.0)
 
 func follow(nm: String) -> void:
 	nm = _clean(nm)
@@ -361,6 +413,9 @@ func start_round() -> void:
 	crate_next = randi() % 4
 	boss_done = false
 	splats.clear()
+	bones.clear()
+	nuke_t = -1.0
+	nuke_done = false
 	topsup = [{}, {}, {}, {}]
 	m.elapsed = 0.0
 	m.zone_time = ROUND_TIME
@@ -457,6 +512,12 @@ func update(delta: float) -> void:
 		_demo(delta)
 	var now := Time.get_ticks_msec()
 	Engine.time_scale = 0.35 if now < slow_until else 1.0
+	if nuke_t >= 0.0:
+		nuke_t += delta
+		if not nuke_done and nuke_t >= NUKE_WARN:
+			_nuke_blast()
+		if nuke_t > 16.0:
+			nuke_t = -1.0
 	banner_t = maxf(0.0, banner_t - delta)
 	toast_t = maxf(0.0, toast_t - delta)
 	say_t = maxf(0.0, say_t - delta)
@@ -511,7 +572,9 @@ func _update_focus(delta: float) -> void:
 	if need and focus_lock <= 0.0:
 		_pick_focus()
 	var target: Vector2 = m.player_pos
-	if state == "pause" and winner >= 0:
+	if nuke_t >= 0.0:
+		target = nuke_pos
+	elif state == "pause" and winner >= 0:
 		target = _centroid(winner)
 	elif focus >= 0:
 		target = m.bots[focus]["pos"]
@@ -661,6 +724,8 @@ func handle_key(code: int) -> void:
 		KEY_S:
 			if viewers.size() > 0:
 				share(viewers.keys()[randi() % viewers.size()])
+		KEY_B:
+			nuke(viewers.keys()[randi() % viewers.size()] if viewers.size() > 0 else "Fan")
 		KEY_N:
 			if state == "round":
 				end_round()
@@ -674,6 +739,26 @@ func handle_key(code: int) -> void:
 
 # ---------- Zeichnen ----------
 func draw_ground() -> void:
+	if nuke_t >= NUKE_WARN:
+		var rr := minf(2100.0, (nuke_t - NUKE_WARN) * 950.0)
+		m.draw_circle(nuke_pos, rr, Color(0.06, 0.04, 0.03, 0.6))
+		m.draw_circle(nuke_pos, rr * 0.55, Color(0.03, 0.02, 0.02, 0.5))
+		if rr < 2100.0:
+			m.draw_arc(nuke_pos, rr, 0.0, TAU, 96, Color(1, 0.55, 0.1, 0.8), 14.0)
+	for bn in bones:
+		var bp: Vector2 = bn["pos"]
+		var a: float = bn["seed"]
+		var d := Vector2.from_angle(a)
+		var bc := Color(0.95, 0.93, 0.85)
+		for sgn in [-1.0, 1.0]:
+			var dd: Vector2 = d.rotated(sgn * 0.6) * 20.0
+			m.draw_line(bp - dd, bp + dd, bc, 5.0)
+			m.draw_circle(bp - dd, 4.0, bc)
+			m.draw_circle(bp + dd, 4.0, bc)
+		m.draw_circle(bp + Vector2(0, -6), 11.0, bc)
+		m.draw_rect(Rect2(bp + Vector2(-6, 1), Vector2(12, 7)), bc)
+		m.draw_circle(bp + Vector2(-4, -6), 3.0, Color(0.1, 0.08, 0.08))
+		m.draw_circle(bp + Vector2(4, -6), 3.0, Color(0.1, 0.08, 0.08))
 	for s in splats:
 		var c: Color = s["col"]
 		c.a = 0.5
@@ -780,11 +865,63 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(vs.x * 0.5 - 340, vs.y - 90, 680, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	m._text(Vector2(vs.x * 0.5 - 340, vs.y - 57), "Schreib ROT · BLAU · GRÜN · GELB zum Mitmachen!", 24, Color(1, 0.95, 0.7), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(vs.x * 0.5 - 340, vs.y - 24), "Likes = Kiste für dein Team · Geschenke = Waffe/Comeback · Warteschlange: %d" % queued, 16, Color(0.85, 0.92, 1.0), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
-	if state == "pause":
+	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
 		_draw_results(vs)
 	if help:
-		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · Z zeig mich · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
+		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · Z zeig mich · B ATOMBOMBE · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if nuke_t >= 0.0:
+		_draw_nuke(vs)
+
+func _draw_nuke(vs: Vector2) -> void:
+	var sc: Vector2 = m._fx_screen(nuke_pos)
+	if nuke_t < NUKE_WARN:
+		var pulse := 0.5 + 0.5 * sin(nuke_t * 14.0)
+		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 0.05, 0.0, 0.10 + 0.14 * pulse))
+		var k := nuke_t / NUKE_WARN
+		var mp := Vector2(sc.x, lerpf(-80.0, sc.y - 40.0, k * k))
+		m.fx.draw_rect(Rect2(mp.x - 7, mp.y - 40, 14, 40), Color(0.8, 0.8, 0.85))
+		m.fx.draw_colored_polygon(PackedVector2Array([mp + Vector2(-7, 0), mp + Vector2(7, 0), mp + Vector2(0, 22)]), Color(0.9, 0.2, 0.1))
+		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.3), "ATOMBOMBE  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
+		return
+	var tb := nuke_t - NUKE_WARN
+	var fade := clampf(1.0 - (tb - 9.0) / 6.0, 0.0, 1.0)
+	var z: float = m.ZOOM
+	var e := 1.0 - pow(1.0 - clampf(tb / 6.0, 0.0, 1.0), 3.0)
+	var h := vs.y * 0.36 * e
+	# Druckwelle
+	if tb < 2.5:
+		var rr := tb * 1100.0 * z
+		var rw := rr * 2.0
+		m.fx.draw_texture_rect(m.tex_ring, Rect2(sc.x - rr, sc.y - rr * 0.6, rw, rr * 1.2), false, Color(1, 0.75, 0.4, 0.8 * (1.0 - tb / 2.5)))
+	# Stiel
+	var n := 10
+	for i in n:
+		var f := float(i) / n
+		var y := sc.y - h * f
+		var w := lerpf(70.0, 46.0, f) * (0.6 + 0.4 * e)
+		var col := Color(1.0, 0.55, 0.12).lerp(Color(0.35, 0.3, 0.28), clampf(f * 0.9 + tb * 0.04, 0.0, 1.0))
+		col.a = fade
+		m.fx.draw_rect(Rect2(sc.x - w * 0.5, y - h / n, w, h / n + 2.0), col)
+	# Feuerball am Boden
+	m._fdisc(sc, 120.0 * e + 20.0, Color(1.0, 0.6, 0.15, 0.9 * fade))
+	m._fdisc(sc, 70.0 * e + 10.0, Color(1.0, 0.95, 0.6, 0.9 * fade))
+	# Pilzkappe
+	var top := Vector2(sc.x, sc.y - h)
+	var R := 130.0 * e + 20.0
+	for k in 7:
+		var a := float(k) / 7.0 * TAU
+		var off := Vector2(cos(a) * R * 0.75, sin(a) * R * 0.38 - R * 0.1)
+		var cc := Color(0.45, 0.35, 0.3).lerp(Color(1.0, 0.5, 0.1), 0.5 + 0.5 * sin(a + tb))
+		cc.a = 0.95 * fade
+		m._fdisc(top + off, R * 0.55, cc)
+	m._fdisc(top + Vector2(0, -R * 0.15), R * 0.7, Color(1.0, 0.7, 0.25, 0.95 * fade))
+	m._fdisc(top + Vector2(0, -R * 0.2), R * 0.4, Color(1.0, 0.95, 0.65, 0.9 * fade))
+	# Blitz
+	if tb < 1.4:
+		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 1, 0.9, clampf(1.0 - tb / 1.4, 0.0, 1.0)))
+	if tb > 1.0 and tb < 7.0:
+		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "NUR %s HAT ÜBERLEBT" % nuke_by.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _is_top(nm: String, k: int) -> bool:
 	if k < 0 or k > 3 or not topsup[k].has(nm):
