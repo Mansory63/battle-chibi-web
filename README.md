@@ -57,3 +57,6 @@ Neues Hauptmenü (hub.gd): Kopfleiste mit Avatar/Stufe/XP, Münzen, Edelsteine, 
 
 ## Block 12 – Sprint + Ansicht
 Sprint-Knopf (Touch) bzw. Strg/C (PC): 1,55x Tempo, 3,2 s Ausdauer, lädt nach 0,8 s Pause in 5 s wieder auf; bei 0 gesperrt bis 30 %. Kamera weiter weg (ZOOM 0.92).
+
+## Block 13 – TikTok-Live-Modus
+live.gd: 4 Teams, Zuschauer-Kämpfer, Runden mit Countdown, Kisten, Geschenke/Likes, Demo/Testtasten, WebSocket/JS-Schnittstelle. Siehe LIVE-ANLEITUNG.md.

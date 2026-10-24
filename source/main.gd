@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261023094144"
+const BUILD := "20261024094744"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -41,6 +41,9 @@ const HOUSE_H := 74.0
 const ROADS := [Rect2(0, 820, 4800, 160), Rect2(0, 2620, 4800, 160), Rect2(500, 0, 160, 3600), Rect2(1700, 0, 160, 3600), Rect2(2900, 0, 160, 3600), Rect2(4100, 0, 160, 3600)]
 const TouchControlsScript := preload("res://touch_controls.gd")
 const HubScript := preload("res://hub.gd")
+const LiveScript := preload("res://live.gd")
+var live
+var live_mode := false
 
 const OUTLINE := Color(0.15, 0.1, 0.1)
 const SKIN := Color(1, 0.86, 0.72)
@@ -324,6 +327,7 @@ func _ready() -> void:
 	_build_menu()
 	_build_pause()
 	_build_fx()
+	call_deferred("_check_live_args")
 
 # ---------- Hauptmenü ----------
 func _build_menu() -> void:
@@ -460,7 +464,7 @@ func _draw_fx() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
-	if phase == "play" and inside < 0 and _enemies_alive() <= 3:
+	if phase == "play" and inside < 0 and not live_mode and _enemies_alive() <= 3:
 		var cc := vs * 0.5
 		for b in bots:
 			if not b["alive"] or int(b["team"]) == 0:
@@ -490,7 +494,9 @@ func _draw_fx() -> void:
 	if phase == "fall":
 		_pill(Rect2(vs.x * 0.5 - 150, 84, 300, 44), Color(0.05, 0.06, 0.12, 0.7), 22)
 		_text(Vector2(vs.x * 0.5 - 150, 116), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
-	if phase == "play":
+	if live_mode:
+		live.draw_hud(vs)
+	elif phase == "play":
 		_draw_hud(vs)
 		var hb := 112.0 * ZOOM / 1.15
 		_fx_bar2(_fx_screen(player_pos), health, Color(0.3, 0.95, 0.4), hb)
@@ -687,6 +693,36 @@ func _on_menu_play() -> void:
 	if music_player and not music_player.playing:
 		music_player.play()
 	_show_message("Fallschirm-Absprung! Steuere zum Landeplatz", 3.0)
+
+func start_live(opts := {}) -> void:
+	if live_mode:
+		return
+	live_mode = true
+	live = LiveScript.new()
+	live.begin(self, opts)
+	if music_player and not music_player.playing:
+		music_player.play()
+
+func _check_live_args() -> void:
+	var opts := {}
+	var go := false
+	for a in OS.get_cmdline_user_args():
+		if a == "live":
+			go = true
+		elif a == "demo":
+			opts["demo"] = true
+	if OS.has_feature("web"):
+		var q = JavaScriptBridge.eval("location.search", true)
+		for part in str(q).trim_prefix("?").split("&"):
+			var kv := part.split("=")
+			if kv[0] == "live":
+				go = true
+			elif kv[0] == "demo":
+				opts["demo"] = true
+			elif kv[0] == "ws" and kv.size() > 1:
+				opts["ws"] = kv[1].uri_decode()
+	if go:
+		start_live(opts)
 
 func _show_end_menu(title: String) -> void:
 	_play_sfx("win" if title.begins_with("SIEG") else "lose", -4.0)
@@ -913,9 +949,9 @@ func _draw_minimap() -> void:
 		if not b["alive"]:
 			continue
 		var is_mate := int(b["team"]) == 0
-		if is_mate or few:
+		if is_mate or few or live_mode:
 			var mp: Vector2 = mt * (b["pos"] as Vector2)
-			m.draw_circle(mp, 5.0, Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2))
+			m.draw_circle(mp, 5.0, live.TEAM_COLORS[int(b["team"]) - 1] if live_mode else (Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2)))
 			m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
 	m.draw_circle(m.size / 2.0, 5.0, Color.WHITE)
 	m.draw_arc(m.size / 2.0, 6.0, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 2.0)
@@ -1403,6 +1439,9 @@ func _fire(owner_id: int, origin: Vector2, dir: Vector2, weapon_key: String) -> 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
+	if live_mode:
+		live.handle_key(event.keycode)
+		return
 	if event.keycode == KEY_SHIFT:
 		_try_dash()
 	elif event.keycode == KEY_E:
@@ -1520,7 +1559,10 @@ func _process(delta: float) -> void:
 		"fall":
 			_update_fall(delta)
 		"play":
-			_update_play(delta)
+			if live_mode:
+				live.update(delta)
+			else:
+				_update_play(delta)
 
 	_update_bullets(delta)
 	if minimap:
@@ -1769,9 +1811,10 @@ func _explode(pos: Vector2, bl: Dictionary) -> void:
 		var b: Dictionary = bots[i]
 		if b["alive"] and i != ow and int(b["team"]) != oteam and b["pos"].distance_to(pos) < radius + BOT_RADIUS:
 			b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
+			b["lh"] = ow
 			if b["health"] <= 0.0:
 				_kill_bot(i, ow == -1)
-	if ow != -1 and oteam != 0 and inside < 0 and player_pos.distance_to(pos) < radius + PLAYER_RADIUS:
+	if ow != -1 and oteam != 0 and not live_mode and inside < 0 and player_pos.distance_to(pos) < radius + PLAYER_RADIUS:
 		_damage_player(bl["damage"] * 0.6)
 
 func _player_died() -> void:
@@ -1784,7 +1827,7 @@ func _player_died() -> void:
 
 func _update_bots(delta: float) -> void:
 	var pw := _player_world()
-	var player_targetable := phase == "play" and inside < 0
+	var player_targetable := phase == "play" and inside < 0 and not live_mode
 	for i in bots.size():
 		var b: Dictionary = bots[i]
 		if not b["alive"]:
@@ -1838,7 +1881,8 @@ func _update_bots(delta: float) -> void:
 					_melee_attack(i, b["pos"], to_t, b["weapon"])
 				else:
 					atk_t[i] = Time.get_ticks_msec()
-					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"])
+					bots[tid]["lh"] = i
+					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"]) * (bot_dmg_mult * 1.5 if live_mode else 1.0)
 					_spark_burst(bots[tid]["pos"], Color(1, 0.9, 0.5), 4, 120.0)
 					if bots[tid]["health"] <= 0.0:
 						_kill_bot(tid, false)
@@ -1882,6 +1926,8 @@ func _update_bots(delta: float) -> void:
 					b["dir"] = Vector2.from_angle(randf() * TAU)
 					b["think"] = randf_range(1.0, 3.0)
 				step = b["dir"]
+				if live_mode and b["pos"].distance_to(ZONE_CENTER) > 250.0:
+					step = (ZONE_CENTER - b["pos"]).normalized() * 0.7 + (b["dir"] as Vector2) * 0.3
 
 		if has_target and dist < 520.0 and phase == "play":
 			b["aim"] = to_t.normalized()
@@ -1893,6 +1939,7 @@ func _update_bots(delta: float) -> void:
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
 			b["health"] -= ZONE_DAMAGE_PER_SEC * delta * (1.0 + 5.0 * clampf(elapsed / zone_time, 0.0, 1.0))
+			b["lh"] = -2
 			if b["health"] <= 0.0:
 				_kill_bot(i)
 
@@ -1912,6 +1959,9 @@ func _kill_bot(i: int, by_player := false) -> void:
 		return
 	bots[i]["alive"] = false
 	bots[i]["dead_at"] = Time.get_ticks_msec()
+	if live_mode:
+		live.on_kill(i)
+		return
 	_spark_burst(bots[i]["pos"], Color(1, 1, 1), 16, 260.0)
 	if by_player and int(bots[i]["team"]) != 0:
 		kills += 1
@@ -1960,12 +2010,13 @@ func _update_bullets(delta: float) -> void:
 				hit = true
 				if not explodes:
 					b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
+					b["lh"] = ow
 					if ow == -1:
 						_popup(b["pos"], bl["damage"], Color(1, 0.95, 0.5))
 					if b["health"] <= 0.0:
 						_kill_bot(i, ow == -1)
 				break
-		if not hit and ow != -1 and oteam != 0 and phase == "play" and inside < 0 and player_pos.distance_to(bl["pos"]) < PLAYER_RADIUS:
+		if not hit and ow != -1 and oteam != 0 and not live_mode and phase == "play" and inside < 0 and player_pos.distance_to(bl["pos"]) < PLAYER_RADIUS:
 			_damage_player(bl["damage"])
 			hit = true
 		if hit:
@@ -2131,6 +2182,8 @@ func _draw_outdoor() -> void:
 
 	# ----- Feuerzone über allem (flach, mit Transformation) -----
 	draw_set_transform_matrix(view)
+	if live_mode:
+		live.draw_ground()
 	_draw_zone()
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
@@ -2276,6 +2329,8 @@ func _draw_interior() -> void:
 	_draw_chest_progress()
 
 func _draw_player() -> void:
+	if live_mode:
+		return
 	var sp := _w(player_pos)
 	var gun_tex: Texture2D = tex_guns.get(weapon, null) if weapon != "" else tex_melee.get(melee, null)
 	var lift := Vector2.ZERO
@@ -2499,7 +2554,7 @@ func _sync_units3d() -> void:
 			"firing": now - int(flash_t.get(-1, -9999)) < 260,
 			"attacking": now - int(atk_t.get(-1, -9999)) < 260,
 			"jumping": jump_timer > 0.0, "falling": falling, "alive": phase != "over" or health > 0.0,
-			"visible": true,
+			"visible": not live_mode,
 		})
 		if outdoor:
 			for i in bots.size():
@@ -2507,6 +2562,11 @@ func _sync_units3d() -> void:
 				if (b["pos"] as Vector2).distance_squared_to(player_pos) > 1150.0 * 1150.0:
 					continue
 				if not b["alive"]:
+					if live_mode:
+						var dtb := now - int(b.get("dead_at", -99999))
+						if dtb < 320:
+							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9})
+						continue
 					if now - int(b.get("dead_at", -99999)) < 1800:
 						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": true})
 					continue

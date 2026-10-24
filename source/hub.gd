@@ -234,6 +234,8 @@ func _build_battle() -> void:
 	b2.pressed.connect(func(): set_tab(4))
 	var b3 := _side(bat, "shield", "SKINS", Vector2(20, 342), Color(0.25, 0.55, 0.85))
 	b3.pressed.connect(func(): set_tab(1))
+	var b4 := _side(bat, "mode", "LIVE-MODUS", Vector2(20, 448), Color(0.9, 0.25, 0.5))
+	b4.pressed.connect(func(): m.start_live({}))
 	# Rechte Spalte
 	m.team_btn = _side(bat, "team", "", Vector2(1110, 130), Color(0.2, 0.55, 0.75))
 	m.team_btn.pressed.connect(func():
