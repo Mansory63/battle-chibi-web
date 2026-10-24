@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024095226"
+const BUILD := "20261024104042"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -241,6 +241,13 @@ var tex_trees: Array[Texture2D] = []
 var tex_loot: Dictionary = {}   # Art -> Texture2D
 var tex_guns: Dictionary = {}   # Waffen-Art -> Texture2D (Waffe in der Hand)
 var grass_blobs: Array = []
+var tex_disc: Texture2D
+var tex_ring: Texture2D
+var tex_dash_h: Texture2D
+var tex_dash_v: Texture2D
+var zone_node: Node2D
+var zone_mat: ShaderMaterial
+var style_cache: Dictionary = {}
 var tex_grass: Texture2D
 var tex_asphalt: Texture2D
 var view := Transform2D.IDENTITY
@@ -327,6 +334,8 @@ func _ready() -> void:
 	_build_menu()
 	_build_pause()
 	_build_fx()
+	_make_perf_textures()
+	_build_zone()
 	call_deferred("_check_live_args")
 
 # ---------- Hauptmenü ----------
@@ -392,17 +401,22 @@ func _fx_bar(sp: Vector2, hp: float, col: Color) -> void:
 	fx.draw_rect(Rect2(top, Vector2(w * ratio, 7)), col)
 
 func _pill(r: Rect2, col: Color, radius := 10) -> void:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = col
-	sb.set_corner_radius_all(radius)
+	var key := Vector3i(int(col.r * 20.0) * 4096 + int(col.g * 20.0) * 64 + int(col.b * 20.0), int(col.a * 24.0), radius)
+	var sb: StyleBoxFlat = style_cache.get(key)
+	if sb == null:
+		sb = StyleBoxFlat.new()
+		sb.bg_color = Color(roundf(col.r * 20.0) / 20.0, roundf(col.g * 20.0) / 20.0, roundf(col.b * 20.0) / 20.0, roundf(col.a * 24.0) / 24.0)
+		sb.set_corner_radius_all(radius)
+		style_cache[key] = sb
 	fx.draw_style_box(sb, r)
 
 func _bar(r: Rect2, ratio: float, col: Color, back := Color(0.08, 0.09, 0.14, 0.75)) -> void:
-	_pill(Rect2(r.position - Vector2(3, 3), r.size + Vector2(6, 6)), Color(0.05, 0.05, 0.08, 0.9), 12)
-	_pill(r, back, 10)
+	fx.draw_rect(Rect2(r.position - Vector2(2, 2), r.size + Vector2(4, 4)), Color(0.05, 0.05, 0.08, 0.92))
+	fx.draw_rect(r, Color(back.r, back.g, back.b, 1.0))
 	if ratio > 0.01:
-		_pill(Rect2(r.position, Vector2(maxf(r.size.y, r.size.x * clampf(ratio, 0.0, 1.0)), r.size.y)), col, 10)
-		_pill(Rect2(r.position + Vector2(3, 2), Vector2(maxf(4.0, r.size.x * clampf(ratio, 0.0, 1.0) - 6.0), r.size.y * 0.35)), Color(1, 1, 1, 0.22), 6)
+		var fw := r.size.x * clampf(ratio, 0.0, 1.0)
+		fx.draw_rect(Rect2(r.position, Vector2(fw, r.size.y)), col)
+		fx.draw_rect(Rect2(r.position, Vector2(fw, r.size.y * 0.38)), Color(1, 1, 1, 0.22))
 
 func _text(p: Vector2, t: String, size: int, col := Color.WHITE, width := -1.0, align := HORIZONTAL_ALIGNMENT_LEFT) -> void:
 	var f := ThemeDB.fallback_font
@@ -461,6 +475,11 @@ func _draw_hud(vs: Vector2) -> void:
 		_text(Vector2(x0 + w - 100, ty), "SPEED %d" % int(ceil(speed_timer)), 18, Color(0.4, 1, 0.5))
 
 func _draw_fx() -> void:
+	var _t1 := Time.get_ticks_usec()
+	_draw_fx_inner()
+	_pf("drawfx", _t1)
+
+func _draw_fx_inner() -> void:
 	if phase == "menu" or phase == "over" or phase == "won":
 		return
 	var vs := get_viewport_rect().size
@@ -510,15 +529,14 @@ func _draw_fx() -> void:
 		var sp := _fx_screen(bl["pos"]) + Vector2(0, -30.0 * ZOOM)
 		var dv := _screen_dir(bl["vel"])
 		if bl["explode"] > 0.0:
-			for k in 5:
-				fx.draw_circle(sp - dv * (10.0 + k * 9.0), 9.0 - k, Color(1, 0.55 - k * 0.07, 0.15, 0.55 - k * 0.1))
-			fx.draw_circle(sp, 9, OUTLINE)
-			fx.draw_circle(sp, 7, Color(0.55, 0.8, 0.55))
+			for k in 4:
+				_fdisc(sp - dv * (10.0 + k * 11.0), 10.0 - k * 1.5, Color(1, 0.55 - k * 0.09, 0.15, 0.55 - k * 0.12))
+			_fdisc(sp, 10, OUTLINE)
+			_fdisc(sp, 7.5, Color(0.55, 0.8, 0.55))
 		else:
-			fx.draw_line(sp - dv * 26.0, sp, Color(1, 0.8, 0.25, 0.35), 8.0)
-			fx.draw_line(sp - dv * 20.0, sp, Color(1, 0.95, 0.6, 0.85), 3.5)
-			fx.draw_circle(sp, 6, Color(1, 0.9, 0.4, 0.35))
-			fx.draw_circle(sp, 3.5, Color(1, 1, 0.9))
+			fx.draw_line(sp - dv * 22.0, sp, Color(1, 0.9, 0.5, 0.8), 4.0)
+			_fdisc(sp, 7, Color(1, 0.9, 0.4, 0.4))
+			_fdisc(sp, 3.5, Color(1, 1, 0.9, 1))
 	# Mündungsfeuer
 	for f in flashes:
 		var fp := _fx_screen(f["pos"]) + Vector2(0, -30.0 * ZOOM)
@@ -536,17 +554,17 @@ func _draw_fx() -> void:
 		var k: float = fb["t"] / 0.55
 		var ep := _fx_screen(fb["pos"]) + Vector2(0, -20.0)
 		var rr: float = fb["r"] * ZOOM * (0.35 + 0.75 * k) * 0.8
-		fx.draw_circle(ep, rr, Color(1, 0.45, 0.1, 0.55 * (1.0 - k)))
-		fx.draw_circle(ep + Vector2(0, -rr * 0.15), rr * 0.7, Color(1, 0.75, 0.25, 0.7 * (1.0 - k)))
-		fx.draw_circle(ep + Vector2(0, -rr * 0.3), rr * 0.4, Color(1, 0.98, 0.7, 0.8 * (1.0 - k)))
-		fx.draw_circle(ep + Vector2(0, -rr * 0.9 * k), rr * 0.45, Color(0.2, 0.18, 0.2, 0.35 * (1.0 - k)))
-		fx.draw_arc(ep, rr * 1.05, 0.0, TAU, 40, Color(1, 0.9, 0.6, 0.6 * (1.0 - k)), 5.0)
+		_fdisc(ep, rr, Color(1, 0.45, 0.1, 0.55 * (1.0 - k)))
+		_fdisc(ep + Vector2(0, -rr * 0.15), rr * 0.7, Color(1, 0.75, 0.25, 0.7 * (1.0 - k)))
+		_fdisc(ep + Vector2(0, -rr * 0.3), rr * 0.4, Color(1, 0.98, 0.7, 0.8 * (1.0 - k)))
+		_fdisc(ep + Vector2(0, -rr * 0.9 * k), rr * 0.45, Color(0.2, 0.18, 0.2, 0.35 * (1.0 - k)))
+		fx.draw_texture_rect(tex_ring, Rect2(ep - Vector2(rr * 1.1, rr * 1.1), Vector2(rr * 2.2, rr * 2.2)), false, Color(1, 0.9, 0.6, 0.6 * (1.0 - k)))
 	# Funken
 	for sp in sparks:
 		var k2: float = sp["t"] / sp["life"]
 		var c: Color = sp["col"]
 		c.a = 1.0 - k2
-		fx.draw_circle(_fx_screen(sp["pos"]) + sp["o"] * ZOOM, 4.5 * (1.0 - k2 * 0.6), c)
+		_fdisc(_fx_screen(sp["pos"]) + sp["o"] * ZOOM, 5.5 * (1.0 - k2 * 0.6), c)
 	var f2 := ThemeDB.fallback_font
 	for p in popups:
 		var k3: float = p["t"] / 0.9
@@ -1047,6 +1065,69 @@ func _season_tint() -> Color:
 	elif month <= 8:
 		return Color(0.98, 0.96, 0.85)    # Sommer: warm
 	return Color(1.0, 0.93, 0.84)         # Herbst: warm
+
+func _make_perf_textures() -> void:
+	var n := 128
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var img2 := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var d := Vector2(x + 0.5 - n * 0.5, y + 0.5 - n * 0.5).length() / (n * 0.5)
+			img.set_pixel(x, y, Color(1, 1, 1, clampf((1.0 - d) / 0.1, 0.0, 1.0)))
+			var ra := clampf(1.0 - absf(d - 0.9) / 0.09, 0.0, 1.0)
+			img2.set_pixel(x, y, Color(1, 1, 1, ra))
+	tex_disc = ImageTexture.create_from_image(img)
+	tex_ring = ImageTexture.create_from_image(img2)
+	var dh := Image.create(90, 8, false, Image.FORMAT_RGBA8)
+	var dv := Image.create(8, 90, false, Image.FORMAT_RGBA8)
+	for i in 45:
+		for j in 8:
+			dh.set_pixel(i, j, Color(1, 1, 1, 0.75))
+			dv.set_pixel(j, i, Color(1, 1, 1, 0.75))
+	tex_dash_h = ImageTexture.create_from_image(dh)
+	tex_dash_v = ImageTexture.create_from_image(dv)
+
+func _disc(p: Vector2, r: float, col: Color) -> void:
+	draw_texture_rect(tex_disc, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), false, col)
+
+func _fdisc(p: Vector2, r: float, col: Color) -> void:
+	fx.draw_texture_rect(tex_disc, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), false, col)
+
+const ZONE_SHADER := """
+shader_type canvas_item;
+uniform vec2 center = vec2(2400.0, 1800.0);
+uniform vec2 origin = vec2(-2500.0, -2500.0);
+uniform vec2 rsize = vec2(9800.0, 8600.0);
+uniform float radius = 2950.0;
+void fragment() {
+	vec2 w = origin + UV * rsize;
+	float d = distance(w, center);
+	float outside = smoothstep(radius - 8.0, radius + 8.0, d);
+	float ang = atan(w.y - center.y, w.x - center.x);
+	float flick = 0.5 + 0.5 * sin(TIME * 5.0 + ang * 7.0) * cos(TIME * 2.3 + ang * 3.0);
+	float pulse = 0.6 + 0.4 * sin(TIME * 9.0);
+	float edge = exp(-abs(d - radius) / 16.0);
+	float edge2 = exp(-abs(d - radius) / 5.0);
+	vec3 col = mix(vec3(1.0, 0.35 + 0.1 * flick, 0.05), vec3(1.0, 0.9, 0.45), clamp(edge * pulse + edge2, 0.0, 1.0));
+	float a = outside * (0.30 + 0.12 * flick) + edge * 0.45 * pulse + edge2 * 0.35;
+	COLOR = vec4(col, clamp(a, 0.0, 0.92));
+}
+"""
+
+func _build_zone() -> void:
+	zone_node = Node2D.new()
+	add_child(zone_node)
+	var cr := ColorRect.new()
+	cr.position = Vector2(-2500, -2500)
+	cr.size = MAP_SIZE + Vector2(5000, 5000)
+	cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = ZONE_SHADER
+	zone_mat = ShaderMaterial.new()
+	zone_mat.shader = sh
+	cr.material = zone_mat
+	zone_node.add_child(cr)
+	zone_node.visible = false
 
 func _radial_texture(inner: Color, outer: Color) -> GradientTexture2D:
 	var g := Gradient.new()
@@ -1560,7 +1641,9 @@ func _process(delta: float) -> void:
 			_update_fall(delta)
 		"play":
 			if live_mode:
+				var _t3 := Time.get_ticks_usec()
 				live.update(delta)
+				_pf("liveupd", _t3)
 			else:
 				_update_play(delta)
 
@@ -1568,9 +1651,15 @@ func _process(delta: float) -> void:
 	if minimap:
 		minimap.queue_redraw()
 	_update_view()
+	zone_node.visible = (phase == "play" or phase == "fall") and inside < 0
+	if zone_node.visible:
+		zone_node.transform = view
+		zone_mat.set_shader_parameter("radius", zone_radius)
 	cam.position = _w(player_pos)
 	light.position = _w(player_pos)
+	var _t2 := Time.get_ticks_usec()
 	_sync_units3d()
+	_pf("sync3d", _t2)
 	if fx:
 		fx.queue_redraw()
 	_update_ui()
@@ -2043,7 +2132,16 @@ func _update_ui() -> void:
 # ---------- Zeichnen ----------
 # Bodenflächen werden mit der Kamera-Transformation gezeichnet (gedreht + geneigt),
 # alles mit Höhe (Häuser, Bäume, Figuren, Loot) aufrecht an der umgerechneten Position.
+var prof := {}
+func _pf(k: String, t0: int) -> void:
+	prof[k] = int(prof.get(k, 0)) + Time.get_ticks_usec() - t0
+
 func _draw() -> void:
+	var _t0 := Time.get_ticks_usec()
+	_draw_inner()
+	_pf("draw2d", _t0)
+
+func _draw_inner() -> void:
 	if inside >= 0:
 		_draw_interior()
 	else:
@@ -2085,8 +2183,8 @@ func _draw_outdoor() -> void:
 			gc = Color(1, 0.9, 0.6, 0.18) if gb[2] else Color(0.75, 0.5, 0.2, 0.16)
 		elif map_theme == 2:
 			gc = Color(1, 1, 1, 0.5) if gb[2] else Color(0.65, 0.78, 0.95, 0.22)
-		draw_circle(gb[0], gb[1], gc)
-		draw_circle(gb[0], gb[1] * 0.6, gc)
+		_disc(gb[0], gb[1], gc)
+		_disc(gb[0], gb[1] * 0.6, gc)
 
 	# Straßen: Bürgersteig, Asphalt, Mittelstreifen
 	for road in ROADS:
@@ -2099,12 +2197,10 @@ func _draw_outdoor() -> void:
 	for road in ROADS:
 		if road.size.x > road.size.y:
 			var cy: float = road.get_center().y
-			for x in range(int(road.position.x), int(road.end.x), 90):
-				draw_rect(Rect2(x, cy - 4, 45, 8), Color(1, 1, 1, 0.75))
+			draw_texture_rect(tex_dash_h, Rect2(road.position.x, cy - 4, road.size.x, 8), true)
 		else:
 			var cx: float = road.get_center().x
-			for y in range(int(road.position.y), int(road.end.y), 90):
-				draw_rect(Rect2(cx - 4, y, 8, 45), Color(1, 1, 1, 0.75))
+			draw_texture_rect(tex_dash_v, Rect2(cx - 4, road.position.y, 8, road.size.y), true)
 
 	# Deko am Boden (Blumen, Steine, Büsche)
 	var cc2: Vector2 = player_pos
@@ -2118,8 +2214,10 @@ func _draw_outdoor() -> void:
 	for ci in 18:
 		var cx := fposmod(float(ci) * 677.0 + t_now * 24.0, MAP_SIZE.x + 800.0) - 400.0
 		var cy := fposmod(float(ci) * 431.0 + t_now * 9.0 + sin(float(ci)) * 300.0, MAP_SIZE.y + 600.0) - 300.0
-		for part in 4:
-			draw_circle(Vector2(cx + part * 110.0 - 160.0, cy + sin(float(part + ci)) * 50.0), 150.0 - part * 12.0, Color(0.05, 0.1, 0.2, 0.045))
+		if Vector2(cx, cy).distance_squared_to(cc2) > 1500.0 * 1500.0:
+			continue
+		for part in 2:
+			_disc(Vector2(cx + part * 220.0 - 110.0, cy + sin(float(part + ci)) * 50.0), 190.0 - part * 20.0, Color(0.05, 0.1, 0.2, 0.05))
 
 	# Schatten von Häusern und Bäumen
 	for r in obstacles:
@@ -2129,7 +2227,7 @@ func _draw_outdoor() -> void:
 	for t in trees:
 		if t.distance_squared_to(cc2) > 1100.0 * 1100.0:
 			continue
-		draw_circle(t + Vector2(16, 16), TREE_RADIUS * 1.2, Color(0, 0, 0, 0.2))
+		_disc(t + Vector2(16, 16), TREE_RADIUS * 1.3, Color(0, 0, 0, 0.2))
 
 	# Ringe unter dem Loot
 	for item in loot:
@@ -2137,15 +2235,15 @@ func _draw_outdoor() -> void:
 			continue
 		var col := _ring_color(item)
 		var rad := 40.0 if item["kind"] == "chest" else 30.0
-		draw_circle(item["pos"], rad, Color(col.r, col.g, col.b, 0.22))
-		draw_arc(item["pos"], rad, 0.0, TAU, 40, col.lightened(0.3), 4.0)
+		_disc(item["pos"], rad, Color(col.r, col.g, col.b, 0.22))
+		draw_texture_rect(tex_ring, Rect2(item["pos"] - Vector2(rad, rad), Vector2(rad * 2.0, rad * 2.0)), false, col.lightened(0.3))
 
 	# Explosionen liegen flach am Boden
 	for ex in explosions:
 		var k: float = ex["t"] / 0.4
 		var rr: float = ex["r"] * (0.4 + 0.6 * k)
-		draw_circle(ex["pos"], rr, Color(1, 0.55, 0.1, 0.55 * (1.0 - k)))
-		draw_circle(ex["pos"], rr * 0.6, Color(1, 0.9, 0.5, 0.7 * (1.0 - k)))
+		_disc(ex["pos"], rr, Color(1, 0.55, 0.1, 0.55 * (1.0 - k)))
+		_disc(ex["pos"], rr * 0.6, Color(1, 0.9, 0.5, 0.7 * (1.0 - k)))
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 	# ----- Alles mit Höhe, nach Bildschirm-Tiefe sortiert -----
@@ -2184,7 +2282,6 @@ func _draw_outdoor() -> void:
 	draw_set_transform_matrix(view)
 	if live_mode:
 		live.draw_ground()
-	_draw_zone()
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 	_draw_swings()
@@ -2429,7 +2526,7 @@ func _draw_zone() -> void:
 # Figur steht aufrecht und schaut zur Kamera, nur die Waffe dreht sich (aim in Bildschirm-Richtung)
 func _draw_unit(p: Vector2, body_tex: Texture2D, gun_tex: Texture2D, aim: Vector2, moving := false, seed := 0.0) -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_circle(p + Vector2(0, 4), 20, Color(0, 0, 0, 0.28))
+	_disc(p + Vector2(0, 4), 22, Color(0, 0, 0, 0.3))
 	if units3d != null:
 		return
 	if body_tex == null:

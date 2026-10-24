@@ -697,10 +697,9 @@ func draw_hud(vs: Vector2) -> void:
 			continue
 		var col: Color = TEAM_COLORS[int(b["team"]) - 1]
 		var z: float = m.ZOOM
-		var pts := PackedVector2Array()
-		for q in 21:
-			pts.append(sp + Vector2(cos(TAU * q / 20.0) * 28.0 * z, sin(TAU * q / 20.0) * 28.0 * z * m.VIEW_TILT + 8.0))
-		m.fx.draw_polyline(pts, col, 4.0)
+		var rx := 30.0 * z
+		var ry: float = rx * m.VIEW_TILT
+		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx, sp.y + 8.0 - ry, rx * 2.0, ry * 2.0), false, col)
 		var hb: float = 112.0 * z / 1.15
 		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / float(b.get("maxhp", HP))), col, hb)
 		var nm: String = b["name"]
