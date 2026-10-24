@@ -32,3 +32,9 @@ Kamera-Zoom nach Zonengröße, Kill-Wiederholung, 100+ Kämpfer. Geschenk-Zuordn
 - Atombombe: Geschenk „Universe“ oder ab 40.000 Münzen. 3 s Warnung, dann Druckwelle, Pilzwolke, nur Spender überlebt (Bunker), Rest wird zu Knochen. Testtaste B.
 - Wake Lock für Dauerbetrieb.
 - Offen: runde Figuren/bessere Effekte, Probelauf auf iPhone, TikTok-Geschenkdaten verifizieren (Name + Münzen), Dauertest, Sonderfall Einsturz/Ausbruch-Feinschliff.
+
+## Entscheidungen (24.10., selbst getroffen)
+- Zonen-Tempo: Standard 1,0 (Runde ca. 5 Min.). Einstellbar über [ ] bzw. ?zone=.
+- Runde Figuren: noch NICHT umgebaut. Erst nach iPhone-Test, dann Probe-Figur.
+- Geschenkwerte: Atombombe nur über Name „Universe“. Münz-Schwelle erst mit echtem TikTok-Geschenk ändern.
+- Zone: Start außerhalb der Karte (3400), Feuer blendet erst bei Berührung ein.
