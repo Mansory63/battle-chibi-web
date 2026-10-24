@@ -998,22 +998,25 @@ func _draw_nuke(vs: Vector2) -> void:
 	for i in n:
 		var f := float(i) / n
 		var y := sc.y - h * f
-		var w := lerpf(70.0, 46.0, f) * (0.6 + 0.4 * e)
-		var col := Color(1.0, 0.55, 0.12).lerp(Color(0.35, 0.3, 0.28), clampf(f * 0.9 + tb * 0.04, 0.0, 1.0))
+		var w := lerpf(90.0, 60.0, f) * (0.6 + 0.4 * e)
+		var col := Color(1.0, 0.55, 0.12).lerp(Color(0.3, 0.26, 0.24), clampf(f * 0.9 + tb * 0.04, 0.0, 1.0))
 		col.a = fade
+		m._fdisc(Vector2(sc.x, y), w * 0.5, col)
 		m.fx.draw_rect(Rect2(sc.x - w * 0.5, y - h / n, w, h / n + 2.0), col)
 	# Feuerball am Boden
 	m._fdisc(sc, 120.0 * e + 20.0, Color(1.0, 0.6, 0.15, 0.9 * fade))
 	m._fdisc(sc, 70.0 * e + 10.0, Color(1.0, 0.95, 0.6, 0.9 * fade))
 	# Pilzkappe
 	var top := Vector2(sc.x, sc.y - h)
-	var R := 130.0 * e + 20.0
-	for k in 7:
-		var a := float(k) / 7.0 * TAU
-		var off := Vector2(cos(a) * R * 0.75, sin(a) * R * 0.38 - R * 0.1)
-		var cc := Color(0.45, 0.35, 0.3).lerp(Color(1.0, 0.5, 0.1), 0.5 + 0.5 * sin(a + tb))
+	var R := 190.0 * e + 24.0
+	# Kappen-Unterseite (dunkel), dann Wolkenring
+	m._fdisc(top + Vector2(0, R * 0.12), R * 0.95, Color(0.25, 0.2, 0.18, 0.9 * fade))
+	for k in 12:
+		var a := float(k) / 12.0 * TAU + tb * 0.15
+		var off := Vector2(cos(a) * R * 0.85, sin(a) * R * 0.42 - R * 0.05)
+		var cc := Color(0.4, 0.3, 0.27).lerp(Color(1.0, 0.5, 0.1), 0.35 + 0.35 * sin(a * 2.0 + tb))
 		cc.a = 0.95 * fade
-		m._fdisc(top + off, R * 0.55, cc)
+		m._fdisc(top + off, R * (0.38 + 0.08 * sin(a * 3.0)), cc)
 	m._fdisc(top + Vector2(0, -R * 0.15), R * 0.7, Color(1.0, 0.7, 0.25, 0.95 * fade))
 	m._fdisc(top + Vector2(0, -R * 0.2), R * 0.4, Color(1.0, 0.95, 0.65, 0.9 * fade))
 	# Blitz
