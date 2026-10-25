@@ -682,7 +682,7 @@ func on_kill(i: int) -> void:
 	m._spark_burst(b["pos"], Color(1, 1, 1), 10, 300.0)
 	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 10, 360.0)
 	splats.append({"pos": b["pos"], "col": col, "r": randf_range(34.0, 56.0), "seed": randf() * TAU})
-	if splats.size() > 180:
+	if splats.size() > 90:
 		splats.pop_front()
 	var wk: String = b["weapon"]
 	if m.WEAPONS.has(wk) or wk == "katana":
@@ -838,15 +838,16 @@ func draw_ground() -> void:
 		m.draw_rect(Rect2(bp + Vector2(-6, 1), Vector2(12, 7)), bc)
 		m.draw_circle(bp + Vector2(-4, -6), 3.0, Color(0.1, 0.08, 0.08))
 		m.draw_circle(bp + Vector2(4, -6), 3.0, Color(0.1, 0.08, 0.08))
+	# Blutflecken als Texturen statt Polygonkreise (viel günstiger im Browser)
 	for s in splats:
 		var c: Color = s["col"]
 		c.a = 0.5
 		var p: Vector2 = s["pos"]
 		var r: float = s["r"]
-		m.draw_circle(p, r, c)
-		for k in 5:
-			var a: float = float(s["seed"]) + k * 1.26
-			m.draw_circle(p + Vector2.from_angle(a) * r * 1.1, r * 0.35, c)
+		m.draw_texture_rect(m.tex_disc, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), false, c)
+		var a: float = float(s["seed"])
+		var q: Vector2 = p + Vector2.from_angle(a) * r * 1.1
+		m.draw_texture_rect(m.tex_disc, Rect2(q - Vector2(r * 0.35, r * 0.35), Vector2(r * 0.7, r * 0.7)), false, c)
 
 func _fmt_time(sec: float) -> String:
 	var s := maxi(0, int(ceil(sec)))

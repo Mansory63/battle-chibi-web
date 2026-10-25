@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025201935"
+const BUILD := "20261025202150"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2915,7 +2915,7 @@ func _sync_units3d() -> void:
 		if outdoor:
 			for i in bots.size():
 				var b: Dictionary = bots[i]
-				if (b["pos"] as Vector2).distance_squared_to(player_pos) > 1150.0 * 1150.0:
+				if (b["pos"] as Vector2).distance_squared_to(player_pos) > 900.0 * 900.0:
 					continue
 				if not b["alive"]:
 					if live_mode:
