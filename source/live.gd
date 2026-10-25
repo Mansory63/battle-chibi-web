@@ -177,9 +177,45 @@ func chat(nm: String, text: String) -> void:
 	var tm := _team_from_text(low)
 	if tm >= 0:
 		join(nm, tm)
+	elif low.begins_with("!") and SHOP.has(low.substr(1).strip_edges()):
+		_buy(_clean(nm), low.substr(1).strip_edges())
 	elif low.contains("zeig mich") and viewers.has(_clean(nm)):
 		show_queue.append(_clean(nm))
 		_toast("%s will gezeigt werden" % _clean(nm))
+
+# Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
+const SHOP := {"schild": 5, "leben": 10, "wieder": 15}
+
+func _buy(nm: String, item: String) -> void:
+	if not viewers.has(nm) or state != "round":
+		return
+	var price: int = SHOP[item]
+	var v: Dictionary = viewers[nm]
+	if int(v["coins"]) < price:
+		_toast("%s: zu wenig Münzen für %s (%d)" % [nm, item, price], Color(1, 0.6, 0.3))
+		return
+	var i := _find_bot(nm)
+	if i < 0:
+		_toast("%s ist gerade nicht auf dem Feld" % nm, Color(1, 0.6, 0.3))
+		return
+	var b: Dictionary = m.bots[i]
+	if item == "wieder":
+		if b["alive"]:
+			_toast("%s lebt noch – Wiederbelebung nur für Tote" % nm, Color(1, 0.6, 0.3))
+			return
+		var tm: int = int(v["team"])
+		_reset_bot(b, tm, nm, true, m._nearest_free(_centroid(tm) + Vector2.from_angle(randf() * TAU) * 80.0, m.BOT_RADIUS))
+		b["health"] = HP
+	elif not b["alive"]:
+		_toast("%s ist tot – nur Wiederbelebung hilft" % nm, Color(1, 0.6, 0.3))
+		return
+	elif item == "leben":
+		b["health"] = HP
+	else:
+		b["health"] = minf(HP, float(b["health"]) + 50.0)
+	v["coins"] = int(v["coins"]) - price
+	m._spark_burst(b["pos"], Color(0.3, 0.9, 1.0), 24, 300.0)
+	_toast("%s kauft %s (-%d Münzen)" % [nm, item, price], Color(0.5, 1.0, 0.6))
 
 func join(nm: String, team: int) -> void:
 	nm = _clean(nm)
@@ -710,7 +746,7 @@ const RULES_LINES := [
 	"1. Schreib ROT, BLAU, GRÜN oder GELB",
 	"2. Likes = Kiste für dein Team",
 	"3. Geschenke = Spezialwaffen",
-	"4. Leben, Schild, Wiederbelebung kaufen",
+	"4. Kaufen im Chat: !schild !leben !wieder",
 	"5. Der Kreis wird kleiner",
 	"6. Der letzte Überlebende gewinnt",
 ]
