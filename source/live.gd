@@ -588,8 +588,8 @@ func update(delta: float) -> void:
 # Kamera, 2D-HUD und 3D-Einheiten nutzen dieselbe ZOOM-Variable.
 func _update_zoom(delta: float) -> void:
 	var progress := clampf((arena_r - m.zone_radius) / maxf(1.0, arena_r - END_R), 0.0, 1.0)
-	var start_zoom := 0.80 if arena_small else 0.70
-	var target := lerpf(start_zoom, 1.30, pow(progress, 0.8))
+	var start_zoom := 1.0 if arena_small else 0.95   # Startansicht lesbar (vorher 0.70: Figuren winzig)
+	var target := lerpf(start_zoom, 1.35, pow(progress, 0.8))
 	if state == "pause":
 		target = 1.0
 	m.ZOOM = lerpf(m.ZOOM, target, 1.0 - exp(-2.2 * delta))
