@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025165239"
+const BUILD := "20261025165931"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -557,7 +557,7 @@ func _draw_fx_inner() -> void:
 			var ang := TAU * i / 8.0
 			var r := sz if i % 2 == 0 else sz * 0.45
 			pts.append(fp + fd * sz * 0.5 + Vector2.from_angle(ang) * r)
-		fx.draw_colored_polygon(pts, Color(1, 0.85, 0.3, 0.9))
+		fx.draw_colored_polygon(pts, f.get("col", Color(1, 0.85, 0.3, 0.9)))
 		fx.draw_circle(fp + fd * sz * 0.5, sz * 0.4, Color(1, 1, 0.9, 0.95))
 	# Explosionen
 	for fb in fireballs:
@@ -1602,7 +1602,14 @@ func _show_message(text: String, duration: float) -> void:
 	message_timer = duration
 
 func _fire(owner_id: int, origin: Vector2, dir: Vector2, weapon_key: String) -> void:
-	flashes.append({"pos": origin + dir.normalized() * 34.0, "dir": dir.normalized(), "t": 0.0, "big": WEAPONS[weapon_key].has("explode") or int(WEAPONS[weapon_key]["pellets"]) > 1})
+	# Mündungsfeuer in Seltenheitsfarbe: selten gelb, episch lila, legendär gold-weiß
+	var rar_f: int = int(bots[owner_id].get("rar", 0)) if owner_id >= 0 and owner_id < bots.size() else 0
+	var fcol := Color(1, 0.85, 0.3, 0.9)
+	if rar_f == 2:
+		fcol = Color(0.75, 0.4, 1.0, 0.95)
+	elif rar_f >= 3:
+		fcol = Color(1, 0.95, 0.6, 1.0)
+	flashes.append({"pos": origin + dir.normalized() * 34.0, "dir": dir.normalized(), "t": 0.0, "big": WEAPONS[weapon_key].has("explode") or int(WEAPONS[weapon_key]["pellets"]) > 1 or rar_f >= 2, "col": fcol})
 	if owner_id == -1:
 		shake = maxf(shake, 0.12 if not WEAPONS[weapon_key].has("explode") else 0.35)
 	flash_t[owner_id] = Time.get_ticks_msec()
@@ -2285,7 +2292,8 @@ func _spark_burst(pos: Vector2, col: Color, n: int, speed: float) -> void:
 		sparks.append({"pos": pos, "o": Vector2(0, -26), "v": Vector2.from_angle(a) * randf_range(0.3, 1.0) * speed + Vector2(0, -120), "t": 0.0, "life": randf_range(0.25, 0.5), "col": col})
 
 func _popup(pos: Vector2, amount: float, col: Color) -> void:
-	_spark_burst(pos, col, 6, 150.0)
+	# Treffer mit mehr Schaden: mehr und größere Funken
+	_spark_burst(pos, col, clampi(6 + int(amount / 8.0), 6, 16), 150.0 + clampf(amount * 2.0, 0.0, 120.0))
 	if col.g > 0.9:
 		hit_marker = 0.18
 	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col})
