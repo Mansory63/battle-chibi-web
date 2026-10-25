@@ -616,6 +616,40 @@ func build_world(obstacles: Array, trees: Array, roofs: Array) -> void:
 		tree_nodes.append({"pos": p, "node": tm, "faded": false})
 
 
+# ---------- Halloween-Deko: Kürbisse und Vogelscheuche ----------
+func build_deco(pumpkins: Array, scare_pos: Vector2) -> void:
+	var stp := SurfaceTool.new()
+	stp.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_add_sphere(stp, Vector3(0, 14, 0), 15.0, Color(1.0, 0.5, 0.1), 0.75)
+	_add_box(stp, Vector3(0, 31, 0), Vector3(5, 9, 5), Color(0.25, 0.42, 0.14))
+	var pump_mesh := stp.commit()
+	var sts := SurfaceTool.new()
+	sts.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var wood := Color(0.42, 0.3, 0.18)
+	_add_cyl(sts, Vector3.ZERO, 3.5, 112.0, wood)
+	_add_box(sts, Vector3(0, 84, 0), Vector3(74, 8, 7), wood)
+	_add_box(sts, Vector3(0, 52, 0), Vector3(42, 52, 16), Color(0.85, 0.65, 0.25))
+	_add_sphere(sts, Vector3(0, 118, 0), 14.0, Color(0.9, 0.75, 0.4))
+	_add_frustum(sts, Vector3(0, 126, 0), 22.0, 3.0, 30.0, Color(0.1, 0.08, 0.12))
+	var scare_mesh := sts.commit()
+	var mat := _vc_material()
+	for i in pumpkins.size():
+		var pp: Vector2 = pumpkins[i]
+		var mi := MeshInstance3D.new()
+		mi.mesh = pump_mesh
+		mi.material_override = mat
+		mi.material_overlay = _tree_outline
+		mi.position = Vector3(pp.x, 0, pp.y)
+		mi.rotation.y = float(i) * 2.3
+		mi.scale = Vector3.ONE * (0.8 + 0.4 * fposmod(float(i) * 0.31, 1.0))
+		world_root.add_child(mi)
+	var sc := MeshInstance3D.new()
+	sc.mesh = scare_mesh
+	sc.material_override = mat
+	sc.material_overlay = _tree_outline
+	sc.position = Vector3(scare_pos.x, 0, scare_pos.y)
+	world_root.add_child(sc)
+
 # ---------- Loot als 3D-Objekte ----------
 var loot_nodes: Dictionary = {}
 var loot_mesh_cache: Dictionary = {}

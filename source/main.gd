@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025225051"
+const BUILD := "20261025225405"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -293,6 +293,19 @@ func _ready() -> void:
 	_spawn_loot()
 	_spawn_bots()
 	units3d.build_world(obstacles, trees, tex_roofs)
+	# Halloween-Deko: Kürbisse und eine Vogelscheuche
+	var pumpkins: Array = []
+	var scare := Vector2(2400, 2200)
+	for i in 400:
+		if pumpkins.size() >= 22:
+			break
+		var pp := Vector2(randf_range(60, MAP_SIZE.x - 60), randf_range(60, MAP_SIZE.y - 60))
+		if _is_free(pp, 30.0) and not _on_road(pp, 40.0) and pp.distance_to(scare) > 60.0:
+			pumpkins.append(pp)
+	if _is_free(scare, 40.0):
+		units3d.build_deco(pumpkins, scare)
+	else:
+		units3d.build_deco(pumpkins, Vector2(-500, -500))
 
 	cam = Camera2D.new()
 	cam.zoom = Vector2(ZOOM, ZOOM)
@@ -1169,7 +1182,7 @@ func _radial_texture(inner: Color, outer: Color) -> GradientTexture2D:
 func _generate_trees() -> void:
 	_tile_world()
 	_build_obstacle_grid()
-	for i in 900:
+	for i in 540:   # weniger Bäume (vorher 900 Versuche)
 		var p := Vector2(randf_range(30, MAP_SIZE.x - 30), randf_range(30, MAP_SIZE.y - 30))
 		if _is_free(p, TREE_RADIUS + 40.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(2400, 3300)) > 120:
 			trees.append(p)
@@ -1520,7 +1533,7 @@ func _tile_world() -> void:
 	# Weniger Häuser: jedes zweite bis dritte fällt weg, Platz für Sonderbauten
 	var kept: Array[Rect2] = []
 	for i in tiled.size():
-		if i % 5 == 1 or i % 5 == 3:
+		if i % 5 == 1 or i % 5 == 3 or i % 7 == 2:   # zusätzlich ~15 % weniger Häuser
 			continue
 		var blocked := false
 		for sp in SPECIAL_SPOTS:
