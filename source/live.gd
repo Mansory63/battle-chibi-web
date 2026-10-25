@@ -698,13 +698,36 @@ func _boss_dead(b: Dictionary) -> void:
 	var kinds := ["ak", "sniper", "rocket", "minigun", "shotgun"]
 	for n in 3:
 		m.loot.append({"pos": m._nearest_free(b["pos"] + Vector2.from_angle(TAU * n / 3.0) * 70.0, 24.0), "kind": kinds[randi() % kinds.size()], "rar": 3})
-	if kl >= 0 and kl < SLOTS * 4:
+	if kl >= 0 and kl < SLOTS * 4 and int(m.bots[kl]["team"]) - 1 >= 0 and int(m.bots[kl]["team"]) - 1 <= 3:
 		var kt := int(m.bots[kl]["team"]) - 1
 		round_kills[kt] += 2
 		_banner("BOSS BESIEGT von %s!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
 		_say("Team %s besiegt den Boss" % TEAM_NAMES[kt])
 	else:
 		_banner("BOSS BESIEGT!", TEAM_COLORS[4], 3.0)
+
+const RULES_LINES := [
+	"1. Schreib ROT, BLAU, GRÜN oder GELB",
+	"2. Likes = Kiste für dein Team",
+	"3. Geschenke = Spezialwaffen",
+	"4. Leben, Schild, Wiederbelebung kaufen",
+	"5. Der Kreis wird kleiner",
+	"6. Der letzte Überlebende gewinnt",
+]
+
+# Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
+func _draw_rules(vs: Vector2) -> void:
+	var pw := minf(vs.x - 40.0, 720.0)
+	var ph := 480.0
+	var px := vs.x * 0.5 - pw * 0.5
+	var py := vs.y * 0.5 - ph * 0.5 + 40.0
+	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.92), 28)
+	m._text(Vector2(px, py + 26), "SO FUNKTIONIERT ES", 40, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := py + 100.0
+	for line in RULES_LINES:
+		m._text(Vector2(px + 36, y), line, 30, Color(0.95, 0.97, 1.0), pw - 72.0)
+		y += 52.0
+	m._text(Vector2(px, py + ph - 56), "Ziel: Ausschalten, überleben, Platz 1", 26, Color(0.6, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _banner(txt: String, col: Color, secs: float) -> void:
 	banner = txt
@@ -892,6 +915,7 @@ func draw_hud(vs: Vector2) -> void:
 		m._fx_bar2(zp, minf(100.0, float(z["health"]) / 60.0 * 100.0), Color(0.4, 1.0, 0.3), 56.0 * m.ZOOM)
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2(ui, ui))
 	vs = vs / ui
+	# Spielregeln während der Pause
 	# Kopfleiste: Countdown + Teams
 	var w := minf(vs.x - 24.0, 760.0)
 	var x0 := vs.x * 0.5 - w * 0.5
@@ -975,7 +999,10 @@ func draw_hud(vs: Vector2) -> void:
 	m._text(Vector2(foot_x, vs.y - 57), join_hint, 19 if vs.x < 620.0 else 24, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(foot_x, vs.y - 24), bonus_hint, 14 if vs.x < 620.0 else 16, Color(0.85, 0.92, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
-		_draw_results(vs)
+		if pause_t > 10.0:
+			_draw_results(vs)   # Ergebnis der letzten Runde
+		else:
+			_draw_rules(vs)     # Spielregeln kurz vor der nächsten Runde
 	if help:
 		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · [ ] Zonen-Tempo · Z zeig mich · B ATOMBOMBE · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
