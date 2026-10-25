@@ -967,7 +967,7 @@ func draw_hud(vs: Vector2) -> void:
 		var col: Color = TEAM_COLORS[k]
 		m._pill(Rect2(cx, cy, cw, 44), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
 		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
-		var score_line := ("%d · %d P" % [alive_t[k], team_points[k]]) if vs.x < 620.0 else ("%d lebt · %d Pkt%s" % [alive_t[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
+		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d lebt · %d Kills · %d Runden%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
 		m._text(Vector2(cx + 10, cy + 39), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
 		# Like-Leiste
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))

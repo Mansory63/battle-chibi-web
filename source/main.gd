@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025225640"
+const BUILD := "20261025231628"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -1184,7 +1184,7 @@ func _generate_trees() -> void:
 	_build_obstacle_grid()
 	for i in 540:   # weniger Bäume (vorher 900 Versuche)
 		var p := Vector2(randf_range(30, MAP_SIZE.x - 30), randf_range(30, MAP_SIZE.y - 30))
-		if _is_free(p, TREE_RADIUS + 40.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(2400, 3300)) > 120:
+		if _is_free(p, TREE_RADIUS + 40.0) and not _near_tree(p, 60.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(2400, 3300)) > 120:
 			trees.append(p)
 			_grid_add_tree(p)
 
@@ -1312,14 +1312,7 @@ func _is_free(p: Vector2, r: float) -> bool:
 		for o in grid_obs[k]:
 			if o.grow(r).has_point(p):
 				return false
-	for dx in range(-1, 2):
-		for dy in range(-1, 2):
-			var kk := Vector2i(k.x + dx, k.y + dy)
-			if grid_trees.has(kk):
-				for t in grid_trees[kk]:
-					if p.distance_to(t) < r + TREE_RADIUS:
-						return false
-	return true
+	return true   # Bäume sind keine Hindernisse mehr (nur Häuser blockieren)
 
 func _on_road(p: Vector2, margin: float) -> bool:
 	for road in ROADS:
@@ -1439,13 +1432,6 @@ func _bullet_blocked(p: Vector2) -> bool:
 		for o in grid_obs[k]:
 			if o.has_point(p):
 				return true
-	for dx in range(-1, 2):
-		for dy in range(-1, 2):
-			var kk := Vector2i(k.x + dx, k.y + dy)
-			if grid_trees.has(kk):
-				for t in grid_trees[kk]:
-					if p.distance_to(t) < TREE_RADIUS * 0.8:
-						return true
 	return false
 
 func _player_world() -> Vector2:
@@ -1501,6 +1487,18 @@ func _gather_teammates() -> void:
 
 func _grid_key(p: Vector2) -> Vector2i:
 	return Vector2i(int(floor(p.x / 128.0)), int(floor(p.y / 128.0)))
+
+# Nur für die Baum-Platzierung: Abstand zu anderen Bäumen
+func _near_tree(p: Vector2, r: float) -> bool:
+	var k := _grid_key(p)
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var kk := Vector2i(k.x + dx, k.y + dy)
+			if grid_trees.has(kk):
+				for t in grid_trees[kk]:
+					if p.distance_to(t) < r:
+						return true
+	return false
 
 func _grid_add_tree(p: Vector2) -> void:
 	var k := _grid_key(p)
@@ -2071,6 +2069,12 @@ func _update_bots(delta: float) -> void:
 	var pw := _player_world()
 	var player_targetable := phase == "play" and inside < 0 and not live_mode
 	_check_outbreak(pw)
+	# Boss (Team 5) lebt? Dann kämpfen alle Teams gemeinsam gegen den Boss
+	var boss_i := -1
+	for j in bots.size():
+		if bots[j]["alive"] and int(bots[j]["team"]) == 5:
+			boss_i = j
+			break
 	for i in bots.size():
 		var b: Dictionary = bots[i]
 		if not b["alive"]:
@@ -2083,23 +2087,29 @@ func _update_bots(delta: float) -> void:
 		if b["tsc"] <= 0.0:
 			# Ziel suchen: nächster Gegner (Spieler oder fremdes Team) im Sichtbereich
 			b["tsc"] = randf_range(0.25, 0.45)
-			var best := 900.0 if zomb else 520.0
+			var best := 900.0 if zomb else (1100.0 if live_mode else 520.0)
 			var bt := -2
-			if player_targetable and team != 0:
+			var all_vs_boss := boss_i >= 0 and not zomb and team != 5
+			if player_targetable and team != 0 and not all_vs_boss:
 				var dp: float = pw.distance_to(b["pos"])
 				if dp < best:
 					best = dp
 					bt = -1
-			for j in bots.size():
-				if j == i:
-					continue
-				var o: Dictionary = bots[j]
-				if not o["alive"] or int(o["team"]) == team:
-					continue
-				var dd: float = o["pos"].distance_to(b["pos"])
-				if dd < best:
-					best = dd
-					bt = j
+			if all_vs_boss:
+				# Boss-Kampf: alle Teams greifen nur den Boss an
+				best = 1e9
+				bt = boss_i
+			else:
+				for j in bots.size():
+					if j == i:
+						continue
+					var o: Dictionary = bots[j]
+					if not o["alive"] or int(o["team"]) == team:
+						continue
+					var dd: float = o["pos"].distance_to(b["pos"])
+					if dd < best:
+						best = dd
+						bt = j
 			b["tid"] = bt
 		var tid: int = int(b.get("tid", -2))
 		var has_target := false
