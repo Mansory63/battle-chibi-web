@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025202150"
+const BUILD := "20261025202427"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -991,7 +991,7 @@ func _draw_minimap() -> void:
 		var is_mate := int(b["team"]) == 0
 		if is_mate or few or live_mode:
 			var mp: Vector2 = mt * (b["pos"] as Vector2)
-			m.draw_circle(mp, 5.0, (Color(0.4, 1.0, 0.3) if b.get("zombie", false) else live.TEAM_COLORS[int(b["team"]) - 1]) if live_mode else (Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2)))
+			m.draw_circle(mp, 5.0, (Color(0.4, 1.0, 0.3) if b.get("zombie", false) else live.TEAM_COLORS[clampi(int(b["team"]) - 1, 0, 4)]) if live_mode else (Color(0.3, 0.7, 1.0) if is_mate else Color(1, 0.2, 0.2)))
 			m.draw_arc(mp, 6.0, 0.0, TAU, 12, Color.WHITE, 2.0)
 	m.draw_circle(m.size / 2.0, 5.0, Color.WHITE)
 	m.draw_arc(m.size / 2.0, 6.0, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 2.0)

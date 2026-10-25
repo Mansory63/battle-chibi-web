@@ -641,8 +641,8 @@ func _pick_focus() -> void:
 func on_kill(i: int) -> void:
 	var b: Dictionary = m.bots[i]
 	var k := int(b["team"]) - 1
-	if k < 0:
-		return
+	if k < 0 or k > 4:
+		return   # nur Teams 1-5 (4 Teams + Boss) gehören zum TikTok-Modus
 	if k == 5:
 		# Team 6 = Zombies: normale Treffer koennen sie endgueltig ausschalten.
 		m._spark_burst(b["pos"], Color(0.4, 1.0, 0.3), 28, 330.0)
@@ -864,7 +864,7 @@ func draw_hud(vs: Vector2) -> void:
 		var sp: Vector2 = m._fx_screen(b["pos"])
 		if not Rect2(Vector2(-60, -160), vs + Vector2(120, 260)).has_point(sp):
 			continue
-		var col: Color = TEAM_COLORS[int(b["team"]) - 1]
+		var col: Color = TEAM_COLORS[clampi(int(b["team"]) - 1, 0, 4)]
 		var z: float = m.ZOOM
 		var rx := 30.0 * z
 		var ry: float = rx * m.VIEW_TILT
