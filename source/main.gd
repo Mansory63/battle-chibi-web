@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025165931"
+const BUILD := "20261025180927"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -733,7 +733,9 @@ func start_live(opts := {}) -> void:
 
 func _check_live_args() -> void:
 	var opts := {}
-	var go := false
+	# TikTok-Modus ist jetzt Standard. Einzelspieler nur mit ?solo=1
+	var go := true
+	var solo := false
 	for a in OS.get_cmdline_user_args():
 		if a == "live":
 			go = true
@@ -747,6 +749,8 @@ func _check_live_args() -> void:
 			var kv := part.split("=")
 			if kv[0] == "fps":
 				show_fps = true
+			if kv[0] == "solo":
+				solo = true
 			if kv[0] == "live":
 				go = true
 			elif kv[0] == "demo":
@@ -757,7 +761,7 @@ func _check_live_args() -> void:
 				opts["arena"] = kv[1].uri_decode()
 			elif kv[0] == "zone" and kv.size() > 1:
 				opts["zone_speed"] = float(kv[1].uri_decode())
-	if go:
+	if go and not solo:
 		start_live(opts)
 
 func _show_end_menu(title: String) -> void:
