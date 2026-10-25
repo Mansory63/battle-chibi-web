@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261024171305"
+const BUILD := "20261025164944"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -1092,7 +1092,8 @@ func _make_perf_textures() -> void:
 		for x in n:
 			var d := Vector2(x + 0.5 - n * 0.5, y + 0.5 - n * 0.5).length() / (n * 0.5)
 			img.set_pixel(x, y, Color(1, 1, 1, clampf((1.0 - d) / 0.1, 0.0, 1.0)))
-			var ra := clampf(1.0 - absf(d - 0.9) / 0.09, 0.0, 1.0)
+			# Breiter, deutlicher Teamfarben-Ring (vorher zu dünn, auf dem Handy unsichtbar)
+			var ra := clampf((d - 0.66) / 0.06, 0.0, 1.0) * clampf((0.97 - d) / 0.05, 0.0, 1.0)
 			img2.set_pixel(x, y, Color(1, 1, 1, ra))
 	tex_disc = ImageTexture.create_from_image(img)
 	tex_ring = ImageTexture.create_from_image(img2)
