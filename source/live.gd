@@ -307,7 +307,7 @@ func _team_bots(k: int) -> Array:
 	return out
 
 func _corner(k: int) -> Vector2:
-	return m.ZONE_CENTER + Vector2.from_angle(PI / 4.0 + k * PI / 2.0) * corner_r
+	return m.ZONE_CENTER + Vector2.from_angle(k * PI / 2.0) * corner_r   # Teams starten in Himmelsrichtungen: Osten, Süden, Westen, Norden
 
 func _centroid(k: int) -> Vector2:
 	var sum := Vector2.ZERO
