@@ -989,7 +989,7 @@ func draw_hud(vs: Vector2) -> void:
 		for z in range(SLOTS * 4 + 1, m.bots.size()):
 			if m.bots[z].get("zombie", false) and m.bots[z]["alive"]:
 				remaining_z += 1
-		m._text(Vector2(12, 162), "ZOMBIES: %d | KILLS: %d" % [remaining_z, zombie_kills], 14, Color(0.5, 1.0, 0.35), minf(260.0, vs.x - 20.0))
+		m._text(Vector2(12, 162), "KNOCHEN: %d | KILLS: %d" % [remaining_z, zombie_kills], 14, Color(0.5, 1.0, 0.35), minf(260.0, vs.x - 20.0))
 	# Kill-Feed links
 	var fy := 192.0 if boss["alive"] and boss["boss"] else 170.0
 	for kf in m.kill_feed:

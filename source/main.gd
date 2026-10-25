@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025231628"
+const BUILD := "20261025232924"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -1577,7 +1577,7 @@ func _outbreak() -> void:
 			n += 1
 	while n < 14:
 		var z := {"pos": door, "team": 6, "health": 60.0, "alive": true, "color": Color(0.5, 0.9, 0.4), "dir": Vector2.DOWN, "think": 1.0, "cd": 1.0,
-			"tex": null, "skin": "char_green", "gun": null, "weapon": "fist", "rar": 0, "aim": Vector2.DOWN, "zombie": true, "name": "Zombie", "viewer": false, "scale": 0.95}
+			"tex": null, "skin": "char_green", "gun": null, "weapon": "fist", "rar": 0, "aim": Vector2.DOWN, "zombie": true, "name": "Knochen-Soldat", "viewer": false, "scale": 0.95}
 		bots.append(z)
 		_revive_zombie(z, door, n)
 		n += 1
@@ -1585,9 +1585,9 @@ func _outbreak() -> void:
 	shake = maxf(shake, 0.5)
 	_play_sfx("rocket", -6.0)
 	if live_mode:
-		live._toast("AUSBRUCH! Zombies sind aus dem Knast!", Color(0.5, 1, 0.4))
+		live._toast("AUSBRUCH! Knochen-Soldaten sind aus dem Knast!", Color(0.5, 1, 0.4))
 	else:
-		_show_message("AUSBRUCH! Zombies sind aus dem Knast!", 4.0)
+		_show_message("AUSBRUCH! Knochen-Soldaten sind aus dem Knast!", 4.0)
 
 func _revive_zombie(z: Dictionary, door: Vector2, n: int) -> void:
 	z["pos"] = _nearest_free(door + Vector2(randf_range(-70, 70), randf_range(0, 60)), BOT_RADIUS)
@@ -2104,7 +2104,7 @@ func _update_bots(delta: float) -> void:
 					if j == i:
 						continue
 					var o: Dictionary = bots[j]
-					if not o["alive"] or int(o["team"]) == team:
+					if not o["alive"] or int(o["team"]) == team or (zomb and int(o["team"]) == 5):
 						continue
 					var dd: float = o["pos"].distance_to(b["pos"])
 					if dd < best:
@@ -2138,7 +2138,7 @@ func _update_bots(delta: float) -> void:
 					bots[tid]["lh"] = i
 					var dmm: float = (bot_dmg_mult * 1.5 if live_mode else 1.0)
 					if zomb:
-						dmm = 0.45 if live_mode else 0.7
+						dmm = 0.2 if live_mode else 0.3
 					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"]) * dmm
 					_spark_burst(bots[tid]["pos"], Color(1, 0.9, 0.5), 4, 120.0)
 					if bots[tid]["health"] <= 0.0:

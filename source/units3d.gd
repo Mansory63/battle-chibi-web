@@ -289,7 +289,7 @@ func _walk_look(n: Node, look: String, tint: Color) -> void:
 			var mat := StandardMaterial3D.new()
 			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			if look == "zombie":
-				mat.albedo_color = Color(0.4, 0.75, 0.3, 0.55)
+				mat.albedo_color = Color(0.92, 0.9, 0.82, 0.5)
 			else:
 				mat.albedo_color = Color(tint.r, tint.g, tint.b, 0.4)
 			c.material_overlay = mat
