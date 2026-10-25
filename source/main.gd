@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025165212"
+const BUILD := "20261025165239"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2100,7 +2100,7 @@ func _update_bots(delta: float) -> void:
 					if bots[tid]["health"] <= 0.0:
 						_kill_bot(tid, false)
 				b["cd"] = randf_range(0.7, 1.1)
-		elif has_target and dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]):
+		elif has_target and dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]) and not (live_mode and elapsed < 60.0 and dist > 200.0):
 			# Teamtaktik nur im Live-Modus: Angriff, Flanke, Deckung, Rueckzug.
 			if live_mode and team >= 1 and team <= 4 and not zomb:
 				step = _live_tactical_step(i, b, tpos, dist, delta)
@@ -2116,7 +2116,7 @@ func _update_bots(delta: float) -> void:
 			# ohne Waffe: zur nächsten Waffe laufen, sonst Team folgen oder herumlaufen
 			var target := -1
 			if MELEE.has(b["weapon"]) and not zomb:
-				var best2 := 420.0
+				var best2 := 1000.0 if (live_mode and elapsed < 90.0) else 420.0
 				for li in loot.size():
 					var it: Dictionary = loot[li]
 					if WEAPONS.has(it["kind"]):
