@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025225405"
+const BUILD := "20261025225640"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -1450,6 +1450,16 @@ func _bullet_blocked(p: Vector2) -> bool:
 
 func _player_world() -> Vector2:
 	return player_pos if inside < 0 else outside_pos
+
+# Figuren-Look: Zombies grünlich, Kämpfer in der Team-Farbe
+func _look(b: Dictionary) -> String:
+	return "zombie" if b.get("zombie", false) else "soldier"
+
+func _tint(b: Dictionary) -> Color:
+	var t := int(b.get("team", 0))
+	if live_mode and t >= 1 and t <= 4:
+		return live.TEAM_COLORS[t - 1]
+	return Color(0.3, 0.6, 1.0)
 
 func _enemies_alive() -> int:
 	var n := 0
@@ -2934,15 +2944,15 @@ func _sync_units3d() -> void:
 					if live_mode:
 						var dtb := now - int(b.get("dead_at", -99999))
 						if dtb < 320:
-							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9})
+							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b)})
 						continue
 					if now - int(b.get("dead_at", -99999)) < 1800:
-						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": true})
+						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": true, "look": _look(b), "tint": _tint(b)})
 					continue
 				units3d.update_unit("bot%d" % i, {
 					"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "moving": b.get("moving", false),
 					"weapon": b["weapon"], "firing": now - int(flash_t.get(i, -9999)) < 260,
-					"attacking": now - int(atk_t.get(i, -9999)) < 260, "alive": true, "visible": true, "scale": float(b.get("scale", 1.0)),
+					"attacking": now - int(atk_t.get(i, -9999)) < 260, "alive": true, "visible": true, "scale": float(b.get("scale", 1.0)), "look": _look(b), "tint": _tint(b),
 				})
 	units3d.end_frame()
 	units3d.update_fades(player_pos)

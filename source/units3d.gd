@@ -275,6 +275,26 @@ func _set_weapon(d: Dictionary, kind: String) -> void:
 	d["weapon_node"] = w
 
 # Eintrag pro Frame: id, skin, screen (Vector2), aim (Bildschirmrichtung), moving, firing, weapon, alive, lift
+# Look-Überlagerung auf allen Figurenteilen (einmal pro Look/Farbe setzen)
+func _apply_look(d: Dictionary, look: String, tint: Color) -> void:
+	var key := "%s|%s" % [look, str(tint)]
+	if d.get("lk", "") == key:
+		return
+	d["lk"] = key
+	_walk_look(d["model"], look, tint)
+
+func _walk_look(n: Node, look: String, tint: Color) -> void:
+	for c in n.get_children():
+		if c is MeshInstance3D:
+			var mat := StandardMaterial3D.new()
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			if look == "zombie":
+				mat.albedo_color = Color(0.4, 0.75, 0.3, 0.55)
+			else:
+				mat.albedo_color = Color(tint.r, tint.g, tint.b, 0.4)
+			c.material_overlay = mat
+		_walk_look(c, look, tint)
+
 func update_unit(id: String, e: Dictionary) -> void:
 	var d: Dictionary
 	if units.has(id):
@@ -288,6 +308,7 @@ func update_unit(id: String, e: Dictionary) -> void:
 		d = _make_unit(e["skin"])
 		units[id] = d
 	d["seen"] = true
+	_apply_look(d, str(e.get("look", "soldier")), e.get("tint", Color(0.3, 0.6, 1.0)))
 	var pivot: Node3D = d["pivot"]
 	pivot.visible = e.get("visible", true)
 	var lift: float = e.get("lift", 0.0)
