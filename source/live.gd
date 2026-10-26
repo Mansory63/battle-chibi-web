@@ -1122,8 +1122,13 @@ func draw_hud(vs: Vector2) -> void:
 		var zp: Vector2 = m._fx_screen(z["pos"])
 		if not Rect2(Vector2(-50, -50), vs + Vector2(100, 100)).has_point(zp):
 			continue
-		# Ladebalken: füllt sich mit jedem Treffer, bei voll ist der Knochen-Krieger tot
-		m._fx_bar2(zp, clampf((1.0 - float(z["health"]) / 60.0) * 100.0, 0.0, 100.0), Color(1.0, 0.55, 0.15), 56.0 * m.ZOOM)
+		# Kugel-Balken: jeder Treffer ist eine Kugel, bei voll ist der Knochen-Krieger tot
+		var nb := 8
+		var filled := clampi(int(floor((1.0 - float(z["health"]) / 60.0) * nb)), 0, nb)
+		if filled > int(z.get("fill_shown", 0)):
+			z["fill_shown"] = filled
+			z["fill_t"] = Time.get_ticks_msec()
+		_draw_bullet_bar(zp, filled, nb, z)
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2(ui, ui))
 	vs = vs / ui
 	# Spielregeln während der Pause
@@ -1306,3 +1311,27 @@ func _draw_pause_info(vs: Vector2) -> void:
 	m._pill(Rect2(px, py, pw, 80), Color(0.05, 0.06, 0.12, 0.9), 22)
 	m._text(Vector2(px, py + 12), "NEXT ROUND IN %d s" % int(ceil(pause_t)), 30, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(px, py + 48), "Queue: %d" % queued, 22, Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+
+# Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
+func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:
+	m.fx.draw_rect(Rect2(p, Vector2(w, h * 0.7)), col)
+	m.fx.draw_colored_polygon(PackedVector2Array([p + Vector2(0, h * 0.7), p + Vector2(w, h * 0.7), p + Vector2(w * 0.5, h)]), col)
+
+func _draw_bullet_bar(sp: Vector2, filled: int, nb: int, z: Dictionary) -> void:
+	var w: float = 9.0 * m.ZOOM
+	var h: float = 16.0 * m.ZOOM
+	var gap: float = 3.0 * m.ZOOM
+	var total: float = nb * w + (nb - 1) * gap
+	var x0 := sp.x - total * 0.5
+	var y: float = sp.y - 58.0 * m.ZOOM
+	var age := clampf(float(Time.get_ticks_msec() - int(z.get("fill_t", 0))) / 350.0, 0.0, 1.0)
+	for i in nb:
+		var slot := Vector2(x0 + i * (w + gap), y)
+		if i < filled and i == filled - 1 and age < 1.0:
+			# frisch getroffen: die Kugel fliegt von oben in ihren Platz
+			var from: Vector2 = slot + Vector2(0, -40.0 * m.ZOOM)
+			_draw_bullet(from.lerp(slot, age), w, h, Color(1.0, 0.95, 0.5))
+		elif i < filled:
+			_draw_bullet(slot, w, h, Color(1.0, 0.8, 0.25))
+		else:
+			_draw_bullet(slot, w, h, Color(0.25, 0.25, 0.3, 0.9))
