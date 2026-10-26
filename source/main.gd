@@ -1,6 +1,6 @@
 extends Node2D
 
-# BattleChibi – Demo-Prototyp v4 (Draufsicht)
+# BattleYaroo – Demo-Prototyp v4 (Draufsicht)
 # Steuerung: WASD/Pfeile = bewegen, Maus = zielen (Waffe dreht sich),
 #            Leertaste oder linke Maustaste = schießen (halten), Shift = Dash,
 #            E = Haus betreten/verlassen, R = neustart
@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026164604"
+const BUILD := "20261026164643"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64

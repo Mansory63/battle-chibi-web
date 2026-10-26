@@ -1,4 +1,4 @@
-# BattleChibi – TikTok-Live-Modus
+# BattleYaroo – TikTok-Live-Modus
 
 ## Starten
 - Im Menü links unten auf **LIVE-MODUS** tippen, oder die Seite mit `?live=1` öffnen:
