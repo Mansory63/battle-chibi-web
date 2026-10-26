@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026222448"
+const BUILD := "20261027005551"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -444,11 +444,20 @@ func _bar(r: Rect2, ratio: float, col: Color, back := Color(0.08, 0.09, 0.14, 0.
 		fx.draw_rect(Rect2(r.position, Vector2(fw, r.size.y)), col)
 		fx.draw_rect(Rect2(r.position, Vector2(fw, r.size.y * 0.38)), Color(1, 1, 1, 0.22))
 
+var _ui_font_cache: Font = null
+
+# Schrift der Oberfläche: Kenney Future (CC0), sonst Standardschrift
+func ui_font() -> Font:
+	if _ui_font_cache == null:
+		var f = load("res://assets/fonts/kenney_future.ttf")
+		_ui_font_cache = f if f is Font else ThemeDB.fallback_font
+	return _ui_font_cache
+
 func _text(p: Vector2, t: String, size: int, col := Color.WHITE, width := -1.0, align := HORIZONTAL_ALIGNMENT_LEFT) -> void:
+	var f := ui_font()
 	# Kleine HUD-Schrift wird um 12 % größer, damit sie auf dem Handy lesbar ist
 	if size <= 24:
 		size = int(round(size * 1.12))
-	var f := ThemeDB.fallback_font
 	fx.draw_string_outline(f, p, t, align, width, size, 7, Color(0.06, 0.05, 0.1, 0.95))
 	fx.draw_string(f, p, t, align, width, size, col)
 

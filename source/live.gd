@@ -1252,7 +1252,7 @@ func _draw_nuke(vs: Vector2) -> void:
 
 # Große Schrift mit dicker dunkler Umrandung, zentriert, optional mit Schlag-Effekt
 func _big_text(vs: Vector2, t: String, size: int, col: Color, punch: float) -> void:
-	var f := ThemeDB.fallback_font
+	var f: Font = m.ui_font()
 	m.fx.draw_set_transform(vs * 0.5, 0.0, Vector2(punch, punch))
 	var pos := Vector2(-vs.x * 0.5, size * 0.35)
 	m.fx.draw_string_outline(f, pos, t, HORIZONTAL_ALIGNMENT_CENTER, vs.x, size, 18, Color(0.05, 0.02, 0.0, 0.95))
