@@ -30,6 +30,9 @@ var state := "round"
 var t := 0.0
 var pause_t := 0.0
 var round_no := 0
+var round_start_ms := 0
+var free_check_done := false
+const FREE_LOCK_S := 30.0   # erste 30 s einer Runde: Likes zählen nicht, danach fliegen inaktive Gratis-Zuschauer raus
 var viewers: Dictionary = {}       # name -> {team, coins, wins, kills, last, pending}
 var queued := 0
 var team_points := [0, 0, 0, 0]
@@ -179,6 +182,9 @@ func _team_from_text(low: String) -> int:
 	return -1
 
 func chat(nm: String, text: String) -> void:
+	var cn := _clean(nm)
+	if viewers.has(cn):
+		viewers[cn]["last"] = Time.get_ticks_msec()  # jede Nachricht zählt als Aktivität
 	var low := text.to_lower().strip_edges()
 	var tm := _team_from_text(low)
 	if tm >= 0:
@@ -270,6 +276,8 @@ func _spawn_reinforce() -> void:
 
 func likes(nm: String, n: int) -> void:
 	nm = _clean(nm)
+	if state == "round" and t < FREE_LOCK_S:
+		return  # Likes in den ersten 30 s zählen nicht
 	var tm := -1
 	if viewers.has(nm):
 		tm = int(viewers[nm]["team"])
@@ -492,8 +500,24 @@ func _drop_crate(k: int, tier_bias: int) -> void:
 	_toast("Crate for %s (%s)!" % [TEAM_NAMES[k], TIER_NAMES[rar]], TEAM_COLORS[k])
 
 # ---------- Runden ----------
+# Gratis-Zuschauer ohne Aktivität seit Rundenstart fliegen raus, bezahlte bleiben
+func _drop_inactive_free() -> void:
+	for nm in viewers.keys():
+		var v: Dictionary = viewers[nm]
+		if int(v["coins"]) > 0 or int(v["last"]) >= round_start_ms:
+			continue
+		for i in SLOTS * 4:
+			var b: Dictionary = m.bots[i]
+			if b.get("viewer", false) and str(b.get("name", "")) == nm:
+				b["alive"] = false
+				b["viewer"] = false
+				b["dead_at"] = -99999
+		viewers.erase(nm)
+
 func start_round() -> void:
 	round_no += 1
+	round_start_ms = Time.get_ticks_msec()
+	free_check_done = false
 	t = 0.0
 	state = "round"
 	reinforce_pending = [0, 0, 0, 0]
@@ -629,6 +653,9 @@ func update(delta: float) -> void:
 	say_t = maxf(0.0, say_t - delta)
 	if state == "round":
 		t += delta
+		if not free_check_done and t >= FREE_LOCK_S:
+			free_check_done = true
+			_drop_inactive_free()
 		m.elapsed = t
 		var zt := t * zone_speed
 		var r := lerpf(arena_r, END_R, clampf(zt / ROUND_TIME, 0.0, 1.0)) if zt < ROUND_TIME else maxf(0.0, END_R * (1.0 - (zt - ROUND_TIME) / 30.0))
