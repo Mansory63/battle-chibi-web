@@ -46,7 +46,12 @@ func setup(host: Node, layer_index := 1) -> void:
 	viewport = SubViewport.new()
 	viewport.transparent_bg = true
 	viewport.own_world_3d = true
-	viewport.msaa_3d = Viewport.MSAA_2X
+	# Handy/Tablet: weniger Pixel und kein MSAA, damit es flüssig läuft
+	if DisplayServer.is_touchscreen_available():
+		res_scale = 0.75
+		viewport.msaa_3d = Viewport.MSAA_DISABLED
+	else:
+		viewport.msaa_3d = Viewport.MSAA_2X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	rect = TextureRect.new()
