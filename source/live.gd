@@ -177,15 +177,14 @@ func chat(nm: String, text: String) -> void:
 	var tm := _team_from_text(low)
 	if tm >= 0:
 		join(nm, tm)
-	elif low.begins_with("!") and SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges()) is String and SHOP.has(SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges())):
-		_buy(_clean(nm), SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges()))
-	elif (low.contains("zeig mich") or low.contains("show me")) and viewers.has(_clean(nm)):
+	elif low.begins_with("!") and SHOP.has(low.substr(1).strip_edges()):
+		_buy(_clean(nm), low.substr(1).strip_edges())
+	elif low.contains("show me") and viewers.has(_clean(nm)):
 		show_queue.append(_clean(nm))
 		_toast("%s will be shown" % _clean(nm))
 
 # Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
-const SHOP := {"schild": 5, "leben": 10, "wieder": 15}
-const SHOP_ALIAS := {"shield": "schild", "heal": "leben", "revive": "wieder"}
+const SHOP := {"shield": 5, "heal": 10, "revive": 15}
 
 func _buy(nm: String, item: String) -> void:
 	if not viewers.has(nm) or state != "round":
@@ -200,7 +199,7 @@ func _buy(nm: String, item: String) -> void:
 		_toast("%s is not on the field right now" % nm, Color(1, 0.6, 0.3))
 		return
 	var b: Dictionary = m.bots[i]
-	if item == "wieder":
+	if item == "revive":
 		if b["alive"]:
 			_toast("%s is still alive – revive only works on the dead" % nm, Color(1, 0.6, 0.3))
 			return
@@ -210,7 +209,7 @@ func _buy(nm: String, item: String) -> void:
 	elif not b["alive"]:
 		_toast("%s is dead – only a revive helps" % nm, Color(1, 0.6, 0.3))
 		return
-	elif item == "leben":
+	elif item == "heal":
 		b["health"] = HP
 	else:
 		b["health"] = minf(HP, float(b["health"]) + 50.0)
@@ -773,7 +772,7 @@ const RULES_LINES := [
 	"1. Chat RED, BLUE, GREEN or YELLOW to join",
 	"2. Likes = reinforcements for your team",
 	"3. Gifts = weapon + crate for your team",
-	"4. Chat shop: !schild shield · !leben heal · !wieder revive",
+	"4. Chat shop: !shield · !heal · !revive",
 	"5. The circle shrinks",
 	"6. Last one standing wins",
 ]
@@ -781,7 +780,7 @@ const RULES_LINES := [
 # Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
 var ticker_x := 0.0
 var ticker_ms := 0
-const TICKER := "HOW TO PLAY:   Chat RED, BLUE, GREEN or YELLOW to join your team   •   Likes = reinforcements for your team   •   Every gift = weapon + crate for your team: Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun · Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket · Universe = NUKE   •   Chat shop: !schild = shield (5) · !leben = heal (10) · !wieder = revive (15 coins)   •   The circle shrinks, last one standing wins!   •   "
+const TICKER := "HOW TO PLAY:   Chat RED, BLUE, GREEN or YELLOW to join your team   •   Likes = reinforcements for your team   •   Every gift = weapon + crate for your team: Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun · Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket · Universe = NUKE   •   Chat shop: !shield (5 coins) · !heal (10) · !revive (15)   •   The circle shrinks, last one standing wins!   •   "
 
 # Laufschrift von rechts nach links, durchgehend am unteren Rand (für Zuschauer: Spielanleitung)
 func _draw_ticker(vs: Vector2) -> void:
