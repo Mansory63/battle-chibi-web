@@ -181,11 +181,47 @@ func _team_from_text(low: String) -> int:
 			return 3
 	return -1
 
+# Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
+const HELP_TOPICS := {
+	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !shield · !heal · !revive", "5. The circle shrinks. Last one standing wins"],
+	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)"],
+	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
+	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
+	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
+	"nuke": ["Universe gift = ATOMIC BOMB", "The atomic bomb is a special gift, not a free action"],
+}
+var help_lines: Array = []
+var help_title := ""
+var help_t := 0.0
+
+func _show_help(key: String) -> void:
+	help_title = key.to_upper()
+	help_lines = HELP_TOPICS[key]
+	help_t = 12.0
+
+func _draw_help(vs: Vector2) -> void:
+	var pw := minf(vs.x - 24.0, 600.0)
+	var ph := 46.0 + 30.0 * help_lines.size()
+	var px := 12.0
+	var py := 150.0
+	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.9), 18)
+	m._text(Vector2(px + 20, py + 10), help_title, 20, Color(1, 0.9, 0.5), pw - 40.0)
+	var y := py + 42.0
+	for line in help_lines:
+		m._text(Vector2(px + 20, y), str(line), 20, Color(0.95, 0.97, 1.0), pw - 40.0)
+		y += 30.0
+
 func chat(nm: String, text: String) -> void:
 	var cn := _clean(nm)
 	if viewers.has(cn):
 		viewers[cn]["last"] = Time.get_ticks_msec()  # jede Nachricht zählt als Aktivität
 	var low := text.to_lower().strip_edges()
+	if HELP_TOPICS.has(low):
+		_show_help(low)
+		return
+	if low == "?" or low == "help" or low == "how to play":
+		_show_help("rules")
+		return
 	var tm := _team_from_text(low)
 	if tm >= 0:
 		join(nm, tm)
@@ -629,6 +665,13 @@ func _refresh_queue() -> void:
 	queued = maxi(0, viewers.size() - seated)
 
 func update(delta: float) -> void:
+	help_t = maxf(0.0, help_t - delta)
+	if state == "pause":
+		m.bullets.clear()  # keine Geschosse über der Erklärung
+		m.sparks.clear()
+		m.flashes.clear()
+		for bi in m.bots.size():
+			m.bots[bi]["cd"] = maxf(float(m.bots[bi]["cd"]), 1.0)  # in der Pause schießt niemand
 	queue_t -= delta
 	if queue_t <= 0.0:
 		queue_t = 0.5
@@ -1171,6 +1214,8 @@ func draw_hud(vs: Vector2) -> void:
 			_draw_results(vs)   # Ergebnis der letzten Runde
 		else:
 			_draw_rules(vs)     # Spielregeln kurz vor der nächsten Runde
+	if help_t > 0.0 and help_lines.size() > 0:
+		_draw_help(vs)
 	if help:
 		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 join · 5 many · L likes · G gift · F follow · S share · [ ] zone speed · Z show me · B atomic bomb · N end round · D demo · H help", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
