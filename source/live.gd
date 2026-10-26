@@ -1204,16 +1204,12 @@ func draw_hud(vs: Vector2) -> void:
 	var foot_w := minf(vs.x - 20.0, 680.0)
 	var foot_x := (vs.x - foot_w) * 0.5
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
-	_draw_ticker(vs)
-	var join_hint := "Chat RED · BLUE · GREEN · YELLOW to join!"
-	var bonus_hint := ("Likes: reinforcements · Gifts: weapon + crate") if vs.x < 620.0 else ("Likes = reinforcements · Gifts = weapon + crate · Queue: %d" % queued)
-	m._text(Vector2(foot_x, vs.y - 57), join_hint, 19 if vs.x < 620.0 else 24, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(foot_x, vs.y - 24), bonus_hint, 14 if vs.x < 620.0 else 16, Color(0.85, 0.92, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
 		if pause_t > EXPLAIN_TIME:
 			_draw_results(vs)   # Ergebnis der letzten Runde
 		else:
-			_draw_rules(vs)     # Spielregeln kurz vor der nächsten Runde
+			_draw_pause_info(vs)  # Countdown + Warteschlange
 	if help_t > 0.0 and help_lines.size() > 0:
 		_draw_help(vs)
 	if help:
@@ -1300,3 +1296,12 @@ func _draw_results(vs: Vector2) -> void:
 		m._text(Vector2(px + 40, py + 144 + r * 30), "%d. %s" % [r + 1, TEAM_NAMES[k]], 22, TEAM_COLORS[k])
 		m._text(Vector2(px + pw - 200, py + 144 + r * 30), "%d points · %d kills" % [team_points[k], round_kills[k]], 20, Color.WHITE, 170.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	m._text(Vector2(px, py + 278), "Next round: choose a team and join!", 16, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+
+# Pause-Anzeige: Countdown bis zur nächsten Runde und Warteschlange (Erklärungen laufen über TikTok Studio)
+func _draw_pause_info(vs: Vector2) -> void:
+	var pw := minf(vs.x - 40.0, 520.0)
+	var px := vs.x * 0.5 - pw * 0.5
+	var py := vs.y * 0.5 + 60.0
+	m._pill(Rect2(px, py, pw, 80), Color(0.05, 0.06, 0.12, 0.9), 22)
+	m._text(Vector2(px, py + 12), "NEXT ROUND IN %d s" % int(ceil(pause_t)), 30, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 48), "Queue: %d" % queued, 22, Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
