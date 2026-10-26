@@ -361,7 +361,7 @@ func nuke(nm: String) -> void:
 	nuke_by = nm
 	nuke_done = false
 	nuke_pos = m.ZONE_CENTER
-	_banner("ATOMIC BOMB by %s!" % nm, Color(1, 0.35, 0.1), 5.0)
+	_banner("ATOMIC BOMB - %s!" % nm.to_upper(), Color(1, 0.35, 0.1), 5.0)
 	_say("Warning! Atomic bomb by %s!" % nm)
 
 func _nuke_blast() -> void:
@@ -519,7 +519,7 @@ func _spawn_boss() -> void:
 	focus_t = 4.0
 	m.shake = 0.8
 	m._spark_burst(b["pos"], TEAM_COLORS[4], 40, 480.0)
-	_banner("BOSS APPEARS!", TEAM_COLORS[4], 4.0)
+	_banner("BOSS INCOMING!", TEAM_COLORS[4], 4.0)
 	_say("The boss appears. Defeat it for legendary weapons")
 
 func _drop_crate(k: int, tier_bias: int) -> void:
@@ -609,7 +609,7 @@ func start_round() -> void:
 	_spawn_loot()
 	focus = -1
 	focus_t = 0.0
-	_banner("ROUND %d" % round_no, Color(1, 0.9, 0.4), 3.0)
+	_banner("ROUND %d - FIGHT!" % round_no, Color(1, 0.9, 0.4), 3.0)
 	_say("Round %d. Chat red, blue, green or yellow" % round_no)
 
 func _spawn_loot() -> void:
@@ -651,6 +651,7 @@ func end_round() -> void:
 			viewers[b["name"]]["wins"] = int(viewers[b["name"]]["wins"]) + 1
 	for i in 3:
 		m._spark_burst(_centroid(best) + Vector2(randf_range(-80, 80), randf_range(-80, 80)), TEAM_COLORS[best], 24, 420.0)
+	_banner("%s WINS THE ROUND!" % TEAM_NAMES[best], TEAM_COLORS[best], 3.5)
 	_say("Team %s wins the round" % TEAM_NAMES[best])
 
 # ---------- pro Bild ----------
@@ -859,10 +860,10 @@ func _boss_dead(b: Dictionary) -> void:
 	if kl >= 0 and kl < SLOTS * 4 and int(m.bots[kl]["team"]) - 1 >= 0 and int(m.bots[kl]["team"]) - 1 <= 3:
 		var kt := int(m.bots[kl]["team"]) - 1
 		round_kills[kt] += 2
-		_banner("BOSS DEFEATED by %s!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
+		_banner("K.O.! BOSS DOWN - %s WINS!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
 		_say("Team %s defeated the boss" % TEAM_NAMES[kt])
 	else:
-		_banner("BOSS DEFEATED!", TEAM_COLORS[4], 3.0)
+		_banner("K.O.! BOSS DOWN!", TEAM_COLORS[4], 3.0)
 
 func _banner(txt: String, col: Color, secs: float) -> void:
 	banner = txt
@@ -1234,12 +1235,12 @@ func _draw_results(vs: Vector2) -> void:
 
 # Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
 const HOW_TO_PLAY := [
-	"Chat RED, BLUE, GREEN or YELLOW to join",
-	"Likes = reinforcements for your team",
-	"Gifts = weapon + crate for your team",
-	"!shield  !heal  !revive = shop",
-	"Circle shrinks - last one standing wins",
-	"Chat: rules, shop, gift, likes, queue, nuke",
+	"CHAT RED, BLUE, GREEN OR YELLOW TO JOIN",
+	"LIKES = REINFORCEMENTS FOR YOUR TEAM",
+	"GIFTS = WEAPON + CRATE FOR YOUR TEAM",
+	"!SHIELD  !HEAL  !REVIVE = SHOP",
+	"CIRCLE SHRINKS - LAST ONE STANDING WINS",
+	"CHAT: RULES, SHOP, GIFT, LIKES, QUEUE, NUKE",
 ]
 
 func _draw_pause_info(vs: Vector2) -> void:
