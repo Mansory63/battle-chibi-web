@@ -1145,7 +1145,18 @@ func draw_hud(vs: Vector2) -> void:
 		var a := clampf(banner_t, 0.0, 1.0)
 		var bc := banner_col
 		bc.a = a
-		m._text(Vector2(0, vs.y * 0.32), banner, 32 if vs.x < 620.0 else 52, bc, vs.x, HORIZONTAL_ALIGNMENT_CENTER)
+		# Banner als goldenes Band mit eingekerbten Enden (wie ein Titel-Band im Spiel)
+		var fs := 32 if vs.x < 620.0 else 52
+		var bw := minf(vs.x - 40.0, fs * 0.62 * float(banner.length()) + 80.0)
+		var by := vs.y * 0.32 - fs * 0.15
+		var bh := fs * 1.7
+		var bx := vs.x * 0.5 - bw * 0.5
+		var notch := bh * 0.45
+		var band := PackedVector2Array([Vector2(bx, by), Vector2(bx + bw, by), Vector2(bx + bw - notch, by + bh * 0.5), Vector2(bx + bw, by + bh), Vector2(bx, by + bh), Vector2(bx + notch, by + bh * 0.5)])
+		m.fx.draw_colored_polygon(band, Color(0.1, 0.06, 0.14, 0.9 * a))
+		var inner := PackedVector2Array([Vector2(bx + 5, by + 5), Vector2(bx + bw - 5, by + 5), Vector2(bx + bw - notch, by + bh * 0.5), Vector2(bx + bw - 5, by + bh - 5), Vector2(bx + 5, by + bh - 5), Vector2(bx + notch, by + bh * 0.5)])
+		m.fx.draw_colored_polygon(inner, Color(1.0, 0.86, 0.35, a))
+		m._text(Vector2(0, by + bh * 0.5 + fs * 0.35), banner, fs, Color(0.3, 0.14, 0.02, a), vs.x, HORIZONTAL_ALIGNMENT_CENTER)
 	if toast_t > 0.0:
 		var ta := clampf(toast_t, 0.0, 1.0)
 		var toast_w := minf(vs.x - 24.0, 520.0)
@@ -1311,7 +1322,8 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var px := vs.x * 0.5 - pw * 0.5
 	var ph := 150.0 * k + HOW_TO_PLAY.size() * 26.0 * k
 	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
-	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.92), 22)
+	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(0.75, 0.45, 1.0, 0.9), 24)
+	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 22)
 	m._text(Vector2(px, py + 10 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(px, py + 52 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
