@@ -18,7 +18,7 @@ cp main.gd units3d.gd touch_controls.gd project.godot export_presets.cfg "$REPO"
 echo "{\"v\": \"$BUILD\"}" > "$REPO"/version.json
 cd "$REPO"
 git add -A
-git commit -qm "$MSG" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+git commit -qm "$MSG" -m "Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01UaRsDwqAQTZNMcAuRy8mb8"
 git push -q || git push -q
 echo "Release $BUILD veröffentlicht"

@@ -89,7 +89,7 @@ func _draw_controls() -> void:
 	if fire_held:
 		v.draw_circle(fc + aim_vec * FIRE_RADIUS * 0.7, 36.0, Color(1, 0.9, 0.85, 0.75))
 	else:
-		v.draw_string(ThemeDB.fallback_font, fc + Vector2(-80, 10), "FEUER", HORIZONTAL_ALIGNMENT_CENTER, 160, 26, Color(1, 1, 1, 0.95))
+		v.draw_string(ThemeDB.fallback_font, fc + Vector2(-80, 10), "FIRE", HORIZONTAL_ALIGNMENT_CENTER, 160, 26, Color(1, 1, 1, 0.95))
 	# Fähigkeit: nur Symbol (Blitz)
 	v.draw_circle(ac, ABILITY_RADIUS, Color(0.3, 0.9, 1.0, 0.4))
 	v.draw_arc(ac, ABILITY_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.65), 4.0)

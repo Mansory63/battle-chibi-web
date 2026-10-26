@@ -12,10 +12,10 @@ const CORNER_R := 1050.0
 const SMALL_START_R := 850.0      # opt-in 1700px-Durchmesser
 const SMALL_CORNER_R := 540.0
 const LIKE_GOAL := 100
-const TEAM_NAMES := ["ROT", "BLAU", "GRÜN", "GELB"]
+const TEAM_NAMES := ["RED", "BLUE", "GREEN", "YELLOW"]
 const TEAM_COLORS := [Color(1.0, 0.3, 0.3), Color(0.35, 0.6, 1.0), Color(0.3, 0.85, 0.4), Color(1.0, 0.85, 0.25), Color(0.75, 0.3, 0.95)]
-const TIER_NAMES := ["", "SELTEN", "EPISCH", "LEGENDÄR"]
-const LOOT_KINDS := ["pistol", "pistol", "smg", "smg", "ak", "ak", "shotgun", "shotgun", "sniper", "sniper", "rocket", "minigun"]
+const TIER_NAMES := ["", "RARE", "EPIC", "LEGENDARY"]
+const LOOT_KINDS := ["pistol"]  # Waffen nur per Geschenk/Kauf, am Boden nur Pistole
 # Geschenk-Name (klein geschrieben) -> Waffe. Anpassbar; unbekannte Geschenke werden nach Münzwert zugeordnet.
 const GIFT_WEAPONS := {"rose": "pistol", "tiktok": "smg", "gg": "sniper", "finger heart": "shotgun", "ice cream cone": "ak",
 	"doughnut": "katana", "hand hearts": "minigun", "money gun": "rocket"}
@@ -177,14 +177,15 @@ func chat(nm: String, text: String) -> void:
 	var tm := _team_from_text(low)
 	if tm >= 0:
 		join(nm, tm)
-	elif low.begins_with("!") and SHOP.has(low.substr(1).strip_edges()):
-		_buy(_clean(nm), low.substr(1).strip_edges())
-	elif low.contains("zeig mich") and viewers.has(_clean(nm)):
+	elif low.begins_with("!") and SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges()) is String and SHOP.has(SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges())):
+		_buy(_clean(nm), SHOP_ALIAS.get(low.substr(1).strip_edges(), low.substr(1).strip_edges()))
+	elif (low.contains("zeig mich") or low.contains("show me")) and viewers.has(_clean(nm)):
 		show_queue.append(_clean(nm))
-		_toast("%s will gezeigt werden" % _clean(nm))
+		_toast("%s will be shown" % _clean(nm))
 
 # Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
 const SHOP := {"schild": 5, "leben": 10, "wieder": 15}
+const SHOP_ALIAS := {"shield": "schild", "heal": "leben", "revive": "wieder"}
 
 func _buy(nm: String, item: String) -> void:
 	if not viewers.has(nm) or state != "round":
@@ -192,22 +193,22 @@ func _buy(nm: String, item: String) -> void:
 	var price: int = SHOP[item]
 	var v: Dictionary = viewers[nm]
 	if int(v["coins"]) < price:
-		_toast("%s: zu wenig Münzen für %s (%d)" % [nm, item, price], Color(1, 0.6, 0.3))
+		_toast("%s: not enough coins for %s (%d)" % [nm, item, price], Color(1, 0.6, 0.3))
 		return
 	var i := _find_bot(nm)
 	if i < 0:
-		_toast("%s ist gerade nicht auf dem Feld" % nm, Color(1, 0.6, 0.3))
+		_toast("%s is not on the field right now" % nm, Color(1, 0.6, 0.3))
 		return
 	var b: Dictionary = m.bots[i]
 	if item == "wieder":
 		if b["alive"]:
-			_toast("%s lebt noch – Wiederbelebung nur für Tote" % nm, Color(1, 0.6, 0.3))
+			_toast("%s is still alive – revive only works on the dead" % nm, Color(1, 0.6, 0.3))
 			return
 		var tm: int = int(v["team"])
 		_reset_bot(b, tm, nm, true, m._nearest_free(_centroid(tm) + Vector2.from_angle(randf() * TAU) * 80.0, m.BOT_RADIUS))
 		b["health"] = HP
 	elif not b["alive"]:
-		_toast("%s ist tot – nur Wiederbelebung hilft" % nm, Color(1, 0.6, 0.3))
+		_toast("%s is dead – only a revive helps" % nm, Color(1, 0.6, 0.3))
 		return
 	elif item == "leben":
 		b["health"] = HP
@@ -215,7 +216,7 @@ func _buy(nm: String, item: String) -> void:
 		b["health"] = minf(HP, float(b["health"]) + 50.0)
 	v["coins"] = int(v["coins"]) - price
 	m._spark_burst(b["pos"], Color(0.3, 0.9, 1.0), 24, 300.0)
-	_toast("%s kauft %s (-%d Münzen)" % [nm, item, price], Color(0.5, 1.0, 0.6))
+	_toast("%s buys %s (-%d coins)" % [nm, item, price], Color(0.5, 1.0, 0.6))
 
 func join(nm: String, team: int) -> void:
 	nm = _clean(nm)
@@ -226,7 +227,7 @@ func join(nm: String, team: int) -> void:
 		viewers[nm]["last"] = Time.get_ticks_msec()
 		return
 	viewers[nm] = {"team": team, "coins": 0, "wins": 0, "kills": 0, "last": Time.get_ticks_msec(), "pending": null}
-	_toast("%s ist bei %s dabei!" % [nm, TEAM_NAMES[team]], TEAM_COLORS[team])
+	_toast("%s joins %s!" % [nm, TEAM_NAMES[team]], TEAM_COLORS[team])
 	if state == "round":
 		_claim_slot(nm, team)
 
@@ -256,7 +257,7 @@ func _spawn_reinforce() -> void:
 			continue
 		for b in _team_bots(k):
 			if not b["alive"] and not b["viewer"] and Time.get_ticks_msec() - int(b.get("dead_at", 0)) > 1500:
-				_reset_bot(b, k, "Verstärkung", false, m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * 90.0, m.BOT_RADIUS))
+				_reset_bot(b, k, "Reinforcement", false, m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * 90.0, m.BOT_RADIUS))
 				_equip(b, "pistol", 1)
 				reinforce_pending[k] = int(reinforce_pending[k]) - 1
 				m._spark_burst(b["pos"], TEAM_COLORS[k], 20, 300.0)
@@ -280,11 +281,9 @@ func likes(nm: String, n: int) -> void:
 	var after: int = int(team_total_likes[tm]) / REINFORCE_EVERY
 	if after > before and state == "round":
 		reinforce_pending[tm] = mini(3, int(reinforce_pending[tm]) + (after - before))
-		_toast("%s bekommt Verstärkung (%d wartend)" % [TEAM_NAMES[tm], reinforce_pending[tm]], TEAM_COLORS[tm])
+		_toast("%s gets reinforcement (%d waiting)" % [TEAM_NAMES[tm], reinforce_pending[tm]], TEAM_COLORS[tm])
 	if team_likes[tm] >= LIKE_GOAL:
-		team_likes[tm] = 0
-		_banner("LIKE-KISTE für %s!" % TEAM_NAMES[tm], TEAM_COLORS[tm], 3.0)
-		_drop_crate(tm, 2)
+		team_likes[tm] = 0  # keine Kiste mehr: Kisten nur bei bezahlten Geschenken
 
 func gift(nm: String, gname: String, coins: int) -> void:
 	nm = _ensure_viewer(nm)
@@ -303,17 +302,20 @@ func gift(nm: String, gname: String, coins: int) -> void:
 		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 6)]
 	var rar := 1 if coins < 10 else (2 if coins < 100 else 3)
 	_give_weapon(nm, wk, rar)
+	# Kiste nur bei bezahltem Geschenk: sichtbar, dass jemand bezahlt hat
+	if coins > 0:
+		_drop_crate(tm, 1)
 
 func nuke(nm: String) -> void:
 	if state != "round" or nuke_t >= 0.0:
-		_toast("%s schenkt die Atombombe – nächste Runde!" % nm, Color(1, 0.5, 0.1))
+		_toast("%s gifts the atomic bomb – next round!" % nm, Color(1, 0.5, 0.1))
 		return
 	nuke_t = 0.0
 	nuke_by = nm
 	nuke_done = false
 	nuke_pos = m.ZONE_CENTER
-	_banner("ATOMBOMBE von %s!" % nm, Color(1, 0.35, 0.1), 5.0)
-	_say("Achtung! Atombombe von %s!" % nm)
+	_banner("ATOMIC BOMB by %s!" % nm, Color(1, 0.35, 0.1), 5.0)
+	_say("Warning! Atomic bomb by %s!" % nm)
 
 func _nuke_blast() -> void:
 	nuke_done = true
@@ -338,7 +340,7 @@ func _nuke_blast() -> void:
 		if i == spare:
 			b["health"] = float(HP)
 			nuke_survivor = str(b.get("name", nuke_by))
-			_toast("%s überlebt im Bunker!" % nuke_survivor, Color(1, 0.9, 0.3))
+			_toast("%s survives in the bunker!" % nuke_survivor, Color(1, 0.9, 0.3))
 			continue
 		b["alive"] = false
 		b["dead_at"] = now
@@ -349,7 +351,7 @@ func _nuke_blast() -> void:
 func follow(nm: String) -> void:
 	nm = _clean(nm)
 	if nm != "":
-		_toast("Willkommen, %s!" % nm)
+		_toast("Welcome, %s!" % nm)
 
 func share(nm: String) -> void:
 	nm = _clean(nm)
@@ -359,7 +361,7 @@ func share(nm: String) -> void:
 	for b in _team_bots(tm):
 		if b["alive"]:
 			b["health"] = minf(HP, float(b["health"]) + 25.0)
-	_toast("%s teilt – %s bekommt Leben!" % [nm, TEAM_NAMES[tm]], TEAM_COLORS[tm])
+	_toast("%s shares – %s gets health!" % [nm, TEAM_NAMES[tm]], TEAM_COLORS[tm])
 
 # ---------- Kämpfer ----------
 func _team_bots(k: int) -> Array:
@@ -416,6 +418,7 @@ func _equip(b: Dictionary, wk: String, rar: int) -> void:
 	b["weapon"] = wk
 	b["rar"] = rar
 	b["gun"] = m.tex_guns.get(wk, null)
+	b["ammo"] = 999 if (wk == "pistol" or not m.WEAPONS.has(wk)) else int(m.WEAPONS[wk]["ammo"])
 
 func _claim_slot(nm: String, k: int) -> void:
 	for b in _team_bots(k):
@@ -437,7 +440,7 @@ func _give_weapon(nm: String, wk: String, rar: int) -> void:
 	var tm: int = viewers[nm]["team"]
 	if state != "round" or i < 0:
 		viewers[nm]["pending"] = [wk, rar]
-		_toast("%s: %s (%s) wartet auf die nächste Runde" % [nm, m.WEAPONS[wk]["name"] if m.WEAPONS.has(wk) else wk, TIER_NAMES[rar]], TEAM_COLORS[tm])
+		_toast("%s: %s (%s) waits for the next round" % [nm, m.WEAPONS[wk]["name"] if m.WEAPONS.has(wk) else wk, TIER_NAMES[rar]], TEAM_COLORS[tm])
 		return
 	var b: Dictionary = m.bots[i]
 	var revived: bool = not b["alive"]
@@ -451,8 +454,8 @@ func _give_weapon(nm: String, wk: String, rar: int) -> void:
 	focus_lock = 6.0
 	focus_t = 6.0
 	var wn: String = m.WEAPONS[wk]["name"] if m.WEAPONS.has(wk) else "Katana"
-	_banner("%s%s: %s (%s)" % [nm, " ist zurück" if revived else "", wn, TIER_NAMES[rar]], TEAM_COLORS[tm], 3.5)
-	_say("%s bekommt %s" % [nm, wn])
+	_banner("%s%s: %s (%s)" % [nm, " is back" if revived else "", wn, TIER_NAMES[rar]], TEAM_COLORS[tm], 3.5)
+	_say("%s gets %s" % [nm, wn])
 
 func _spawn_boss() -> void:
 	var b: Dictionary = m.bots[SLOTS * 4]
@@ -469,19 +472,19 @@ func _spawn_boss() -> void:
 	focus_t = 4.0
 	m.shake = 0.8
 	m._spark_burst(b["pos"], TEAM_COLORS[4], 40, 480.0)
-	_banner("BOSS ERSCHEINT!", TEAM_COLORS[4], 4.0)
-	_say("Der Boss erscheint. Besiegt ihn für legendäre Waffen")
+	_banner("BOSS APPEARS!", TEAM_COLORS[4], 4.0)
+	_say("The boss appears. Defeat it for legendary weapons")
 
 func _drop_crate(k: int, tier_bias: int) -> void:
 	var pos: Vector2 = m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * randf_range(80.0 if arena_small else 120.0, 150.0 if arena_small else 260.0), 24.0)
 	var rar := clampi(1 + m._random_rarity([55, 33, 12]) + (tier_bias - 1 if tier_bias > 1 else 0), 1, 3)
-	var kinds := ["pistol", "smg", "ak", "shotgun", "sniper", "rocket", "minigun"]
+	var kinds := ["pistol"]
 	for n in 2:
 		m.loot.append({"pos": m._nearest_free(pos + Vector2.from_angle(randf() * TAU) * 50.0, 24.0), "kind": kinds[randi() % kinds.size()], "rar": rar})
 	m._spark_burst(pos, TEAM_COLORS[k], 26, 300.0)
 	m._spark_burst(pos, Color(1, 0.9, 0.4), 14, 260.0)
 	m.shake = maxf(m.shake, 0.15)
-	_toast("Kiste für %s (%s)!" % [TEAM_NAMES[k], TIER_NAMES[rar]], TEAM_COLORS[k])
+	_toast("Crate for %s (%s)!" % [TEAM_NAMES[k], TIER_NAMES[rar]], TEAM_COLORS[k])
 
 # ---------- Runden ----------
 func start_round() -> void:
@@ -541,8 +544,8 @@ func start_round() -> void:
 	_spawn_loot()
 	focus = -1
 	focus_t = 0.0
-	_banner("RUNDE %d" % round_no, Color(1, 0.9, 0.4), 3.0)
-	_say("Runde %d. Schreibt rot, blau, grün oder gelb" % round_no)
+	_banner("ROUND %d" % round_no, Color(1, 0.9, 0.4), 3.0)
+	_say("Round %d. Chat red, blue, green or yellow" % round_no)
 
 func _spawn_loot() -> void:
 	for k in 4:
@@ -583,7 +586,7 @@ func end_round() -> void:
 			viewers[b["name"]]["wins"] = int(viewers[b["name"]]["wins"]) + 1
 	for i in 3:
 		m._spark_burst(_centroid(best) + Vector2(randf_range(-80, 80), randf_range(-80, 80)), TEAM_COLORS[best], 24, 420.0)
-	_say("Team %s gewinnt die Runde" % TEAM_NAMES[best])
+	_say("Team %s wins the round" % TEAM_NAMES[best])
 
 # ---------- pro Bild ----------
 func update(delta: float) -> void:
@@ -609,11 +612,6 @@ func update(delta: float) -> void:
 		var zt := t * zone_speed
 		var r := lerpf(arena_r, END_R, clampf(zt / ROUND_TIME, 0.0, 1.0)) if zt < ROUND_TIME else maxf(0.0, END_R * (1.0 - (zt - ROUND_TIME) / 30.0))
 		m.zone_radius = r
-		crate_t -= delta
-		if crate_t <= 0.0:
-			crate_t = 30.0
-			_drop_crate(crate_next, 1)
-			crate_next = (crate_next + 1) % 4
 		if not boss_done and t >= BOSS_SPAWN_AT:
 			boss_done = true
 			_spawn_boss()
@@ -720,9 +718,9 @@ func on_kill(i: int) -> void:
 				var vn := str(killer["name"])
 				if viewers.has(vn):
 					viewers[vn]["kills"] = int(viewers[vn]["kills"]) + 1
-			m.kill_feed.append({"text": "%s besiegt ZOMBIE" % str(killer["name"]), "t": 0.0})
+			m.kill_feed.append({"text": "%s defeated a ZOMBIE" % str(killer["name"]), "t": 0.0})
 		else:
-			m.kill_feed.append({"text": "ZOMBIE ausgeschaltet", "t": 0.0})
+			m.kill_feed.append({"text": "ZOMBIE eliminated", "t": 0.0})
 		if m.kill_feed.size() > 5:
 			m.kill_feed.pop_front()
 		return
@@ -753,32 +751,54 @@ func on_kill(i: int) -> void:
 	if m.WEAPONS.has(wk) or wk == "katana":
 		m.loot.append({"pos": b["pos"], "kind": wk, "rar": int(b["rar"])})
 	if b["viewer"] and kname != "" and int(m.bots[kl]["team"]) <= 4:
-		_toast("%s hat %s zerplatzt!" % [kname, b["name"]], TEAM_COLORS[int(m.bots[kl]["team"]) - 1])
+		_toast("%s blew up %s!" % [kname, b["name"]], TEAM_COLORS[int(m.bots[kl]["team"]) - 1])
 
 func _boss_dead(b: Dictionary) -> void:
 	var kl := int(b.get("lh", -2))
 	m._spark_burst(b["pos"], TEAM_COLORS[4], 50, 520.0)
 	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 30, 420.0)
 	m.shake = 1.0
-	var kinds := ["ak", "sniper", "rocket", "minigun", "shotgun"]
+	var kinds := ["pistol"]
 	for n in 3:
 		m.loot.append({"pos": m._nearest_free(b["pos"] + Vector2.from_angle(TAU * n / 3.0) * 70.0, 24.0), "kind": kinds[randi() % kinds.size()], "rar": 3})
 	if kl >= 0 and kl < SLOTS * 4 and int(m.bots[kl]["team"]) - 1 >= 0 and int(m.bots[kl]["team"]) - 1 <= 3:
 		var kt := int(m.bots[kl]["team"]) - 1
 		round_kills[kt] += 2
-		_banner("BOSS BESIEGT von %s!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
-		_say("Team %s besiegt den Boss" % TEAM_NAMES[kt])
+		_banner("BOSS DEFEATED by %s!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
+		_say("Team %s defeated the boss" % TEAM_NAMES[kt])
 	else:
-		_banner("BOSS BESIEGT!", TEAM_COLORS[4], 3.0)
+		_banner("BOSS DEFEATED!", TEAM_COLORS[4], 3.0)
 
 const RULES_LINES := [
-	"1. Schreib ROT, BLAU, GRÜN oder GELB",
-	"2. Likes = Kiste für dein Team",
-	"3. Geschenke = Spezialwaffen",
-	"4. Kaufen im Chat: !schild !leben !wieder",
-	"5. Der Kreis wird kleiner",
-	"6. Der letzte Überlebende gewinnt",
+	"1. Chat RED, BLUE, GREEN or YELLOW to join",
+	"2. Likes = reinforcements for your team",
+	"3. Gifts = weapon + crate for your team",
+	"4. Chat shop: !schild shield · !leben heal · !wieder revive",
+	"5. The circle shrinks",
+	"6. Last one standing wins",
 ]
+
+# Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
+var ticker_x := 0.0
+var ticker_ms := 0
+const TICKER := "HOW TO PLAY:   Chat RED, BLUE, GREEN or YELLOW to join your team   •   Likes = reinforcements for your team   •   Every gift = weapon + crate for your team: Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun · Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket · Universe = NUKE   •   Chat shop: !schild = shield (5) · !leben = heal (10) · !wieder = revive (15 coins)   •   The circle shrinks, last one standing wins!   •   "
+
+# Laufschrift von rechts nach links, durchgehend am unteren Rand (für Zuschauer: Spielanleitung)
+func _draw_ticker(vs: Vector2) -> void:
+	var f: Font = ThemeDB.fallback_font
+	var fs := 18 if vs.x >= 620.0 else 14
+	var tw: float = f.get_string_size(TICKER, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 40.0
+	var now_ms := Time.get_ticks_msec()
+	if ticker_ms == 0:
+		ticker_x = vs.x
+	var dt := clampf(float(now_ms - ticker_ms) / 1000.0, 0.0, 0.1) if ticker_ms != 0 else 0.0
+	ticker_ms = now_ms
+	ticker_x -= dt * vs.x * 0.12
+	if ticker_x < -tw:
+		ticker_x += tw
+	m._pill(Rect2(0, vs.y - 178, vs.x, 40), Color(0.05, 0.06, 0.12, 0.85), 10)
+	m._text(Vector2(ticker_x, vs.y - 168), TICKER, fs, Color(1, 0.95, 0.7), tw)
+	m._text(Vector2(ticker_x + tw, vs.y - 168), TICKER, fs, Color(1, 0.95, 0.7), tw)
 
 # Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
 func _draw_rules(vs: Vector2) -> void:
@@ -787,12 +807,12 @@ func _draw_rules(vs: Vector2) -> void:
 	var px := vs.x * 0.5 - pw * 0.5
 	var py := vs.y * 0.5 - ph * 0.5 + 40.0
 	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.92), 28)
-	m._text(Vector2(px, py + 26), "SO FUNKTIONIERT ES", 40, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 26), "HOW TO PLAY", 40, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var y := py + 100.0
 	for line in RULES_LINES:
 		m._text(Vector2(px + 36, y), line, 30, Color(0.95, 0.97, 1.0), pw - 72.0)
 		y += 52.0
-	m._text(Vector2(px, py + ph - 56), "Ziel: Ausschalten, überleben, Platz 1", 26, Color(0.6, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + ph - 56), "Goal: eliminate, survive, place 1st", 26, Color(0.6, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _banner(txt: String, col: Color, secs: float) -> void:
 	banner = txt
@@ -807,7 +827,7 @@ func _say(txt: String) -> void:
 	if not OS.has_feature("web") or m.muted or say_t > 0.0:
 		return
 	say_t = 3.0
-	JavaScriptBridge.eval("try{var u=new SpeechSynthesisUtterance('%s');u.lang='de-DE';u.rate=1.1;speechSynthesis.speak(u);}catch(e){}" % _clean(txt).replace("'", ""), true)
+	JavaScriptBridge.eval("try{var u=new SpeechSynthesisUtterance('%s');u.lang='en-US';u.rate=1.1;speechSynthesis.speak(u);}catch(e){}" % _clean(txt).replace("'", ""), true)
 
 # ---------- WebSocket ----------
 func _poll_ws() -> void:
@@ -861,10 +881,10 @@ func handle_key(code: int) -> void:
 				share(viewers.keys()[randi() % viewers.size()])
 		KEY_BRACKETLEFT:
 			zone_speed = maxf(0.25, zone_speed - 0.25)
-			_toast("Zonen-Tempo %.2f" % zone_speed)
+			_toast("Zone speed %.2f" % zone_speed)
 		KEY_BRACKETRIGHT:
 			zone_speed = minf(3.0, zone_speed + 0.25)
-			_toast("Zonen-Tempo %.2f" % zone_speed)
+			_toast("Zone speed %.2f" % zone_speed)
 		KEY_B:
 			nuke(viewers.keys()[randi() % viewers.size()] if viewers.size() > 0 else "Fan")
 		KEY_N:
@@ -988,7 +1008,7 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(vs.x * 0.5 - 130, 10, 260, 54), Color(0.05, 0.06, 0.12, 0.8), 27)
 	var tcol := Color(1, 0.9, 0.5) if left > 30.0 else Color(1, 0.4, 0.3)
 	m._text(Vector2(vs.x * 0.5 - 130, 50), (_fmt_time(left) if state == "round" else "PAUSE %d" % int(ceil(pause_t))), 38, tcol, 260.0, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(vs.x * 0.5 - 130, 84), ("RUNDE %d · MINI" % round_no) if arena_small else ("RUNDE %d" % round_no), 16, Color(0.8, 0.9, 1.0), 260.0, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(vs.x * 0.5 - 130, 84), ("ROUND %d · MINI" % round_no) if arena_small else ("ROUND %d" % round_no), 16, Color(0.8, 0.9, 1.0), 260.0, HORIZONTAL_ALIGNMENT_CENTER)
 	var cw := w / 4.0 - 6.0
 	for k in 4:
 		var cx := x0 + k * (cw + 8.0)
@@ -996,7 +1016,7 @@ func draw_hud(vs: Vector2) -> void:
 		var col: Color = TEAM_COLORS[k]
 		m._pill(Rect2(cx, cy, cw, 44), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
 		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
-		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d lebt · %d Kills · %d Runden%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
+		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d alive · %d kills · %d rounds%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
 		m._text(Vector2(cx + 10, cy + 39), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
 		# Like-Leiste
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))
@@ -1059,8 +1079,9 @@ func draw_hud(vs: Vector2) -> void:
 	var foot_w := minf(vs.x - 20.0, 680.0)
 	var foot_x := (vs.x - foot_w) * 0.5
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
-	var join_hint := "ROT · BLAU · GRÜN · GELB" if vs.x < 620.0 else "Schreib ROT · BLAU · GRÜN · GELB zum Mitmachen!"
-	var bonus_hint := ("Likes: Kisten · Geschenke: Waffen") if vs.x < 620.0 else ("Likes = Kiste für dein Team · Geschenke = Waffe/Comeback · Warteschlange: %d" % queued)
+	_draw_ticker(vs)
+	var join_hint := "Chat RED · BLUE · GREEN · YELLOW to join!"
+	var bonus_hint := ("Likes: reinforcements · Gifts: weapon + crate") if vs.x < 620.0 else ("Likes = reinforcements · Gifts = weapon + crate · Queue: %d" % queued)
 	m._text(Vector2(foot_x, vs.y - 57), join_hint, 19 if vs.x < 620.0 else 24, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(foot_x, vs.y - 24), bonus_hint, 14 if vs.x < 620.0 else 16, Color(0.85, 0.92, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
@@ -1069,7 +1090,7 @@ func draw_hud(vs: Vector2) -> void:
 		else:
 			_draw_rules(vs)     # Spielregeln kurz vor der nächsten Runde
 	if help:
-		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 Beitritt · 5 viele · L Likes · G Geschenk · F Follow · S Teilen · [ ] Zonen-Tempo · Z zeig mich · B ATOMBOMBE · N Runde beenden · D Demo · H Hilfe", 14, Color(0.7, 0.8, 0.9, 0.8))
+		m._text(Vector2(12, vs.y - 168), "TEST: 1-4 join · 5 many · L likes · G gift · F follow · S share · [ ] zone speed · Z show me · B atomic bomb · N end round · D demo · H help", 14, Color(0.7, 0.8, 0.9, 0.8))
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if nuke_t >= 0.0:
 		_draw_nuke(vs)
@@ -1083,7 +1104,7 @@ func _draw_nuke(vs: Vector2) -> void:
 		var mp := Vector2(sc.x, lerpf(-80.0, sc.y - 40.0, k * k))
 		m.fx.draw_rect(Rect2(mp.x - 7, mp.y - 40, 14, 40), Color(0.8, 0.8, 0.85))
 		m.fx.draw_colored_polygon(PackedVector2Array([mp + Vector2(-7, 0), mp + Vector2(7, 0), mp + Vector2(0, 22)]), Color(0.9, 0.2, 0.1))
-		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.3), "ATOMBOMBE  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.3), "ATOMIC BOMB  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	var tb := nuke_t - NUKE_WARN
 	var fade := clampf(1.0 - (tb - 9.0) / 6.0, 0.0, 1.0)
@@ -1125,7 +1146,7 @@ func _draw_nuke(vs: Vector2) -> void:
 	if tb < 1.4:
 		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 1, 0.9, clampf(1.0 - tb / 1.4, 0.0, 1.0)))
 	if tb > 1.0 and tb < 7.0:
-		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "NUR %s HAT ÜBERLEBT" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "ONLY %s SURVIVED" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _is_top(nm: String, k: int) -> bool:
 	if k < 0 or k > 3 or not topsup[k].has(nm):
@@ -1141,14 +1162,14 @@ func _draw_results(vs: Vector2) -> void:
 	var py := vs.y * 0.42
 	m._pill(Rect2(px, py, pw, 290), Color(0.04, 0.05, 0.12, 0.88), 22)
 	var wc: Color = TEAM_COLORS[maxi(0, winner)]
-	m._text(Vector2(px, py + 44), "TEAM %s GEWINNT!" % TEAM_NAMES[maxi(0, winner)], 34, wc, pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 44), "TEAM %s WINS!" % TEAM_NAMES[maxi(0, winner)], 34, wc, pw, HORIZONTAL_ALIGNMENT_CENTER)
 	if streak >= 2:
 		m._text(Vector2(px, py + 74), "Siegesserie: %d" % streak, 20, Color(1, 0.6, 0.2), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 108), "GESAMTWERTUNG", 18, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 108), "OVERALL SCORE", 18, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var order := [0, 1, 2, 3]
 	order.sort_custom(func(a, b): return team_points[a] > team_points[b])
 	for r in 4:
 		var k: int = order[r]
 		m._text(Vector2(px + 40, py + 144 + r * 30), "%d. %s" % [r + 1, TEAM_NAMES[k]], 22, TEAM_COLORS[k])
-		m._text(Vector2(px + pw - 200, py + 144 + r * 30), "%d Punkte · %d Kills" % [team_points[k], round_kills[k]], 20, Color.WHITE, 170.0, HORIZONTAL_ALIGNMENT_RIGHT)
-	m._text(Vector2(px, py + 278), "Nächste Runde: Team wählen und mitmachen!", 16, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(px + pw - 200, py + 144 + r * 30), "%d points · %d kills" % [team_points[k], round_kills[k]], 20, Color.WHITE, 170.0, HORIZONTAL_ALIGNMENT_RIGHT)
+	m._text(Vector2(px, py + 278), "Next round: choose a team and join!", 16, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)

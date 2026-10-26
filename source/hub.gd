@@ -7,16 +7,16 @@ const NAVY2 := Color(0.12, 0.17, 0.34, 0.96)
 const GOLD := Color(1.0, 0.82, 0.2)
 const INK := Color(0.1, 0.07, 0.12)
 const MISSIONS := [
-	["Spiele 3 Runden", 3, 60, 0],
-	["Erledige 5 Gegner", 5, 80, 0],
-	["Erreiche die Top 10", 1, 0, 5],
+	["Play 3 rounds", 3, 60, 0],
+	["Eliminate 5 enemies", 5, 80, 0],
+	["Reach the top 10", 1, 0, 5],
 ]
 const SHOP := [
-	["shield", "Startschild", "Beginne mit 50 Schild", 50],
-	["pistol", "Start-Pistole", "Beginne mit Pistole + Munition", 40],
-	["xp", "Doppel-XP", "Doppelte XP für 1 Runde", 80],
+	["shield", "Starting shield", "Start with 50 shield", 50],
+	["pistol", "Starter pistol", "Start with pistol + ammo", 40],
+	["xp", "Double XP", "Double XP for 1 round", 80],
 ]
-const TABS := ["SHOP", "SKINS", "KAMPF", "AUFGABEN", "MEHR"]
+const TABS := ["SHOP", "SKINS", "BATTLE", "TASKS", "MORE"]
 
 class Ico extends Control:
 	var kind := "coin"
@@ -199,7 +199,7 @@ func _build_top() -> void:
 	_box(self, Vector2(60, 52), Vector2(38, 28), GOLD, 10, 3)
 	lvl_lbl = _lbl(self, "1", Vector2(60, 52), Vector2(38, 28), 20, INK)
 	lvl_lbl.add_theme_constant_override("outline_size", 0)
-	_lbl(self, "SPIELER", Vector2(108, 8), Vector2(200, 32), 24)
+	_lbl(self, "PLAYER", Vector2(108, 8), Vector2(200, 32), 24)
 	xp_bar = Control.new()
 	xp_bar.position = Vector2(108, 46)
 	xp_bar.size = Vector2(190, 18)
@@ -228,13 +228,13 @@ func _side(parent: Control, kind: String, caption: String, pos: Vector2, col: Co
 
 func _build_battle() -> void:
 	# Linke Spalte
-	var b1 := _side(bat, "list", "AUFGABEN", Vector2(20, 130), Color(0.85, 0.5, 0.2))
+	var b1 := _side(bat, "list", "TASKS", Vector2(20, 130), Color(0.85, 0.5, 0.2))
 	b1.pressed.connect(func(): set_tab(3))
-	var b2 := _side(bat, "star", "SAISON-PASS", Vector2(20, 236), Color(0.55, 0.4, 0.8))
+	var b2 := _side(bat, "star", "SEASON PASS", Vector2(20, 236), Color(0.55, 0.4, 0.8))
 	b2.pressed.connect(func(): set_tab(4))
 	var b3 := _side(bat, "shield", "SKINS", Vector2(20, 342), Color(0.25, 0.55, 0.85))
 	b3.pressed.connect(func(): set_tab(1))
-	var b4 := _side(bat, "mode", "LIVE-MODUS", Vector2(20, 448), Color(0.9, 0.25, 0.5))
+	var b4 := _side(bat, "mode", "LIVE MODE", Vector2(20, 448), Color(0.9, 0.25, 0.5))
 	b4.pressed.connect(func(): m.start_live({}))
 	# Rechte Spalte
 	m.team_btn = _side(bat, "team", "", Vector2(1110, 130), Color(0.2, 0.55, 0.75))
@@ -260,7 +260,7 @@ func _build_battle() -> void:
 	plate_lbl = _lbl(bat, "Astronaut", Vector2(500, 478), Vector2(280, 30), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	plate_sub = _lbl(bat, "", Vector2(500, 506), Vector2(280, 24), 16, Color(0.7, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
 	# Spielen
-	m.menu_play = _button(bat, "SPIELEN", Vector2(450, 548), Vector2(380, 80), Color(1.0, 0.75, 0.1), 46, INK)
+	m.menu_play = _button(bat, "PLAY", Vector2(450, 548), Vector2(380, 80), Color(1.0, 0.75, 0.1), 46, INK)
 	m.menu_play.add_theme_color_override("font_outline_color", Color(1, 0.95, 0.7, 0.8))
 	m.menu_play.pressed.connect(m._on_menu_play)
 	sub_lbl = _lbl(bat, "", Vector2(450, 628), Vector2(380, 24), 16, Color(0.85, 0.92, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
@@ -303,8 +303,8 @@ func refresh() -> void:
 	win_lbl.text = str(int(h["wins"]))
 	avatar.texture = m._load_tex(m.ART + "portrait_" + m.save_skin + ".png")
 	plate_lbl.text = m._skin_name()
-	plate_sub.text = "Stufe %d" % lvl
-	sub_lbl.text = "%s · %s · %s" % [["SOLO", "DUO", "TRIO", "QUATTRO"][m.team_size - 1], ["Wiese", "Wüste", "Schnee", "Düster"][m.map_theme], "Hardcore" if m.hardcore else "Normal"]
+	plate_sub.text = "Level %d" % lvl
+	sub_lbl.text = "%s · %s · %s" % [["SOLO", "DUO", "TRIO", "QUAD"][m.team_size - 1], ["Meadow", "Desert", "Snow", "Dark"][m.map_theme], "Hardcore" if m.hardcore else "Normal"]
 	if side_icons.has("sound"):
 		var ic: Ico = side_icons["sound"]
 		ic.col = Color(0.6, 0.6, 0.65) if m.muted else Color.WHITE
@@ -361,7 +361,7 @@ func _build_skins() -> void:
 		_box(card, Vector2(0, 142), Vector2(270, 70), Color(0.03, 0.04, 0.1, 0.8), 14, 0).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_lbl(card, e[2], Vector2(0, 148), Vector2(270, 32), 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		if unlocked:
-			_lbl(card, "AUSGERÜSTET" if sel else "TIPPEN ZUM AUSRÜSTEN", Vector2(0, 178), Vector2(270, 26), 15, GOLD if sel else Color(0.8, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+			_lbl(card, "EQUIPPED" if sel else "TAP TO EQUIP", Vector2(0, 178), Vector2(270, 26), 15, GOLD if sel else Color(0.8, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
 			var btn := Button.new()
 			btn.flat = true
 			btn.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -376,12 +376,12 @@ func _build_skins() -> void:
 			card.add_child(btn)
 		else:
 			_ico(card, "lock", Vector2(106, 50), Vector2(58, 58), Color(0.85, 0.85, 0.9))
-			_lbl(card, "Stufe %d" % e[0], Vector2(0, 178), Vector2(270, 26), 18, Color(1, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER)
+			_lbl(card, "Level %d" % e[0], Vector2(0, 178), Vector2(270, 26), 18, Color(1, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER)
 
 # ---------- Shop ----------
 func _build_shop() -> void:
 	_panel_base("SHOP")
-	_lbl(pan, "Gekaufte Gegenstände gelten für deine nächste Runde.", Vector2(24, 62), Vector2(800, 30), 18, Color(0.8, 0.9, 1.0))
+	_lbl(pan, "Purchased items apply to your next round.", Vector2(24, 62), Vector2(800, 30), 18, Color(0.8, 0.9, 1.0))
 	var h: Dictionary = m.hub_data
 	for i in SHOP.size():
 		var it: Array = SHOP[i]
@@ -408,8 +408,8 @@ func _build_shop() -> void:
 
 # ---------- Aufgaben ----------
 func _build_missions() -> void:
-	_panel_base("TÄGLICHE AUFGABEN")
-	_lbl(pan, "Neue Aufgaben jeden Tag.", Vector2(24, 62), Vector2(600, 30), 18, Color(0.8, 0.9, 1.0))
+	_panel_base("DAILY TASKS")
+	_lbl(pan, "New tasks every day.", Vector2(24, 62), Vector2(600, 30), 18, Color(0.8, 0.9, 1.0))
 	var h: Dictionary = m.hub_data
 	for i in MISSIONS.size():
 		var ms: Array = MISSIONS[i]
@@ -430,10 +430,10 @@ func _build_missions() -> void:
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(bar)
 		_lbl(row, "%d / %d" % [prog, ms[1]], Vector2(640, 68), Vector2(120, 34), 22)
-		var rtxt := ("%d Münzen" % ms[2]) if int(ms[2]) > 0 else ("%d Edelsteine" % ms[3])
+		var rtxt := ("%d coins" % ms[2]) if int(ms[2]) > 0 else ("%d gems" % ms[3])
 		_ico(row, "coin" if int(ms[2]) > 0 else "gem", Vector2(770, 16), Vector2(36, 36))
 		_lbl(row, rtxt, Vector2(812, 12), Vector2(150, 44), 20, GOLD)
-		var bt := "ERHALTEN" if claimed else ("ABHOLEN" if done else "OFFEN")
+		var bt := "CLAIMED" if claimed else ("CLAIM" if done else "OPEN")
 		var b := _button(row, bt, Vector2(960, 40), Vector2(180, 52), Color(0.3, 0.75, 0.4) if (done and not claimed) else Color(0.4, 0.4, 0.5), 24)
 		b.disabled = not done or claimed
 		var idx := i
@@ -447,12 +447,12 @@ func _build_missions() -> void:
 
 # ---------- Mehr ----------
 func _build_more() -> void:
-	_panel_base("MEHR")
+	_panel_base("MORE")
 	var h: Dictionary = m.hub_data
-	var rec := "REKORDE\n\nGespielte Runden: %d\nSiege: %d\nBeste Platzierung: %s\nMeiste Kills: %d" % [int(h["matches"]), int(h["wins"]), ("#%d" % int(h["best_place"])) if int(h["best_place"]) > 0 else "–", int(h["best_kills"])]
+	var rec := "RECORDS\n\nRounds played: %d\nWins: %d\nBest placement: %s\nMost kills: %d" % [int(h["matches"]), int(h["wins"]), ("#%d" % int(h["best_place"])) if int(h["best_place"]) > 0 else "–", int(h["best_kills"])]
 	var l1 := _lbl(pan, rec, Vector2(30, 70), Vector2(360, 300), 22, Color.WHITE)
 	l1.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	var ctl := "STEUERUNG\n\nJoystick links: laufen\nFEUER halten: schießen, Daumen ziehen: zielen\nBlitz: Sprung / Dash\nII oben: Pause\nPC: WASD, Maus, Leertaste, Shift\nBlau = Schild, Rot = Sprung,\nGelb = Power, Grün = Speed"
+	var ctl := "CONTROLS\n\nLeft joystick: move\nHOLD FIRE: shoot, drag thumb: aim\nLightning: jump / dash\nII top: pause\nPC: WASD, mouse, space, shift\nBlue = shield, Red = jump,\nYellow = power, Green = speed"
 	var l2 := _lbl(pan, ctl, Vector2(420, 70), Vector2(380, 440), 20, Color.WHITE)
 	l2.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	l2.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

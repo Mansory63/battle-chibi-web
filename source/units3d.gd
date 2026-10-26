@@ -257,6 +257,25 @@ func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
 			ap.play(anim, 0.12)
 	ap.speed_scale = speed
 
+# Ohne Waffe: Hand in Hautfarbe statt Boxhandschuh; mit Waffe wieder normal
+func _set_bare_hand(d: Dictionary, bare: bool) -> void:
+	if d.get("bare", false) == bare or d.get("hand") == null:
+		return
+	d["bare"] = bare
+	_paint_hand(d["hand"], bare)
+
+func _paint_hand(n: Node, bare: bool) -> void:
+	for c in n.get_children():
+		if c is MeshInstance3D:
+			if bare:
+				var mat := StandardMaterial3D.new()
+				mat.albedo_color = Color(0.93, 0.76, 0.6)
+				mat.roughness = 0.8
+				c.material_override = mat
+			else:
+				c.material_override = null
+		_paint_hand(c, bare)
+
 func _set_weapon(d: Dictionary, kind: String) -> void:
 	if d["weapon"] == kind:
 		return
@@ -337,6 +356,7 @@ func update_unit(id: String, e: Dictionary) -> void:
 	var weapon: String = e.get("weapon", "")
 	_set_weapon(d, weapon)
 	var armed: bool = weapon != "" and weapon != "fist" and not (weapon in ["bat", "pan", "extinguisher", "katana", "hammer"])
+	_set_bare_hand(d, (weapon == "" or weapon == "fist") and e.get("look", "") != "zombie")
 	var anim := "idle"
 	var spd := 1.0
 	if not e.get("alive", true):
@@ -678,6 +698,41 @@ func build_deco(pumpkins: Array, scare_pos: Vector2) -> void:
 	sc.material_overlay = _tree_outline
 	sc.position = Vector3(scare_pos.x, 0, scare_pos.y)
 	world_root.add_child(sc)
+
+# Spinnennetze auf dem Boden (dunkle Karte): Speichen + Ringe als dünne Linien
+func build_webs(spots: Array) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var col := Color(0.88, 0.9, 0.95)
+	var spokes := 8
+	var R := 44.0
+	for i in spots.size():
+		var c: Vector2 = spots[i]
+		var rot := float(i) * 0.37
+		for s in spokes:
+			_web_seg(st, c, c + Vector2.from_angle(TAU * float(s) / float(spokes) + rot) * R, col)
+		for ring in [0.35, 0.65, 1.0]:
+			for s in spokes:
+				var a0 := TAU * float(s) / float(spokes) + rot
+				var a1 := TAU * float(s + 1) / float(spokes) + rot
+				_web_seg(st, c + Vector2.from_angle(a0) * R * ring, c + Vector2.from_angle(a1) * R * ring, col)
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var web_mat := StandardMaterial3D.new()
+	web_mat.albedo_color = col
+	web_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mi.material_override = web_mat
+	world_root.add_child(mi)
+
+func _web_seg(st: SurfaceTool, a: Vector2, b: Vector2, col: Color) -> void:
+	var d := b - a
+	if d.length() < 0.01:
+		return
+	var n := Vector2(-d.y, d.x).normalized() * 0.9
+	var p := [Vector3(a.x + n.x, 0.8, a.y + n.y), Vector3(a.x - n.x, 0.8, a.y - n.y), Vector3(b.x - n.x, 0.8, b.y - n.y), Vector3(b.x + n.x, 0.8, b.y + n.y)]
+	for idx in [0, 1, 2, 0, 2, 3]:
+		st.set_color(col)
+		st.add_vertex(p[idx])
 
 # ---------- Loot als 3D-Objekte ----------
 var loot_nodes: Dictionary = {}

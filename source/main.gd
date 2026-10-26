@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026073216"
+const BUILD := "20261026074659"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -52,25 +52,25 @@ const WALL_COLOR := Color(0.92, 0.85, 0.72)
 const WALL_EDGE := Color(0.45, 0.35, 0.28)
 
 const WEAPONS := {
-	"pistol": {"name": "Pistole", "damage": 20.0, "cooldown": 0.45, "speed": 700.0, "ammo": 15, "spread": 0.0, "pellets": 1},
+	"pistol": {"name": "Pistol", "damage": 20.0, "cooldown": 0.45, "speed": 700.0, "ammo": 15, "spread": 0.0, "pellets": 1},
 	"smg": {"name": "Uzi", "damage": 8.0, "cooldown": 0.07, "speed": 750.0, "ammo": 120, "spread": 0.12, "pellets": 1},
 	"ak": {"name": "AK", "damage": 15.0, "cooldown": 0.15, "speed": 900.0, "ammo": 60, "spread": 0.05, "pellets": 1},
 	"minigun": {"name": "Minigun", "damage": 7.0, "cooldown": 0.05, "speed": 820.0, "ammo": 200, "spread": 0.14, "pellets": 1},
 	"shotgun": {"name": "Pumpgun", "damage": 12.0, "cooldown": 0.9, "speed": 620.0, "ammo": 10, "spread": 0.28, "pellets": 6},
-	"sniper": {"name": "Scharfschützengewehr", "damage": 65.0, "cooldown": 1.3, "speed": 1200.0, "ammo": 5, "spread": 0.0, "pellets": 1},
-	"rocket": {"name": "Raketenwerfer", "damage": 60.0, "cooldown": 1.6, "speed": 480.0, "ammo": 3, "spread": 0.0, "pellets": 1, "explode": 95.0},
+	"sniper": {"name": "Sniper Rifle", "damage": 65.0, "cooldown": 1.3, "speed": 1200.0, "ammo": 5, "spread": 0.0, "pellets": 1},
+	"rocket": {"name": "Rocket Launcher", "damage": 60.0, "cooldown": 1.6, "speed": 480.0, "ammo": 3, "spread": 0.0, "pellets": 1, "explode": 95.0},
 	"revolver": {"name": "Revolver", "damage": 34.0, "cooldown": 0.62, "speed": 850.0, "ammo": 6, "spread": 0.02, "pellets": 1},
-	"crossbow": {"name": "Armbrust", "damage": 52.0, "cooldown": 1.05, "speed": 1050.0, "ammo": 6, "spread": 0.0, "pellets": 1},
-	"laser": {"name": "Laserkanone", "damage": 11.0, "cooldown": 0.085, "speed": 1500.0, "ammo": 160, "spread": 0.025, "pellets": 1},
+	"crossbow": {"name": "Crossbow", "damage": 52.0, "cooldown": 1.05, "speed": 1050.0, "ammo": 6, "spread": 0.0, "pellets": 1},
+	"laser": {"name": "Laser Cannon", "damage": 11.0, "cooldown": 0.085, "speed": 1500.0, "ammo": 160, "spread": 0.025, "pellets": 1},
 	"bot": {"name": "Bot", "damage": 5.0, "cooldown": 1.0, "speed": 600.0, "ammo": 999, "spread": 0.18, "pellets": 1},
 }
 const LOOT_NAMES := {
-	"heal": "Medipack klein", "heal_big": "Medipack groß", "shield_big": "Schild groß", "pistol": "Pistole", "smg": "Uzi", "ak": "AK", "minigun": "Minigun",
-	"shotgun": "Pumpgun", "sniper": "Scharfschützengewehr", "rocket": "Raketenwerfer",
-	"shield": "Schild klein", "jump": "Sprung", "power": "Power", "speed": "Speed",
+	"heal": "Small medipack", "heal_big": "Large medipack", "shield_big": "Large shield", "pistol": "Pistol", "smg": "Uzi", "ak": "AK", "minigun": "Minigun",
+	"shotgun": "Pumpgun", "sniper": "Sniper Rifle", "rocket": "Rocket Launcher",
+	"shield": "Small shield", "jump": "Jump", "power": "Power", "speed": "Speed",
 	"board": "Skateboard", "dash": "Dash",
-	"bat": "Baseballschläger", "pan": "Pfanne", "extinguisher": "Feuerlöscher", "chest": "Kiste",
-	"revolver": "Revolver", "crossbow": "Armbrust", "laser": "Laserkanone", "katana": "Katana", "hammer": "Vorschlaghammer",
+	"bat": "Baseball bat", "pan": "Frying pan", "extinguisher": "Fire extinguisher", "chest": "Crate",
+	"revolver": "Revolver", "crossbow": "Crossbow", "laser": "Laser Cannon", "katana": "Katana", "hammer": "Sledgehammer",
 }
 const LOOT_COLORS := {
 	"heal": Color(1, 0.3, 0.4), "heal_big": Color(1, 0.3, 0.4), "shield_big": Color(0.3, 0.6, 1.0), "pistol": Color(0.35, 0.35, 0.4), "smg": Color(0.4, 0.8, 0.3),
@@ -83,17 +83,17 @@ const LOOT_COLORS := {
 }
 # Bodenloot: wenig, vor allem Heilung, Nahkampf und einfache Waffen. Die guten Sachen sind in Kisten.
 const LOOT_WEIGHTED := ["heal", "heal", "heal", "shield", "shield", "bat", "pan", "extinguisher", "bat", "pistol", "pistol", "smg", "shotgun", "jump", "power", "speed", "revolver", "katana", "hammer"]
-const RARITY_NAMES := ["Gewöhnlich", "Selten", "Episch", "Legendär"]
+const RARITY_NAMES := ["Common", "Rare", "Epic", "Legendary"]
 const RARITY_COLORS := [Color(0.35, 0.85, 0.4), Color(0.3, 0.6, 1.0), Color(0.7, 0.4, 1.0), Color(1.0, 0.78, 0.15)]
 const RARITY_MULT := [1.0, 1.15, 1.3, 1.5]
 const CHEST_WEAPONS := [["pistol", "smg", "shotgun", "revolver"], ["smg", "shotgun", "ak", "revolver", "crossbow"], ["ak", "shotgun", "sniper", "minigun", "crossbow", "laser"], ["minigun", "rocket", "sniper", "ak", "laser"]]
 const MELEE := {
-	"fist": {"name": "Fäuste", "damage": 10.0, "cooldown": 0.45, "range": 58.0},
-	"bat": {"name": "Baseballschläger", "damage": 24.0, "cooldown": 0.6, "range": 72.0},
-	"pan": {"name": "Pfanne", "damage": 20.0, "cooldown": 0.5, "range": 64.0},
-	"extinguisher": {"name": "Feuerlöscher", "damage": 15.0, "cooldown": 0.32, "range": 68.0},
+	"fist": {"name": "Fists", "damage": 10.0, "cooldown": 0.45, "range": 58.0},
+	"bat": {"name": "Baseball bat", "damage": 24.0, "cooldown": 0.6, "range": 72.0},
+	"pan": {"name": "Frying pan", "damage": 20.0, "cooldown": 0.5, "range": 64.0},
+	"extinguisher": {"name": "Fire extinguisher", "damage": 15.0, "cooldown": 0.32, "range": 68.0},
 	"katana": {"name": "Katana", "damage": 30.0, "cooldown": 0.5, "range": 80.0},
-	"hammer": {"name": "Vorschlaghammer", "damage": 45.0, "cooldown": 0.95, "range": 70.0},
+	"hammer": {"name": "Sledgehammer", "damage": 45.0, "cooldown": 0.95, "range": 70.0},
 }
 const ROOM_FURNITURE := [
 	Rect2(60, 60, 150, 80),    # Bett
@@ -115,6 +115,7 @@ var trees: Array[Vector2] = []
 var grass_spots: Array[Vector2] = []
 var loot: Array[Dictionary] = []     # Außen: {pos, kind}
 var bots: Array[Dictionary] = []     # {pos, health, alive, color, dir, think, cd, tex, gun, aim}
+var team_focus: Array = [-1, -1, -1, -1, -1, -1]
 var bullets: Array[Dictionary] = []  # {pos, vel, damage, life, owner}
 var interior_loot: Dictionary = {}   # Haus-Index -> Array[Dictionary] (Innenraum-Loot)
 
@@ -137,8 +138,8 @@ const XP_PER_LEVEL := 300
 const MAX_LEVEL := 20
 # Saison-Pass: Stufe -> freigeschalteter Skin
 const SKINS := [
-	[1, "char_player", "Astronaut"], [2, "char_red", "Pirat"], [4, "char_green", "Ninja"], [6, "char_yellow", "Koch"],
-	[8, "char_purple", "Roboter"], [10, "char_orange", "Feuerwehr"], [13, "char_cyan", "Wikinger"], [16, "char_pink", "Cowboy"],
+	[1, "char_player", "Astronaut"], [2, "char_red", "Pirate"], [4, "char_green", "Ninja"], [6, "char_yellow", "Chef"],
+	[8, "char_purple", "Robot"], [10, "char_orange", "Firefighter"], [13, "char_cyan", "Viking"], [16, "char_pink", "Cowboy"],
 ]
 var menu_title: Label
 var hub: Control
@@ -194,7 +195,7 @@ var fireballs: Array[Dictionary] = []
 var shake := 0.0
 var tut_done := false
 var tut_step := 0
-const TUT_TEXTS := ["Linker Daumen: laufen", "Rechter Daumen: FEUER halten = schießen, ziehen = zielen", "Kisten öffnen: 3 Sekunden daneben stehen", "Bleib in der Zone, das Feuer außen tut weh!"]
+const TUT_TEXTS := ["Linker Daumen: laufen", "Right thumb: HOLD FIRE = shoot, drag = aim", "Open crates: stand next to them for 3 seconds", "Stay in the zone, the fire outside hurts!"]
 var zone_dmg := ZONE_DAMAGE_PER_SEC
 var zone_time := ZONE_SHRINK_TIME
 var bot_dmg_mult := 0.5
@@ -202,7 +203,7 @@ var bot_cd_mult := 1.0
 var xp_mult := 1.0
 var mode_btn: Button
 var map_btn: Button
-var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee, 3 Düster
+var map_theme := 3   # Neues Projekt: dunkle Karte als Standard
 var team_size := 1   # 1 Solo, 2 Duo, 3 Trio, 4 Quattro
 var team_btn: Button
 var total_teams := 50
@@ -306,6 +307,16 @@ func _ready() -> void:
 		units3d.build_deco(pumpkins, scare)
 	else:
 		units3d.build_deco(pumpkins, Vector2(-500, -500))
+	# Spinnennetze verteilt über die dunkle Karte
+	if map_theme == 3:
+		var webs: Array = []
+		for i in 600:
+			if webs.size() >= 45:
+				break
+			var wp := Vector2(randf_range(60, MAP_SIZE.x - 60), randf_range(60, MAP_SIZE.y - 60))
+			if _is_free(wp, 50.0) and not _on_road(wp, 40.0):
+				webs.append(wp)
+		units3d.build_webs(webs)
 
 	cam = Camera2D.new()
 	cam.zoom = Vector2(ZOOM, ZOOM)
@@ -447,7 +458,7 @@ func _draw_hud(vs: Vector2) -> void:
 	if show_fps:
 		_text(Vector2(vs.x - 150, 40), "FPS %d" % fps_shown, 22, Color(0.4, 1.0, 0.4), 140.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	_pill(Rect2(16, 14, 170, 40), Color(0.05, 0.06, 0.12, 0.7), 20)
-	_text(Vector2(30, 60), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
+	_text(Vector2(30, 60), "LEFT  %d" % alive, 24, Color(1, 0.9, 0.5))
 	_pill(Rect2(16, 60, 130, 34), Color(0.05, 0.06, 0.12, 0.7), 17)
 	_text(Vector2(30, 100), "KILLS  %d" % kills, 20)
 	# Kill-Feed
@@ -533,7 +544,7 @@ func _draw_fx_inner() -> void:
 			fx.draw_rect(Rect2(vs.x - m, 0, m, vs.y), Color(1, 0.1, 0.1, a * 0.3))
 	if phase == "fall":
 		_pill(Rect2(vs.x * 0.5 - 150, 84, 300, 44), Color(0.05, 0.06, 0.12, 0.7), 22)
-		_text(Vector2(vs.x * 0.5 - 150, 116), "Landung in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(Vector2(vs.x * 0.5 - 150, 116), "Landing in %d s" % int(ceil(fall_timer)), 24, Color(1, 0.9, 0.5), 300.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if live_mode:
 		live.draw_hud(vs)
 	if show_fps:
@@ -638,7 +649,7 @@ func _build_pause() -> void:
 	box.size = Vector2(400, 380)
 	box.add_theme_constant_override("separation", 16)
 	pstage.add_child(box)
-	var resume := _menu_button("WEITER", Color(0.25, 0.75, 0.35))
+	var resume := _menu_button("CONTINUE", Color(0.25, 0.75, 0.35))
 	resume.pressed.connect(_toggle_pause)
 	var esc := InputEventKey.new()
 	esc.keycode = KEY_ESCAPE
@@ -651,7 +662,7 @@ func _build_pause() -> void:
 		_toggle_sound()
 		_update_menu_buttons())
 	box.add_child(pause_sound_btn)
-	var quit_btn := _menu_button("AUFGEBEN", Color(0.8, 0.3, 0.3))
+	var quit_btn := _menu_button("GIVE UP", Color(0.8, 0.3, 0.3))
 	quit_btn.pressed.connect(func():
 		get_tree().paused = false
 		get_tree().reload_current_scene())
@@ -662,7 +673,7 @@ func _toggle_pause() -> void:
 		return
 	paused_away = not paused_away
 	pause_layer.visible = paused_away
-	pause_info.text = "Du bist weg vom Spiel, bleibst aber verbunden und kannst getroffen werden." if ONLINE else "Das Spiel ist angehalten."
+	pause_info.text = "You left the game, but you stay connected and can still be hit." if ONLINE else "The game is paused."
 	if not ONLINE:
 		get_tree().paused = paused_away
 	_update_menu_buttons()
@@ -733,7 +744,7 @@ func _on_menu_play() -> void:
 	phase = "fall"
 	if music_player and not music_player.playing:
 		music_player.play()
-	_show_message("Fallschirm-Absprung! Steuere zum Landeplatz", 3.0)
+	_show_message("Parachute jump! Steer to the landing zone", 3.0)
 
 func start_live(opts := {}) -> void:
 	if live_mode:
@@ -780,12 +791,12 @@ func _check_live_args() -> void:
 		start_live(opts)
 
 func _show_end_menu(title: String) -> void:
-	_play_sfx("win" if title.begins_with("SIEG") else "lose", -4.0)
+	_play_sfx("win" if title.begins_with("WIN") else "lose", -4.0)
 	menu_title.text = title
 	menu_title.add_theme_font_size_override("font_size", 30)
 	menu_title.size = Vector2(700, 72)
 	menu_title.position = Vector2(290, 6)
-	menu_play.text = "NOCHMAL"
+	menu_play.text = "AGAIN"
 	hub.set_tab(2)
 	menu_layer.visible = true
 	touch.visible = false
@@ -801,7 +812,7 @@ func _load_save() -> void:
 		save_skin = str(cfg.get_value("pass", "skin", "char_player"))
 		muted = bool(cfg.get_value("settings", "muted", false))
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
-		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 4
+		map_theme = int(cfg.get_value("settings", "map_theme", 3)) % 4
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
 		var hd = cfg.get_value("hub", "data", {})
@@ -859,27 +870,27 @@ func _set_side(b: Button, t: String) -> void:
 		(b.get_meta("lbl") as Label).text = t
 
 func _update_menu_buttons() -> void:
-	_set_side(sound_btn, "TON\nAUS" if muted else "TON\nAN")
+	_set_side(sound_btn, "SOUND\nOFF" if muted else "SOUND\nON")
 	_set_side(mode_btn, "HARDCORE" if hardcore else "NORMAL")
-	_set_side(team_btn, "TEAM\n" + ["SOLO", "DUO", "TRIO", "QUATTRO"][team_size - 1])
-	_set_side(map_btn, "KARTE\n" + ["WIESE", "WÜSTE", "SCHNEE", "DÜSTER"][map_theme])
+	_set_side(team_btn, "TEAM\n" + ["SOLO", "DUO", "TRIO", "QUAD"][team_size - 1])
+	_set_side(map_btn, "MAP\n" + ["MEADOW", "DESERT", "SNOW", "DARK"][map_theme])
 	if mode_btn:
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
-		pause_sound_btn.text = "TON AUS" if muted else "TON AN"
+		pause_sound_btn.text = "SOUND OFF" if muted else "SOUND ON"
 	if hub:
 		hub.refresh()
 
 func _update_pass_label() -> void:
 	var lvl := _level()
 	var into := save_xp % XP_PER_LEVEL
-	var txt := "SAISON 1 – STUFE %d / %d\nXP: %d / %d bis zur nächsten Stufe\n\nBelohnungen:\n" % [lvl, MAX_LEVEL, into, XP_PER_LEVEL]
+	var txt := "SEASON 1 – LEVEL %d / %d\nXP: %d / %d to next level\n\nRewards:\n" % [lvl, MAX_LEVEL, into, XP_PER_LEVEL]
 	if lvl >= MAX_LEVEL:
 		txt = "SAISON 1 – MAXIMALE STUFE %d\n\nBelohnungen:\n" % MAX_LEVEL
 	for e in SKINS:
 		var mark := "✔" if lvl >= e[0] else "🔒"
-		txt += "%s  Stufe %d: Skin %s\n" % [mark, e[0], e[2]]
-	txt += "\nXP: 20 pro Runde, 50 pro Kill, bis 300 für die Platzierung"
+		txt += "%s  Level %d: Skin %s\n" % [mark, e[0], e[2]]
+	txt += "\nXP: 20 per round, 50 per kill, up to 300 for placement"
 	pass_label.text = txt
 
 func _award_xp() -> String:
@@ -889,10 +900,10 @@ func _award_xp() -> String:
 	save_xp += gained
 	var coins := 10 + kills * 8 + maxi(0, 20 - placement) * 3 + (50 if placement == 1 else 0)
 	_record_match(coins)
-	var msg := "+%d XP  +%d Münzen" % [gained, coins]
+	var msg := "+%d XP  +%d coins" % [gained, coins]
 	if _level() > before:
 		hub_data["gems"] = int(hub_data["gems"]) + 2
-		msg += "   STUFE %d! +2 Edelsteine" % _level()
+		msg += "   LEVEL %d! +2 gems" % _level()
 	_write_save()
 	_update_menu_buttons()
 	return msg
@@ -1297,7 +1308,7 @@ func _open_chest(list: Array[Dictionary], pos: Vector2, rar: int) -> void:
 		var ang := -PI / 2.0 + (k - (drops.size() - 1) / 2.0) * 0.9
 		list.append({"pos": pos + Vector2.from_angle(ang) * 62.0, "kind": drops[k][0], "rar": drops[k][1]})
 	_play_sfx("power", 0.0)
-	_show_message("%s-Kiste geöffnet!" % RARITY_NAMES[rar], 1.2)
+	_show_message("%s crate opened!" % RARITY_NAMES[rar], 1.2)
 
 func _set_camera_limits(_outdoor: bool) -> void:
 	# Bei gekippter Kamera keine festen Grenzen; außerhalb der Insel liegt Wasser
@@ -1412,7 +1423,7 @@ func _enter_house(i: int) -> void:
 	inside = i
 	player_pos = Vector2(ROOM_DOOR.x, ROOM_DOOR.y - 60)
 	_set_camera_limits(false)
-	_show_message("Im Haus. [E] verlässt das Haus", 2.0)
+	_show_message("Inside. [E] leaves the house", 2.0)
 
 func _exit_house() -> void:
 	var door := _door_of(inside)   # Tür merken, bevor inside zurückgesetzt wird
@@ -1583,7 +1594,7 @@ func _outbreak() -> void:
 			n += 1
 	while n < 14:
 		var z := {"pos": door, "team": 6, "health": 60.0, "alive": true, "color": Color(0.5, 0.9, 0.4), "dir": Vector2.DOWN, "think": 1.0, "cd": 1.0,
-			"tex": null, "skin": "char_green", "gun": null, "weapon": "fist", "rar": 0, "aim": Vector2.DOWN, "zombie": true, "name": "Knochen-Soldat", "viewer": false, "scale": 0.95}
+			"tex": null, "skin": "char_green", "gun": null, "weapon": "fist", "rar": 0, "aim": Vector2.DOWN, "zombie": true, "name": "Bone soldier", "viewer": false, "scale": 0.95}
 		bots.append(z)
 		_revive_zombie(z, door, n)
 		n += 1
@@ -1591,9 +1602,9 @@ func _outbreak() -> void:
 	shake = maxf(shake, 0.5)
 	_play_sfx("rocket", -6.0)
 	if live_mode:
-		live._toast("AUSBRUCH! Knochen-Soldaten sind aus dem Knast!", Color(0.5, 1, 0.4))
+		live._toast("OUTBREAK! Bone soldiers escaped from prison!", Color(0.5, 1, 0.4))
 	else:
-		_show_message("AUSBRUCH! Knochen-Soldaten sind aus dem Knast!", 4.0)
+		_show_message("OUTBREAK! Bone soldiers escaped from prison!", 4.0)
 
 func _revive_zombie(z: Dictionary, door: Vector2, n: int) -> void:
 	z["pos"] = _nearest_free(door + Vector2(randf_range(-70, 70), randf_range(0, 60)), BOT_RADIUS)
@@ -1710,7 +1721,7 @@ func _try_dash() -> void:
 	if jump_charges > 0 and inside < 0:
 		jump_charges -= 1
 		jump_timer = 0.6
-		_show_message("Sprung!", 0.8)
+		_show_message("Jump!", 0.8)
 		return
 	if dash_charges <= 0:
 		return
@@ -1837,7 +1848,7 @@ func _update_fall(delta: float) -> void:
 			weapon = "pistol"
 			ammo = WEAPONS["pistol"]["ammo"]
 		_gather_teammates()
-		_show_message("Gelandet! Sammle Loot und überlebe!", 2.5)
+		_show_message("Landed! Collect loot and survive!", 2.5)
 
 func _update_play(delta: float) -> void:
 	elapsed += delta
@@ -2001,7 +2012,7 @@ func _apply_loot(kind: String) -> void:
 	if WEAPONS.has(kind):
 		_show_message("%s (%s)" % [LOOT_NAMES[kind], RARITY_NAMES[weapon_rar]], 1.4)
 	else:
-		_show_message(LOOT_NAMES[kind] + " eingesammelt", 1.2)
+		_show_message(LOOT_NAMES[kind] + " collected", 1.2)
 
 # Nahkampf: trifft Gegner vor der Figur (Kegel in Blickrichtung)
 func _melee_attack(owner_id: int, origin: Vector2, dir: Vector2, kind: String) -> void:
@@ -2069,12 +2080,37 @@ func _player_died() -> void:
 	placement = _alive_team_count()
 	_show_message("", 0.0)
 	var xp_msg := _award_xp()
-	_show_end_menu("PLATZ %d VON %d   %s" % [placement, total_teams, xp_msg])
+	_show_end_menu("PLACE %d OF %d   %s" % [placement, total_teams, xp_msg])
+
+func _update_team_focus() -> void:
+	# Team gegen Team: jedes Team (1-4) sucht sich das gegnerische Team, dessen nächste Figur seinem Schwerpunkt am nächsten ist
+	for k in range(1, 5):
+		var c := Vector2.ZERO
+		var cn := 0
+		for b in bots:
+			if b["alive"] and int(b["team"]) == k:
+				c += b["pos"]
+				cn += 1
+		team_focus[k] = -1
+		if cn == 0:
+			continue
+		c /= float(cn)
+		var best_d := 1e9
+		for o in bots:
+			var ot := int(o["team"])
+			if not o["alive"] or ot == k or ot < 1 or ot > 4:
+				continue
+			var d: float = o["pos"].distance_to(c)
+			if d < best_d:
+				best_d = d
+				team_focus[k] = ot
 
 func _update_bots(delta: float) -> void:
 	var pw := _player_world()
 	var player_targetable := phase == "play" and inside < 0 and not live_mode
 	_check_outbreak(pw)
+	if live_mode:
+		_update_team_focus()
 	# Boss (Team 5) lebt? Dann kämpfen alle Teams gemeinsam gegen den Boss
 	var boss_i := -1
 	for j in bots.size():
@@ -2106,6 +2142,9 @@ func _update_bots(delta: float) -> void:
 				best = 1e9
 				bt = boss_i
 			else:
+				var rng := best
+				var best_sc := best
+				var focus_t := int(team_focus[team]) if (live_mode and team >= 1 and team <= 4) else -1
 				for j in bots.size():
 					if j == i:
 						continue
@@ -2113,8 +2152,9 @@ func _update_bots(delta: float) -> void:
 					if not o["alive"] or int(o["team"]) == team or (zomb and int(o["team"]) == 5):
 						continue
 					var dd: float = o["pos"].distance_to(b["pos"])
-					if dd < best:
-						best = dd
+					var sc: float = dd * (0.6 if (focus_t >= 0 and int(o["team"]) == focus_t) else 1.0)
+					if dd < rng and sc < best_sc:
+						best_sc = sc
 						bt = j
 			b["tid"] = bt
 		var tid: int = int(b.get("tid", -2))
@@ -2128,6 +2168,7 @@ func _update_bots(delta: float) -> void:
 			has_target = true
 		var to_t: Vector2 = tpos - b["pos"]
 		var dist := to_t.length() if has_target else 99999.0
+		var eng_r := 1100.0 if live_mode else 520.0
 		var step := Vector2.ZERO
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius and not zomb:
@@ -2150,7 +2191,7 @@ func _update_bots(delta: float) -> void:
 					if bots[tid]["health"] <= 0.0:
 						_kill_bot(tid, false)
 				b["cd"] = randf_range(0.7, 1.1)
-		elif has_target and dist < 520.0 and elapsed > 10.0 and not MELEE.has(b["weapon"]) and not (live_mode and elapsed < 60.0 and dist > 200.0):
+		elif has_target and dist < eng_r and elapsed > 10.0 and not MELEE.has(b["weapon"]) and not (live_mode and elapsed < 60.0 and dist > 200.0):
 			# Teamtaktik nur im Live-Modus: Angriff, Flanke, Deckung, Rueckzug.
 			if live_mode and team >= 1 and team <= 4 and not zomb:
 				step = _live_tactical_step(i, b, tpos, dist, delta)
@@ -2162,11 +2203,17 @@ func _update_bots(delta: float) -> void:
 				var aim := to_t.normalized().rotated(randf_range(-0.15, 0.15))
 				_fire(i, b["pos"], aim, b["weapon"])
 				b["cd"] = randf_range(1.2, 2.0) * bot_cd_mult
+				# Munition: Bot-Waffe hat begrenzte Munition; leer -> Fäuste, dann neue Waffe suchen
+				b["ammo"] = int(b.get("ammo", WEAPONS[b["weapon"]]["ammo"])) - 1
+				if int(b["ammo"]) <= 0:
+					b["weapon"] = "fist"
+					b["gun"] = null
+					b["ammo"] = 0
 		else:
 			# ohne Waffe: zur nächsten Waffe laufen, sonst Team folgen oder herumlaufen
 			var target := -1
 			if MELEE.has(b["weapon"]) and not zomb:
-				var best2 := 1000.0 if (live_mode and elapsed < 90.0) else 420.0
+				var best2 := 1100.0 if live_mode else 600.0
 				for li in loot.size():
 					var it: Dictionary = loot[li]
 					if WEAPONS.has(it["kind"]):
@@ -2181,6 +2228,7 @@ func _update_bots(delta: float) -> void:
 					b["weapon"] = it2["kind"]
 					b["rar"] = int(it2.get("rar", 0))
 					b["gun"] = tex_guns.get(it2["kind"], null)
+					b["ammo"] = 999 if it2["kind"] == "pistol" else int(WEAPONS[it2["kind"]]["ammo"])
 					loot.remove_at(target)
 			elif team == 0:
 				# Teamkollege: dem Spieler folgen
@@ -2196,7 +2244,7 @@ func _update_bots(delta: float) -> void:
 				elif live_mode and b["pos"].distance_to(ZONE_CENTER) > 250.0:
 					step = (ZONE_CENTER - b["pos"]).normalized() * 0.7 + (b["dir"] as Vector2) * 0.3
 
-		if has_target and dist < 520.0 and phase == "play":
+		if has_target and dist < eng_r and phase == "play":
 			b["aim"] = to_t.normalized()
 		elif step != Vector2.ZERO:
 			b["aim"] = step.normalized()
@@ -2360,18 +2408,18 @@ func _kill_bot(i: int, by_player := false) -> void:
 	_spark_burst(bots[i]["pos"], Color(1, 1, 1), 16, 260.0)
 	if by_player and int(bots[i]["team"]) != 0:
 		kills += 1
-		_show_message("Gegner erledigt! (%d)" % kills, 1.2)
-		kill_feed.append({"text": "DU  ›  %s" % str(bots[i].get("skin", "Gegner")).replace("char_", "").capitalize(), "t": 0.0})
+		_show_message("Enemy eliminated! (%d)" % kills, 1.2)
+		kill_feed.append({"text": "DU  ›  %s" % str(bots[i].get("skin", "Enemy")).replace("char_", "").capitalize(), "t": 0.0})
 		if kill_feed.size() > 4:
 			kill_feed.pop_front()
 	if not by_player and int(bots[i]["team"]) == 0 and phase == "play":
-		_show_message("Teamkollege ausgeschaltet!", 1.8)
+		_show_message("Teammate eliminated!", 1.8)
 	if phase == "play" and _enemies_alive() == 0:
 		phase = "won"
 		placement = 1
 		_show_message("", 0.0)
 		var xp_msg := _award_xp()
-		_show_end_menu("SIEG! #1   " + xp_msg)
+		_show_end_menu("WIN! #1   " + xp_msg)
 
 func _update_bullets(delta: float) -> void:
 	for kf in kill_feed:
@@ -2421,12 +2469,12 @@ func _update_bullets(delta: float) -> void:
 
 func _update_ui() -> void:
 	if phase == "fall":
-		hud.text = "Fallschirm… Landung in %d s" % int(ceil(fall_timer))
+		hud.text = "Parachute… landing in %d s" % int(ceil(fall_timer))
 	else:
 		var weapon_text: String = MELEE[melee]["name"]
 		if weapon != "":
 			weapon_text = "%s %s (%d)" % [WEAPONS[weapon]["name"], RARITY_NAMES[weapon_rar], ammo]
-		hud.text = "Leben: %d  |  Schild: %d  |  Sprung: %d  |  Dash: %d\nWaffe: %s  |  Übrig: %d  |  Kills: %d" % [
+		hud.text = "Health: %d  |  Shield: %d  |  Jump: %d  |  Dash: %d\nWeapon: %s  |  Left: %d  |  Kills: %d" % [
 			int(health), int(shield), jump_charges, dash_charges, weapon_text, _living_bots() + 1, kills]
 		if power_timer > 0.0:
 			hud.text += "  |  Power %d s" % int(ceil(power_timer))
@@ -2619,7 +2667,7 @@ func _draw_chest_progress() -> void:
 	draw_rect(Rect2(p + Vector2(-39, -6), Vector2(78, 12)), Color(0.2, 0.2, 0.22))
 	draw_rect(Rect2(p + Vector2(-39, -6), Vector2(78.0 * k, 12)), col)
 	var f := ThemeDB.fallback_font
-	draw_string(f, p + Vector2(-40, -16), "Öffnen…", HORIZONTAL_ALIGNMENT_CENTER, 80, 16, Color(1, 1, 1))
+	draw_string(f, p + Vector2(-40, -16), "Opening…", HORIZONTAL_ALIGNMENT_CENTER, 80, 16, Color(1, 1, 1))
 
 func _draw_swings() -> void:
 	for sw in swings:
