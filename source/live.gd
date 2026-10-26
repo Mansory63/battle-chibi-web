@@ -1232,22 +1232,37 @@ func _draw_results(vs: Vector2) -> void:
 		m._text(Vector2(px + pw - 200, py + 144 + r * 30), "%d points · %d kills" % [team_points[k], round_kills[k]], 20, Color.WHITE, 170.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	m._text(Vector2(px, py + 278), "Next round: choose a team and join!", 16, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 
-# Pause-Anzeige: Countdown bis zur nächsten Runde und Warteschlange (Erklärungen laufen über TikTok Studio)
+# Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
+const HOW_TO_PLAY := [
+	"Chat RED, BLUE, GREEN or YELLOW to join",
+	"Likes = reinforcements for your team",
+	"Gifts = weapon + crate for your team",
+	"!shield  !heal  !revive = shop",
+	"Circle shrinks - last one standing wins",
+	"Chat: rules, shop, gift, likes, queue, nuke",
+]
+
 func _draw_pause_info(vs: Vector2) -> void:
-	var pw := minf(vs.x - 40.0, 520.0)
+	var k := clampf(vs.x / 420.0, 0.9, 1.4)
+	var pw := minf(vs.x - 20.0, 620.0)
 	var px := vs.x * 0.5 - pw * 0.5
-	var py := vs.y * 0.5 + 60.0
-	m._pill(Rect2(px, py, pw, 120), Color(0.05, 0.06, 0.12, 0.9), 22)
-	m._text(Vector2(px, py + 12), "NEXT ROUND IN %d s" % int(ceil(pause_t)), 30, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 48), "Queue: %d" % queued, 22, Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var ph := 150.0 * k + HOW_TO_PLAY.size() * 26.0 * k
+	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
+	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.92), 22)
+	m._text(Vector2(px, py + 10 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 52 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
-	for i in mini(4, queue_names.size()):
-		shown.append(str(queue_names[i]).substr(0, 12))
+	for i in mini(3, queue_names.size()):
+		shown.append(str(queue_names[i]).substr(0, 10))
 	var more := queue_names.size() - shown.size()
 	var names_txt := ", ".join(shown)
 	if more > 0:
 		names_txt += "  +%d more" % more
-	m._text(Vector2(px, py + 84), names_txt, 18, Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 88 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := py + 128.0 * k
+	for line in HOW_TO_PLAY:
+		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
+		y += 26.0 * k
 
 # Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
 func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:
