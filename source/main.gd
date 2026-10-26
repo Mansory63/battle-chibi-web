@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026143613"
+const BUILD := "20261026153310"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -553,7 +553,7 @@ func _draw_fx_inner() -> void:
 		_draw_hud(vs)
 		var hb := 112.0 * ZOOM / 1.15
 		_fx_bar2(_fx_screen(player_pos), health, Color(0.3, 0.95, 0.4), hb)
-		if inside < 0:
+		if inside < 0 and not (live_mode and live.state == "pause"):
 			for b in bots:
 				if b["alive"]:
 					if _fx_screen(b["pos"]).distance_squared_to(vs * 0.5) < 1500.0 * 1500.0:
