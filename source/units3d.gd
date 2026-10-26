@@ -537,6 +537,7 @@ func build_world(obstacles: Array, trees: Array, roofs: Array) -> void:
 		var r: Rect2 = obstacles[i]
 		if specials.has(i):
 			_build_special(str(specials[i]), r)
+			_add_landmark_flag(str(specials[i]), r)
 			continue
 		var wall_col: Color = WALL_TINTS[i % WALL_TINTS.size()]
 		var H := HOUSE_WALL_H
@@ -839,6 +840,55 @@ func _add_frustum(st: SurfaceTool, base: Vector3, r0: float, r1: float, h: float
 		var q1 := base + Vector3(cos(a1) * r1, h, sin(a1) * r1)
 		var shade := 0.85 + 0.15 * cos((a0 + a1) * 0.5 - 0.8)
 		_quad(st, p1, p0, q0, q1, Color(col.r * shade, col.g * shade, col.b * shade), Vector2.ZERO, base + Vector3(0, h * 0.5, 0))
+
+# Landesflagge auf dem Mast jedes Wahrzeichens
+const FLAG_BY_KIND := {
+	"brandenburg": {"stripes": "h", "cols": [Color(0.05, 0.05, 0.05), Color(0.85, 0.1, 0.12), Color(1.0, 0.8, 0.1)]},
+	"eiffel": {"stripes": "v", "cols": [Color(0.1, 0.2, 0.7), Color(0.97, 0.97, 0.97), Color(0.85, 0.12, 0.15)]},
+	"pisa": {"stripes": "v", "cols": [Color(0.1, 0.6, 0.25), Color(0.97, 0.97, 0.97), Color(0.85, 0.12, 0.15)]},
+	"colosseum": {"stripes": "v", "cols": [Color(0.1, 0.6, 0.25), Color(0.97, 0.97, 0.97), Color(0.85, 0.12, 0.15)]},
+	"bigben": {"stripes": "uk", "cols": [Color(0.1, 0.18, 0.55), Color(0.97, 0.97, 0.97), Color(0.85, 0.12, 0.15)]},
+}
+
+func _add_landmark_flag(kind: String, r: Rect2) -> void:
+	if not FLAG_BY_KIND.has(kind):
+		return
+	var f: Dictionary = FLAG_BY_KIND[kind]
+	var c := r.get_center()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var base_h := 150.0
+	var fw := 46.0
+	var fh := 26.0
+	_add_box(st, Vector3(c.x, base_h * 0.5, c.y), Vector3(3.5, base_h, 3.5), Color(0.75, 0.75, 0.78))
+	var x0 := c.x + 2.0
+	var y1 := base_h
+	var y0 := base_h - fh
+	var z := c.y
+	var cols: Array = f["cols"]
+	if f["stripes"] == "h":
+		for k in cols.size():
+			var ya := y1 - fh * (k + 1) / cols.size()
+			var yb := y1 - fh * k / cols.size()
+			_quad(st, Vector3(x0, ya, z), Vector3(x0 + fw, ya, z), Vector3(x0 + fw, yb, z), Vector3(x0, yb, z), cols[k])
+	elif f["stripes"] == "v":
+		for k in cols.size():
+			var xa := x0 + fw * k / cols.size()
+			var xb := x0 + fw * (k + 1) / cols.size()
+			_quad(st, Vector3(xa, y0, z), Vector3(xb, y0, z), Vector3(xb, y1, z), Vector3(xa, y1, z), cols[k])
+	else:
+		# Union-Jack-Grundform: blaues Feld, weißes und rotes Kreuz
+		_quad(st, Vector3(x0, y0, z), Vector3(x0 + fw, y0, z), Vector3(x0 + fw, y1, z), Vector3(x0, y1, z), cols[0])
+		var mid_x := x0 + fw * 0.5
+		var mid_y := (y0 + y1) * 0.5
+		_quad(st, Vector3(mid_x - 4, y0, z), Vector3(mid_x + 4, y0, z), Vector3(mid_x + 4, y1, z), Vector3(mid_x - 4, y1, z), cols[1])
+		_quad(st, Vector3(x0, mid_y - 3, z), Vector3(x0 + fw, mid_y - 3, z), Vector3(x0 + fw, mid_y + 3, z), Vector3(x0, mid_y + 3, z), cols[1])
+		_quad(st, Vector3(mid_x - 2.2, y0, z), Vector3(mid_x + 2.2, y0, z), Vector3(mid_x + 2.2, y1, z), Vector3(mid_x - 2.2, y1, z), cols[2])
+		_quad(st, Vector3(x0, mid_y - 1.6, z), Vector3(x0 + fw, mid_y - 1.6, z), Vector3(x0 + fw, mid_y + 1.6, z), Vector3(x0, mid_y + 1.6, z), cols[2])
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = _vc_material()
+	world_root.add_child(mi)
 
 func _build_special(kind: String, r: Rect2) -> void:
 	var st := SurfaceTool.new()
