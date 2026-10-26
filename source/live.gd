@@ -1122,7 +1122,8 @@ func draw_hud(vs: Vector2) -> void:
 		var zp: Vector2 = m._fx_screen(z["pos"])
 		if not Rect2(Vector2(-50, -50), vs + Vector2(100, 100)).has_point(zp):
 			continue
-		m._fx_bar2(zp, minf(100.0, float(z["health"]) / 60.0 * 100.0), Color(0.4, 1.0, 0.3), 56.0 * m.ZOOM)
+		# Ladebalken: füllt sich mit jedem Treffer, bei voll ist der Knochen-Krieger tot
+		m._fx_bar2(zp, clampf((1.0 - float(z["health"]) / 60.0) * 100.0, 0.0, 100.0), Color(1.0, 0.55, 0.15), 56.0 * m.ZOOM)
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2(ui, ui))
 	vs = vs / ui
 	# Spielregeln während der Pause

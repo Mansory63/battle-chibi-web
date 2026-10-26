@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026081206"
+const BUILD := "20261026081343"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2066,13 +2066,19 @@ func _explode(pos: Vector2, bl: Dictionary) -> void:
 	var oteam: int = 0 if ow == -1 else int(bots[ow]["team"])
 	for i in bots.size():
 		var b: Dictionary = bots[i]
-		if b["alive"] and i != ow and int(b["team"]) != oteam and b["pos"].distance_to(pos) < radius + BOT_RADIUS:
+		if b["alive"] and i != ow and int(b["team"]) != oteam and b["pos"].distance_to(pos) < radius + BOT_RADIUS and _zombie_hit_ok(b, ow):
 			b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
 			b["lh"] = ow
 			if b["health"] <= 0.0:
 				_kill_bot(i, ow == -1)
 	if ow != -1 and oteam != 0 and not live_mode and inside < 0 and player_pos.distance_to(pos) < radius + PLAYER_RADIUS:
 		_damage_player(bl["damage"] * 0.6)
+
+# Knochen-Krieger nehmen nur Schaden von Spielern und Zuschauern (nicht von den Bots)
+func _zombie_hit_ok(b: Dictionary, ow: int) -> bool:
+	if not b.get("zombie", false):
+		return true
+	return ow == -1 or (ow >= 0 and ow < bots.size() and bots[ow].get("viewer", false))
 
 func _player_died() -> void:
 	health = 0.0
@@ -2449,7 +2455,7 @@ func _update_bullets(delta: float) -> void:
 			var b: Dictionary = bots[i]
 			if not b["alive"] or i == ow or int(b["team"]) == oteam:
 				continue
-			if b["pos"].distance_to(bl["pos"]) < BOT_RADIUS:
+			if b["pos"].distance_to(bl["pos"]) < BOT_RADIUS and _zombie_hit_ok(b, ow):
 				hit = true
 				if not explodes:
 					b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
