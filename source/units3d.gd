@@ -46,12 +46,13 @@ func setup(host: Node, layer_index := 1) -> void:
 	viewport = SubViewport.new()
 	viewport.transparent_bg = true
 	viewport.own_world_3d = true
-	# Handy/Tablet: weniger Pixel und kein MSAA, damit es flüssig läuft
-	if DisplayServer.is_touchscreen_available():
+	# Nur echte Handys (iPhone/Android) bekommen das schlanke Profil; PC/OBS bleibt voll scharf
+	if OS.has_feature("web_ios") or OS.has_feature("web_android"):
 		res_scale = 0.8
 		viewport.msaa_3d = Viewport.MSAA_DISABLED
 		Engine.max_fps = 30  # gleichmäßige Bilder statt Ruckeln
 	else:
+		res_scale = 1.0
 		viewport.msaa_3d = Viewport.MSAA_2X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
