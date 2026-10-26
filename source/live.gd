@@ -657,12 +657,18 @@ func end_round() -> void:
 var queue_t := 0.0
 
 # Warteschlange live zählen: Zuschauer, die keinen Kämpfer-Platz haben
+var queue_names: Array = []
+
 func _refresh_queue() -> void:
-	var seated := 0
+	var seated := {}
 	for i in SLOTS * 4:
 		if m.bots[i].get("viewer", false):
-			seated += 1
-	queued = maxi(0, viewers.size() - seated)
+			seated[str(m.bots[i].get("name", ""))] = true
+	queue_names.clear()
+	for nm in viewers.keys():
+		if not seated.has(nm):
+			queue_names.append(nm)
+	queued = queue_names.size()
 
 func update(delta: float) -> void:
 	help_t = maxf(0.0, help_t - delta)
@@ -857,84 +863,6 @@ func _boss_dead(b: Dictionary) -> void:
 		_say("Team %s defeated the boss" % TEAM_NAMES[kt])
 	else:
 		_banner("BOSS DEFEATED!", TEAM_COLORS[4], 3.0)
-
-const RULES_LINES := [
-	"1. Chat RED, BLUE, GREEN or YELLOW to join",
-	"2. Likes = reinforcements for your team",
-	"3. Gifts = weapon + crate for your team",
-	"4. Chat shop: !shield · !heal · !revive",
-	"5. The circle shrinks",
-	"6. Last one standing wins",
-]
-
-# Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
-var ticker_x := 0.0
-var ticker_ms := 0
-const TICKER := "HOW TO PLAY:   Chat RED, BLUE, GREEN or YELLOW to join your team   •   Likes = reinforcements for your team   •   Every gift = weapon + crate for your team: Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun · Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket · Universe = NUKE   •   Chat shop: !shield (5 coins) · !heal (10) · !revive (15)   •   The circle shrinks, last one standing wins!   •   "
-
-# Laufschrift von rechts nach links, durchgehend am unteren Rand (für Zuschauer: Spielanleitung)
-func _draw_ticker(vs: Vector2) -> void:
-	var f: Font = ThemeDB.fallback_font
-	var fs := 18 if vs.x >= 620.0 else 14
-	var tw: float = f.get_string_size(TICKER, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 40.0
-	var now_ms := Time.get_ticks_msec()
-	if ticker_ms == 0:
-		ticker_x = vs.x
-	var dt := clampf(float(now_ms - ticker_ms) / 1000.0, 0.0, 0.1) if ticker_ms != 0 else 0.0
-	ticker_ms = now_ms
-	ticker_x -= dt * vs.x * 0.12
-	if ticker_x < -tw:
-		ticker_x += tw
-	m._pill(Rect2(0, vs.y - 178, vs.x, 40), Color(0.05, 0.06, 0.12, 0.85), 10)
-	m._text(Vector2(ticker_x, vs.y - 168), TICKER, fs, Color(1, 0.95, 0.7), tw)
-	m._text(Vector2(ticker_x + tw, vs.y - 168), TICKER, fs, Color(1, 0.95, 0.7), tw)
-
-# Großer Erklärbildschirm in der Pause (Anzeige in Bildschirmkoordinaten)
-const LANG_CARDS := [
-	{"name": "English", "lines": ["Chat RED, BLUE, GREEN or YELLOW to join", "Gifts = weapon + crate for your team", "Last one standing wins"]},
-	{"name": "Deutsch", "lines": ["Schreib ROT, BLAU, GR\u00dcN oder GELB zum Mitmachen", "Geschenke = Waffe + Kiste f\u00fcr dein Team", "Der letzte \u00dcberlebende gewinnt"]},
-	{"name": "Fran\u00e7ais", "lines": ["\u00c9cris ROUGE, BLEU, VERT ou JAUNE pour rejoindre", "Cadeaux = arme + caisse pour ton \u00e9quipe", "Le dernier survivant gagne"]},
-	{"name": "\u0420\u0443\u0441\u0441\u043a\u0438\u0439", "lines": ["\u041d\u0430\u043f\u0438\u0448\u0438 \u041a\u0420\u0410\u0421\u041d\u042b\u0419, \u0421\u0418\u041d\u0418\u0419, \u0417\u0415\u041b\u0401\u041d\u042b\u0419 \u0438\u043b\u0438 \u0416\u0401\u041b\u0422\u042b\u0419, \u0447\u0442\u043e\u0431\u044b \u0432\u0441\u0442\u0443\u043f\u0438\u0442\u044c", "\u041f\u043e\u0434\u0430\u0440\u043a\u0438 = \u043e\u0440\u0443\u0436\u0438\u0435 + \u044f\u0449\u0438\u043a \u0434\u043b\u044f \u0442\u0432\u043e\u0435\u0439 \u043a\u043e\u043c\u0430\u043d\u0434\u044b", "\u041f\u043e\u0431\u0435\u0436\u0434\u0430\u0435\u0442 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0432\u044b\u0436\u0438\u0432\u0448\u0438\u0439"]},
-	{"name": "T\u00fcrk\u00e7e", "lines": ["Kat\u0131lmak i\u00e7in KIRMIZI, MAV\u0130, YE\u015e\u0130L veya SARI yaz", "Hediyeler = silah + sand\u0131k, tak\u0131m\u0131n i\u00e7in", "Son ayakta kalan kazan\u0131r"]},
-	{"name": "\u0627\u0644\u0639\u0631\u0628\u064a\u0629", "lines": ["\u0627\u0643\u062a\u0628 \u0623\u062d\u0645\u0631 \u0623\u0648 \u0623\u0632\u0631\u0642 \u0623\u0648 \u0623\u062e\u0636\u0631 \u0623\u0648 \u0623\u0635\u0641\u0631 \u0644\u0644\u0627\u0646\u0636\u0645\u0627\u0645", "\u0627\u0644\u0647\u062f\u0627\u064a\u0627 = \u0633\u0644\u0627\u062d + \u0635\u0646\u062f\u0648\u0642 \u0644\u0641\u0631\u064a\u0642\u0643", "\u064a\u0641\u0648\u0632 \u0622\u062e\u0631 \u0645\u0646 \u064a\u0628\u0642\u0649 \u0639\u0644\u0649 \u0642\u064a\u062f \u0627\u0644\u062d\u064a\u0627\u0629"]},
-	{"name": "\u0641\u0627\u0631\u0633\u06cc", "lines": ["\u0628\u0631\u0627\u06cc \u067e\u06cc\u0648\u0633\u062a\u0646\u060c \u0642\u0631\u0645\u0632\u060c \u0622\u0628\u06cc\u060c \u0633\u0628\u0632 \u06cc\u0627 \u0632\u0631\u062f \u0628\u0646\u0648\u06cc\u0633", "\u0647\u062f\u06cc\u0647 = \u0633\u0644\u0627\u062d + \u0635\u0646\u062f\u0648\u0642 \u0628\u0631\u0627\u06cc \u062a\u06cc\u0645\u062a", "\u0622\u062e\u0631\u06cc\u0646 \u0628\u0627\u0632\u0645\u0627\u0646\u062f\u0647 \u0628\u0631\u0646\u062f\u0647 \u0627\u0633\u062a"]},
-	{"name": "Portugu\u00eas", "lines": ["Escreva VERMELHO, AZUL, VERDE ou AMARELO para entrar", "Presentes = arma + caixa para o seu time", "O \u00faltimo sobrevivente vence"]},
-	{"name": "\u0939\u093f\u0928\u094d\u0926\u0940", "lines": ["\u0936\u093e\u092e\u093f\u0932 \u0939\u094b\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0932\u093e\u0932, \u0928\u0940\u0932\u093e, \u0939\u0930\u093e \u092f\u093e \u092a\u0940\u0932\u093e \u0932\u093f\u0916\u0947\u0902", "\u0909\u092a\u0939\u093e\u0930 = \u0939\u0925\u093f\u092f\u093e\u0930 + \u092c\u0949\u0915\u094d\u0938, \u0906\u092a\u0915\u0940 \u091f\u0940\u092e \u0915\u0947 \u0932\u093f\u090f", "\u0906\u0916\u093f\u0930\u0940 \u091c\u0940\u0935\u093f\u0924 \u0916\u093f\u0932\u093e\u0921\u093c\u0940 \u091c\u0940\u0924\u0924\u093e \u0939\u0948"]},
-	{"name": "\u4e2d\u6587", "lines": ["\u8f93\u5165 \u7ea2\u3001\u84dd\u3001\u7eff \u6216 \u9ec4 \u52a0\u5165", "\u793c\u7269 = \u6b66\u5668 + \u7bb1\u5b50\uff0c\u7ed9\u4f60\u7684\u961f\u4f0d", "\u6700\u540e\u5b58\u6d3b\u8005\u83b7\u80dc"]},
-]
-
-var rules_font: Font = null
-
-func _rules_font() -> Font:
-	if rules_font == null:
-		var base: Font = load("res://assets/fonts/rules_latin.ttf")
-		var fb: Array[Font] = [load("res://assets/fonts/rules_deva.ttf"), load("res://assets/fonts/rules_cjk.ttf")]
-		base.fallbacks = fb
-		rules_font = base
-	return rules_font
-
-func _draw_rules(vs: Vector2) -> void:
-	var pw := minf(vs.x - 40.0, 720.0)
-	var ph := 600.0
-	var px := vs.x * 0.5 - pw * 0.5
-	var py := maxf(12.0, vs.y * 0.5 - ph * 0.5)
-	m._pill(Rect2(px, py, pw, ph), Color(0.05, 0.06, 0.12, 0.92), 28)
-	m._text(Vector2(px, py + 18), "HOW TO PLAY", 38, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	var y := py + 74.0
-	for line in RULES_LINES:
-		m._text(Vector2(px + 36, y), line, 27, Color(0.95, 0.97, 1.0), pw - 72.0)
-		y += 43.0
-	# Sprachen: alle 2 Sekunden wechselt die Kurzfassung in die nächste Sprache
-	var ci := int(clampf(EXPLAIN_TIME - pause_t, 0.0, EXPLAIN_TIME) / 2.0) % LANG_CARDS.size()
-	var card: Dictionary = LANG_CARDS[ci]
-	var lf := _rules_font()
-	m.fx.draw_line(Vector2(px + 36, py + 352), Vector2(px + pw - 36, py + 352), Color(1, 1, 1, 0.25), 2.0)
-	m.fx.draw_string(lf, Vector2(px, py + 384), str(card["name"]), HORIZONTAL_ALIGNMENT_CENTER, pw, 26, Color(1, 0.9, 0.5))
-	var ly := py + 420.0
-	for line in card["lines"]:
-		m.fx.draw_string(lf, Vector2(px + 36, ly), str(line), HORIZONTAL_ALIGNMENT_CENTER, pw - 72.0, 25, Color(0.95, 0.97, 1.0))
-		ly += 36.0
-	m._text(Vector2(px, py + ph - 34), "Goal: eliminate, survive, place 1st", 22, Color(0.6, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _banner(txt: String, col: Color, secs: float) -> void:
 	banner = txt
@@ -1308,9 +1236,17 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var pw := minf(vs.x - 40.0, 520.0)
 	var px := vs.x * 0.5 - pw * 0.5
 	var py := vs.y * 0.5 + 60.0
-	m._pill(Rect2(px, py, pw, 80), Color(0.05, 0.06, 0.12, 0.9), 22)
+	m._pill(Rect2(px, py, pw, 120), Color(0.05, 0.06, 0.12, 0.9), 22)
 	m._text(Vector2(px, py + 12), "NEXT ROUND IN %d s" % int(ceil(pause_t)), 30, Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(px, py + 48), "Queue: %d" % queued, 22, Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var shown: Array = []
+	for i in mini(4, queue_names.size()):
+		shown.append(str(queue_names[i]).substr(0, 12))
+	var more := queue_names.size() - shown.size()
+	var names_txt := ", ".join(shown)
+	if more > 0:
+		names_txt += "  +%d more" % more
+	m._text(Vector2(px, py + 84), names_txt, 18, Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
 func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:
