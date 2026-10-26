@@ -58,7 +58,24 @@ var splats: Array = []
 # Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
 const BOSS_SPAWN_AT := 100.0
 const BOSS_WARNING := 8.0
-const NUKE_WARN := 3.0
+const NUKE_WARN := 5.0   # Countdown 5-4-3-2-1, dann Einschlag
+const NUKE_PIX := 1.0    # Pixel-Pilz blitzt nach dem Einschlag 1 Sekunde auf
+const PIX_MUSH := [
+	"....XXXXXX....",
+	"..XXXXXXXXXX..",
+	".XXXXOOXXXXXX.",
+	"XXXXOOOOXXXXXX",
+	"XXXXOOXXXXXXXX",
+	"XXXXXXXXXXXXXX",
+	".XXXXXXXXXXXX.",
+	"..XXXXXXXXXX..",
+	"....XXXXXX....",
+	".....XXXX.....",
+	".....XXXX.....",
+	".....XXXX.....",
+	"....XXXXXX....",
+	"...XXXXXXXX...",
+]
 const NUKE_COINS := 40000
 var nuke_t := -1.0
 var nuke_by := ""
@@ -393,7 +410,7 @@ func _nuke_blast() -> void:
 		b["dead_at"] = now
 		bones.append({"pos": b["pos"], "seed": randf() * TAU})
 	m._play_sfx("rocket", 0.0)
-	m._play_sfx("rocket", 0.0)
+	m._play_sfx("explosion", 0.0)
 
 func follow(nm: String) -> void:
 	nm = _clean(nm)
@@ -1156,16 +1173,26 @@ func draw_hud(vs: Vector2) -> void:
 
 func _draw_nuke(vs: Vector2) -> void:
 	var sc: Vector2 = m._fx_screen(nuke_pos)
+	# 1) Countdown 5-4-3-2-1 riesig in der Mitte
 	if nuke_t < NUKE_WARN:
 		var pulse := 0.5 + 0.5 * sin(nuke_t * 14.0)
-		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 0.05, 0.0, 0.10 + 0.14 * pulse))
-		var k := nuke_t / NUKE_WARN
-		var mp := Vector2(sc.x, lerpf(-80.0, sc.y - 40.0, k * k))
-		m.fx.draw_rect(Rect2(mp.x - 7, mp.y - 40, 14, 40), Color(0.8, 0.8, 0.85))
-		m.fx.draw_colored_polygon(PackedVector2Array([mp + Vector2(-7, 0), mp + Vector2(7, 0), mp + Vector2(0, 22)]), Color(0.9, 0.2, 0.1))
-		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.52), "ATOMIC BOMB  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 0.05, 0.0, 0.08 + 0.12 * pulse))
+		var n := int(ceil(NUKE_WARN - nuke_t))
+		var frac := fmod(nuke_t, 1.0)
+		var punch := 1.0 + 0.6 * maxf(0.0, 1.0 - frac * 3.0)
+		var col := Color(1, 0.9, 0.2) if n > 1 else Color(1, 0.3, 0.2)
+		_big_text(vs, str(n), 340, col, punch)
 		return
-	var tb := nuke_t - NUKE_WARN
+	# 2) Einschlag: Blitz, dann 1 Sekunde Pixel-Pilz
+	var tp := nuke_t - NUKE_WARN
+	if tp < 0.25:
+		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 1, 0.92, 1.0 - tp / 0.25))
+	if tp < NUKE_PIX:
+		_draw_pixel_mushroom(vs, tp)
+		_big_text(vs, "NUKE!", 200, Color(1, 0.95, 0.5), 1.0 + 0.4 * maxf(0.0, 1.0 - tp * 2.0))
+		return
+	# 3) Großer Atompilz
+	var tb := tp - NUKE_PIX
 	var fade := clampf(1.0 - (tb - 9.0) / 6.0, 0.0, 1.0)
 	var z: float = m.ZOOM
 	var e := 1.0 - pow(1.0 - clampf(tb / 6.0, 0.0, 1.0), 3.0)
@@ -1173,39 +1200,74 @@ func _draw_nuke(vs: Vector2) -> void:
 	# Druckwelle
 	if tb < 2.5:
 		var rr := tb * 1100.0 * z
-		var rw := rr * 2.0
-		m.fx.draw_texture_rect(m.tex_ring, Rect2(sc.x - rr, sc.y - rr * 0.6, rw, rr * 1.2), false, Color(1, 0.75, 0.4, 0.8 * (1.0 - tb / 2.5)))
-	# Stiel
-	var n := 10
-	for i in n:
-		var f := float(i) / n
+		m.fx.draw_texture_rect(m.tex_ring, Rect2(sc.x - rr, sc.y - rr * 0.6, rr * 2.0, rr * 1.2), false, Color(1, 0.75, 0.4, 0.8 * (1.0 - tb / 2.5)))
+	# Stiel: von unten orange, nach oben grau-braun, leicht verjüngt
+	var n_s := 12
+	for i in n_s:
+		var f := float(i) / n_s
 		var y := sc.y - h * f
-		var w := lerpf(90.0, 60.0, f) * (0.6 + 0.4 * e)
-		var col := Color(1.0, 0.55, 0.12).lerp(Color(0.3, 0.26, 0.24), clampf(f * 0.9 + tb * 0.04, 0.0, 1.0))
-		col.a = fade
-		m._fdisc(Vector2(sc.x, y), w * 0.5, col)
-		m.fx.draw_rect(Rect2(sc.x - w * 0.5, y - h / n, w, h / n + 2.0), col)
+		var w := lerpf(120.0, 70.0, f) * (0.6 + 0.4 * e)
+		var col_s := Color(1.0, 0.5, 0.12).lerp(Color(0.38, 0.32, 0.29), clampf(f * 1.1, 0.0, 1.0))
+		col_s.a = fade
+		m._fdisc(Vector2(sc.x, y), w * 0.5, col_s)
+		m.fx.draw_rect(Rect2(sc.x - w * 0.5, y - h / n_s, w, h / n_s + 2.0), col_s)
 	# Feuerball am Boden
-	m._fdisc(sc, 120.0 * e + 20.0, Color(1.0, 0.6, 0.15, 0.9 * fade))
-	m._fdisc(sc, 70.0 * e + 10.0, Color(1.0, 0.95, 0.6, 0.9 * fade))
+	m._fdisc(sc, 150.0 * e + 24.0, Color(1.0, 0.55, 0.12, 0.9 * fade))
+	m._fdisc(sc, 90.0 * e + 12.0, Color(1.0, 0.9, 0.5, 0.9 * fade))
 	# Pilzkappe
 	var top := Vector2(sc.x, sc.y - h)
-	var R := 190.0 * e + 24.0
-	# Kappen-Unterseite (dunkel), dann Wolkenring
-	m._fdisc(top + Vector2(0, R * 0.12), R * 0.95, Color(0.25, 0.2, 0.18, 0.9 * fade))
-	for k in 12:
-		var a := float(k) / 12.0 * TAU + tb * 0.15
-		var off := Vector2(cos(a) * R * 0.85, sin(a) * R * 0.42 - R * 0.05)
-		var cc := Color(0.4, 0.3, 0.27).lerp(Color(1.0, 0.5, 0.1), 0.35 + 0.35 * sin(a * 2.0 + tb))
+	var R := 210.0 * e + 28.0
+	m._fdisc(top + Vector2(0, R * 0.14), R * 0.98, Color(0.3, 0.22, 0.19, 0.95 * fade))
+	# Wolkenkranz oben
+	for k in 22:
+		var a := float(k) / 22.0 * TAU + tb * 0.12
+		var off := Vector2(cos(a) * R * 0.8, sin(a) * R * 0.36 - R * 0.05)
+		var cc := Color(0.42, 0.32, 0.28).lerp(Color(1.0, 0.55, 0.15), 0.4 + 0.4 * sin(a * 2.0 + tb * 1.5))
 		cc.a = 0.95 * fade
-		m._fdisc(top + off, R * (0.38 + 0.08 * sin(a * 3.0)), cc)
-	m._fdisc(top + Vector2(0, -R * 0.15), R * 0.7, Color(1.0, 0.7, 0.25, 0.95 * fade))
-	m._fdisc(top + Vector2(0, -R * 0.2), R * 0.4, Color(1.0, 0.95, 0.65, 0.9 * fade))
-	# Blitz
-	if tb < 1.4:
-		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 1, 0.9, clampf(1.0 - tb / 1.4, 0.0, 1.0)))
+		m._fdisc(top + off, R * (0.3 + 0.06 * sin(a * 3.0)), cc)
+	# eingerollter Rand (nach außen hängend)
+	for k in 12:
+		var a2 := PI * float(k) / 11.0
+		var pos2 := top + Vector2(cos(a2) * R * 0.95, sin(a2) * R * 0.22 + R * 0.2)
+		m._fdisc(pos2, R * 0.2, Color(1.0, 0.62, 0.28, 0.9 * fade))
+	# helle Kuppe und Kern
+	m._fdisc(top + Vector2(0, -R * 0.25), R * 0.6, Color(1.0, 0.72, 0.35, 0.95 * fade))
+	m._fdisc(top + Vector2(0, -R * 0.3), R * 0.36, Color(1.0, 0.95, 0.7, 0.9 * fade))
+	# Blitz am Anfang des großen Pilzes
+	if tb < 0.6:
+		m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(1, 0.95, 0.8, 0.5 * (1.0 - tb / 0.6)))
 	if tb > 1.0 and tb < 7.0:
 		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "ONLY %s SURVIVED" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
+
+# Große Schrift mit dicker dunkler Umrandung, zentriert, optional mit Schlag-Effekt
+func _big_text(vs: Vector2, t: String, size: int, col: Color, punch: float) -> void:
+	var f := ThemeDB.fallback_font
+	m.fx.draw_set_transform(vs * 0.5, 0.0, Vector2(punch, punch))
+	var pos := Vector2(-vs.x * 0.5, size * 0.35)
+	m.fx.draw_string_outline(f, pos, t, HORIZONTAL_ALIGNMENT_CENTER, vs.x, size, 18, Color(0.05, 0.02, 0.0, 0.95))
+	m.fx.draw_string(f, pos, t, HORIZONTAL_ALIGNMENT_CENTER, vs.x, size, col)
+	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+# Pixel-Pilz: grobe Blöcke, Farben flackern, verblasst am Ende der Sekunde
+func _draw_pixel_mushroom(vs: Vector2, tp: float) -> void:
+	var px := minf(vs.x, vs.y) / 36.0
+	var ox := vs.x * 0.5 - px * 7.0
+	var oy := vs.y * 0.30
+	var alpha := clampf((NUKE_PIX - tp) * 6.0, 0.0, 1.0)
+	var tick := int(tp * 30.0)
+	for j in PIX_MUSH.size():
+		var row: String = PIX_MUSH[j]
+		for i in row.length():
+			var ch := row[i]
+			if ch == ".":
+				continue
+			var hsh := sin(float(i * 13 + j * 7 + tick * 5) * 12.9898) * 43758.5453
+			var jit: float = hsh - floor(hsh)
+			var col := Color(1.0, 0.45 + 0.3 * jit, 0.1 + 0.1 * jit)
+			if ch == "O":
+				col = Color(1.0, 0.92, 0.5)
+			col.a = alpha
+			m.fx.draw_rect(Rect2(ox + i * px, oy + j * px, px, px), col)
 
 func _is_top(nm: String, k: int) -> bool:
 	if k < 0 or k > 3 or not topsup[k].has(nm):
