@@ -1163,7 +1163,7 @@ func _draw_nuke(vs: Vector2) -> void:
 		var mp := Vector2(sc.x, lerpf(-80.0, sc.y - 40.0, k * k))
 		m.fx.draw_rect(Rect2(mp.x - 7, mp.y - 40, 14, 40), Color(0.8, 0.8, 0.85))
 		m.fx.draw_colored_polygon(PackedVector2Array([mp + Vector2(-7, 0), mp + Vector2(7, 0), mp + Vector2(0, 22)]), Color(0.9, 0.2, 0.1))
-		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.3), "ATOMIC BOMB  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(vs.x * 0.5 - 300, vs.y * 0.52), "ATOMIC BOMB  %d" % int(ceil(NUKE_WARN - nuke_t)), 64, Color(1, 0.9, 0.2), 600.0, HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	var tb := nuke_t - NUKE_WARN
 	var fade := clampf(1.0 - (tb - 9.0) / 6.0, 0.0, 1.0)
