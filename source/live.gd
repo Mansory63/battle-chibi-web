@@ -32,7 +32,7 @@ var pause_t := 0.0
 var round_no := 0
 var round_start_ms := 0
 var free_check_done := false
-const FREE_LOCK_S := 30.0   # erste 30 s einer Runde: Likes zählen nicht, danach fliegen inaktive Gratis-Zuschauer raus
+const FREE_LOCK_S := 30.0   # nach 30 s einer Runde fliegen inaktive Gratis-Zuschauer raus (Likes und Chat zählen als Aktivität)
 var viewers: Dictionary = {}       # name -> {team, coins, wins, kills, last, pending}
 var queued := 0
 var team_points := [0, 0, 0, 0]
@@ -276,8 +276,6 @@ func _spawn_reinforce() -> void:
 
 func likes(nm: String, n: int) -> void:
 	nm = _clean(nm)
-	if state == "round" and t < FREE_LOCK_S:
-		return  # Likes in den ersten 30 s zählen nicht
 	var tm := -1
 	if viewers.has(nm):
 		tm = int(viewers[nm]["team"])

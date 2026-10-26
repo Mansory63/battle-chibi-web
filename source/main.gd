@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026080448"
+const BUILD := "20261026080555"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
