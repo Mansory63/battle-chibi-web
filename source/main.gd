@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026072146"
+const BUILD := "20261026072918"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2201,6 +2201,14 @@ func _update_bots(delta: float) -> void:
 		b["moving"] = step != Vector2.ZERO
 		if step != Vector2.ZERO:
 			b["pos"] = _move(b["pos"], step.normalized() * BOT_SPEED * (0.85 if zomb else 1.0) * delta, BOT_RADIUS)
+			# Festhänger: kommt eine Figur 1,5 s lang kaum vom Fleck, springt sie auf einen freien Platz in der Nähe
+			b["st"] = float(b.get("st", 0.0)) + delta
+			if b["st"] >= 1.5:
+				var lp: Vector2 = b.get("lp", b["pos"])
+				if b["pos"].distance_to(lp) < 14.0:
+					b["pos"] = _nearest_free(b["pos"] + Vector2.from_angle(randf() * TAU) * 110.0, BOT_RADIUS)
+				b["lp"] = b["pos"]
+				b["st"] = 0.0
 
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius:
 			b["health"] -= ZONE_DAMAGE_PER_SEC * delta * (1.0 + 5.0 * clampf(elapsed / zone_time, 0.0, 1.0))
