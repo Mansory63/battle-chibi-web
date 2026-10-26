@@ -48,8 +48,9 @@ func setup(host: Node, layer_index := 1) -> void:
 	viewport.own_world_3d = true
 	# Handy/Tablet: weniger Pixel und kein MSAA, damit es flüssig läuft
 	if DisplayServer.is_touchscreen_available():
-		res_scale = 0.75
+		res_scale = 0.65
 		viewport.msaa_3d = Viewport.MSAA_DISABLED
+		Engine.max_fps = 30  # gleichmäßige Bilder statt Ruckeln
 	else:
 		viewport.msaa_3d = Viewport.MSAA_2X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS

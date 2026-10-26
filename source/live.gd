@@ -744,7 +744,7 @@ func on_kill(i: int) -> void:
 	m._spark_burst(b["pos"], Color(1, 1, 1), 10, 300.0)
 	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 10, 360.0)
 	splats.append({"pos": b["pos"], "col": col, "r": randf_range(34.0, 56.0), "seed": randf() * TAU})
-	if splats.size() > 400:
+	if splats.size() > (200 if DisplayServer.is_touchscreen_available() else 400):
 		splats.pop_front()
 	var wk: String = b["weapon"]
 	if m.WEAPONS.has(wk) or wk == "katana":
