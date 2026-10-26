@@ -92,7 +92,198 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="BattleChibi"><meta name="theme-color" content="#14204a"><style>html,body{background:#14204a !important;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#status{background:linear-gradient(180deg,#0f1733,#1b2a5e) !important;position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;overflow:hidden}@keyframes bcIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@keyframes bcSlide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}#status::before{content:'BattleChibi';display:block;position:absolute;left:0;right:0;top:38%;text-align:center;font:700 34px -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:2px;color:#ffffff;animation:bcIn .6s ease both}#status-progress{background:#2a3a75 !important;border-radius:4px;overflow:hidden;position:absolute !important;left:0 !important;right:0 !important;margin:0 auto !important;width:50% !important;top:52% !important;height:6px !important;appearance:none;-webkit-appearance:none;border:0 !important}#status-progress::-webkit-progress-bar{background:#2a3a75}#status-progress::-webkit-progress-value{background:#7ab8ff}#status-splash{display:none !important}#status-notice{position:absolute !important;left:0;right:0;top:58% !important;color:#9fb2e0 !important;font:500 14px -apple-system,Segoe UI,Roboto,sans-serif;text-align:center}</style><script>(function(){var n=0;function box(){if(document.getElementById('bc-fix'))return;var d=document.createElement('div');d.id='bc-fix';d.style.cssText='position:fixed;left:0;right:0;bottom:0;padding:16px;background:#14204a;color:#fff;font:18px sans-serif;text-align:center;z-index:99999';d.appendChild(document.createTextNode('Das Spiel hat ein Problem. '));var b=document.createElement('button');b.textContent='Reparieren und neu laden';b.style.cssText='font-size:18px;padding:8px 16px;margin-left:8px';b.onclick=fixit;d.appendChild(b);document.body.appendChild(d);}function fixit(){try{if(window.caches){caches.keys().then(function(k){k.forEach(function(x){caches.delete(x)})})}if(navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}}catch(e){}setTimeout(function(){location.reload()},400);}window.__bcfix=fixit;window.addEventListener('error',function(){n++;if(n>25)box();});setTimeout(function(){if(!window.__bc_started){try{if(!sessionStorage.getItem('bc_auto')){sessionStorage.setItem('bc_auto','1');fixit();return;}}catch(e){}box();}},60000);})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="BattleChibi"><meta name="theme-color" content="#14204a"><style>html,body{background:#14204a !important;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#status{background:linear-gradient(180deg,#0f1733,#1b2a5e) !important;position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;overflow:hidden}@keyframes bcIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@keyframes bcSlide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}#status::before{content:'BattleChibi';display:block;position:absolute;left:0;right:0;top:38%;text-align:center;font:700 34px -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:2px;color:#ffffff;animation:bcIn .6s ease both}#status-progress{background:#2a3a75 !important;border-radius:4px;overflow:hidden;position:absolute !important;left:0 !important;right:0 !important;margin:0 auto !important;width:50% !important;top:52% !important;height:6px !important;appearance:none;-webkit-appearance:none;border:0 !important}#status-progress::-webkit-progress-bar{background:#2a3a75}#status-progress::-webkit-progress-value{background:#7ab8ff}#status-splash{display:none !important}#status-notice{position:absolute !important;left:0;right:0;top:58% !important;color:#9fb2e0 !important;font:500 14px -apple-system,Segoe UI,Roboto,sans-serif;text-align:center}</style><script>(function(){var n=0;function box(){if(document.getElementById('bc-fix'))return;var d=document.createElement('div');d.id='bc-fix';d.style.cssText='position:fixed;left:0;right:0;bottom:0;padding:16px;background:#14204a;color:#fff;font:18px sans-serif;text-align:center;z-index:99999';d.appendChild(document.createTextNode('Das Spiel hat ein Problem. '));var b=document.createElement('button');b.textContent='Reparieren und neu laden';b.style.cssText='font-size:18px;padding:8px 16px;margin-left:8px';b.onclick=fixit;d.appendChild(b);document.body.appendChild(d);}function fixit(){try{if(window.caches){caches.keys().then(function(k){k.forEach(function(x){caches.delete(x)})})}if(navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}}catch(e){}setTimeout(function(){location.reload()},400);}window.__bcfix=fixit;window.addEventListener('error',function(){n++;if(n>25)box();});setTimeout(function(){if(!window.__bc_started){try{if(!sessionStorage.getItem('bc_auto')){sessionStorage.setItem('bc_auto','1');fixit();return;}}catch(e){}box();}},60000);})();</script><script>(function(){
+  var N = 24;          // Anzahl Kugeln im Ladebalken
+  var FIRE_EVERY = 0.16; // Sekunden zwischen Schüssen
+  var FLY = 0.35;      // Flugzeit einer Kugel
+  var ov = null, cv = null, ctx = null, W = 0, H = 0, dpr = 1, s = 1;
+  var t = 0, t0ms = 0, nextFire = 0, hits = 0, bullets = [], dead = false, deadT = 0, flashT = -9, done = false, last = 0;
+  var fading = false, fadeT = 0;
+
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.floor(W * dpr); cv.height = Math.floor(H * dpr);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    s = Math.max(0.7, Math.min(1.6, Math.min(W, H) / 480));
+  }
+
+  function started(){ try { return !!window.__bc_started; } catch(e){ return false; } }
+
+  function shooterX(){ return W * 0.16; }
+  function skelX(){ return W * 0.80; }
+  function groundY(){ return H * 0.55; }
+
+  function drawShooter(){
+    var x = shooterX(), y = groundY(), k = s;
+    ctx.save();
+    ctx.translate(x, y);
+    // Beine
+    ctx.fillStyle = '#2d3f7a';
+    ctx.fillRect(-9*k, -2*k, 7*k, 22*k); ctx.fillRect(2*k, -2*k, 7*k, 22*k);
+    // Körper
+    ctx.fillStyle = '#3fd0c9';
+    roundRect(-14*k, -44*k, 28*k, 46*k, 8*k); ctx.fill();
+    // Kopf
+    ctx.fillStyle = '#ffd7b0';
+    ctx.beginPath(); ctx.arc(0, -56*k, 15*k, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1b2a5e';
+    ctx.beginPath(); ctx.arc(-5*k, -57*k, 2.2*k, 0, Math.PI*2); ctx.arc(5*k, -57*k, 2.2*k, 0, Math.PI*2); ctx.fill();
+    // Helm
+    ctx.fillStyle = '#4d6ad8';
+    ctx.beginPath(); ctx.arc(0, -58*k, 16*k, Math.PI, 0); ctx.fill();
+    // Gewehr
+    ctx.fillStyle = '#222';
+    ctx.fillRect(10*k, -34*k, 34*k, 7*k);
+    ctx.restore();
+  }
+
+  function drawSkeleton(){
+    var x = skelX(), y = groundY(), k = s;
+    var age = t - flashT;
+    var shake = age < 0.05 ? Math.sin(age * 90) * 4 * k : 0;
+    var flash = age < 0.05;
+    ctx.save();
+    ctx.translate(x + shake, y);
+    var alpha = 1;
+    if (dead) {
+      var da = Math.min(1, (t - deadT) / 0.5);
+      ctx.rotate(da * Math.PI / 2);
+      alpha = 1 - Math.max(0, (t - deadT - 1.2) / 0.8) * 0.5;
+    } else {
+      ctx.translate(0, Math.sin(t * 4) * 1.5 * k);
+    }
+    ctx.globalAlpha = Math.max(0.3, alpha);
+    var bone = flash ? '#ff9a9a' : '#f2efe6';
+    ctx.strokeStyle = bone; ctx.lineWidth = 4 * k; ctx.lineCap = 'round';
+    // Wirbelsäule
+    ctx.beginPath(); ctx.moveTo(0, -40*k); ctx.lineTo(0, -4*k); ctx.stroke();
+    // Arme
+    ctx.beginPath(); ctx.moveTo(0, -34*k); ctx.lineTo(-16*k, -14*k); ctx.moveTo(0, -34*k); ctx.lineTo(16*k, -14*k); ctx.stroke();
+    // Beine
+    ctx.beginPath(); ctx.moveTo(0, -4*k); ctx.lineTo(-10*k, 22*k); ctx.moveTo(0, -4*k); ctx.lineTo(10*k, 22*k); ctx.stroke();
+    // Rippen
+    ctx.lineWidth = 2.5 * k;
+    for (var i = 0; i < 3; i++) {
+      var ry = -32*k + i*7*k;
+      ctx.beginPath(); ctx.moveTo(-9*k, ry); ctx.lineTo(9*k, ry); ctx.stroke();
+    }
+    // Schädel
+    ctx.fillStyle = bone;
+    ctx.beginPath(); ctx.arc(0, -52*k, 13*k, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1b2a5e';
+    ctx.beginPath(); ctx.arc(-5*k, -53*k, 3.4*k, 0, Math.PI*2); ctx.arc(5*k, -53*k, 3.4*k, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawBullet(x, y, col){
+    var k = s;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x - 8*k, y - 3*k); ctx.lineTo(x + 4*k, y - 3*k);
+    ctx.lineTo(x + 9*k, y); ctx.lineTo(x + 4*k, y + 3*k); ctx.lineTo(x - 8*k, y + 3*k);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function drawBar(){
+    var k = s;
+    var barW = Math.min(W * 0.72, 420);
+    var slot = barW / N;
+    var x0 = (W - barW) / 2, y = H * 0.74;
+    for (var i = 0; i < N; i++) {
+      var cx = x0 + slot * i + slot / 2;
+      if (i < hits) drawBullet(cx - 4*k, y, '#ffcc4d');
+      else { ctx.fillStyle = '#2a3a75'; roundRect(cx - 6*k, y - 3*k, 14*k, 6*k, 2*k); ctx.fill(); }
+    }
+    ctx.fillStyle = '#9fb2e0';
+    ctx.font = '500 ' + Math.round(14 * k) + 'px -apple-system, Segoe UI, Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    var msg = dead ? (started() ? '' : 'Spiel wird geladen...') : '';
+    if (msg) ctx.fillText(msg, W / 2, y + 30 * k);
+  }
+
+  function drawTitle(){
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = '700 ' + Math.round(34 * s) + 'px -apple-system, Segoe UI, Roboto, sans-serif';
+    ctx.fillText('BattleChibi', W / 2, H * 0.28);
+  }
+
+  function frame(now){
+    if (done) return;
+    if (!t0ms) t0ms = now;
+    t = (now - t0ms) / 1000; // echte Zeit, auch wenn der Browser ruckelt
+
+    // Schüsse laufend abfeuern, solange der Krieger lebt
+    while (!dead && nextFire <= t) { bullets.push({ t0: nextFire }); nextFire += FIRE_EVERY; }
+    // Kugeln fliegen und treffen
+    for (var i = bullets.length - 1; i >= 0; i--) {
+      var b = bullets[i];
+      if (t - b.t0 >= FLY) {
+        bullets.splice(i, 1);
+        if (!dead) {
+          hits = Math.min(N, hits + 1);
+          flashT = t;
+          if (hits >= N) { dead = true; deadT = t; }
+        }
+      }
+    }
+
+    ctx.clearRect(0, 0, W, H);
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0f1733'); g.addColorStop(1, '#1b2a5e');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    drawTitle();
+    // Boden
+    ctx.fillStyle = '#26366e';
+    ctx.fillRect(0, groundY(), W, H - groundY());
+    drawShooter();
+    drawSkeleton();
+    // Fliegende Kugeln
+    for (var j = 0; j < bullets.length; j++) {
+      var p = (t - bullets[j].t0) / FLY;
+      var bx = shooterX() + 30 * s + (skelX() - shooterX() - 50 * s) * p;
+      drawBullet(bx, groundY() - 40 * s, '#ffe9a8');
+    }
+    drawBar();
+
+    // Ausblenden, wenn Krieger tot ist (Animation fertig) und das Spiel läuft
+    if (dead && started() && t - deadT > 1.8 && !fading) { fading = true; fadeT = t; }
+    if (fading) {
+      var f = Math.min(1, (t - fadeT) / 0.4);
+      ov.style.opacity = String(1 - f);
+      if (f >= 1) { done = true; if (ov.parentNode) ov.parentNode.removeChild(ov); return; }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function init(){
+    ov = document.createElement('div');
+    ov.id = 'bcL';
+    ov.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:#0f1733;transition:none';
+    cv = document.createElement('canvas');
+    ov.appendChild(cv);
+    document.body.appendChild(ov);
+    ctx = cv.getContext('2d');
+    size();
+    window.addEventListener('resize', size);
+    requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();</script>
 	</head>
 	<body>
 		<canvas id="canvas">
@@ -111,7 +302,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1497104,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1498208,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
