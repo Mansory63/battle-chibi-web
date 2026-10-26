@@ -286,13 +286,17 @@ func _apply_look(d: Dictionary, look: String, tint: Color) -> void:
 func _walk_look(n: Node, look: String, tint: Color) -> void:
 	for c in n.get_children():
 		if c is MeshInstance3D:
-			var mat := StandardMaterial3D.new()
-			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			if look == "zombie":
-				mat.albedo_color = Color(0.92, 0.9, 0.82, 0.5)
+				# Knochen-Soldat: komplett weiß, Textur wird ersetzt
+				var bone := StandardMaterial3D.new()
+				bone.albedo_color = Color(0.96, 0.95, 0.9)
+				bone.roughness = 0.85
+				c.material_override = bone
+				c.material_overlay = null
 			else:
-				mat.albedo_color = Color(tint.r, tint.g, tint.b, 0.4)
-			c.material_overlay = mat
+				# Kämpfer: normale Optik, Team-Zugehörigkeit über Ring und Namen
+				c.material_override = null
+				c.material_overlay = null
 		_walk_look(c, look, tint)
 
 func update_unit(id: String, e: Dictionary) -> void:
@@ -313,6 +317,9 @@ func update_unit(id: String, e: Dictionary) -> void:
 	pivot.visible = e.get("visible", true)
 	var lift: float = e.get("lift", 0.0)
 	pivot.scale = Vector3.ONE * UNIT_SCALE * float(e.get("scale", 1.0))
+	if str(e.get("look", "")) == "zombie":
+		# Knochen-Soldaten schlanker: nur Breite und Tiefe verringern
+		pivot.scale = Vector3(pivot.scale.x * 0.7, pivot.scale.y, pivot.scale.z * 0.7)
 	var aim: Vector2 = e.get("aim", Vector2.DOWN)
 	if world_mode:
 		# Weltkoordinaten (x, Höhe, y); Figur steht aufrecht, Kamera kippt

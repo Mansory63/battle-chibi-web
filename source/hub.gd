@@ -304,7 +304,7 @@ func refresh() -> void:
 	avatar.texture = m._load_tex(m.ART + "portrait_" + m.save_skin + ".png")
 	plate_lbl.text = m._skin_name()
 	plate_sub.text = "Stufe %d" % lvl
-	sub_lbl.text = "%s · %s · %s" % [["SOLO", "DUO", "TRIO", "QUATTRO"][m.team_size - 1], ["Wiese", "Wüste", "Schnee"][m.map_theme], "Hardcore" if m.hardcore else "Normal"]
+	sub_lbl.text = "%s · %s · %s" % [["SOLO", "DUO", "TRIO", "QUATTRO"][m.team_size - 1], ["Wiese", "Wüste", "Schnee", "Düster"][m.map_theme], "Hardcore" if m.hardcore else "Normal"]
 	if side_icons.has("sound"):
 		var ic: Ico = side_icons["sound"]
 		ic.col = Color(0.6, 0.6, 0.65) if m.muted else Color.WHITE

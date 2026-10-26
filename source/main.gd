@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261025232924"
+const BUILD := "20261026072146"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -202,7 +202,7 @@ var bot_cd_mult := 1.0
 var xp_mult := 1.0
 var mode_btn: Button
 var map_btn: Button
-var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee
+var map_theme := 0   # 0 Wiese, 1 Wüste, 2 Schnee, 3 Düster
 var team_size := 1   # 1 Solo, 2 Duo, 3 Trio, 4 Quattro
 var team_btn: Button
 var total_teams := 50
@@ -447,9 +447,9 @@ func _draw_hud(vs: Vector2) -> void:
 	if show_fps:
 		_text(Vector2(vs.x - 150, 40), "FPS %d" % fps_shown, 22, Color(0.4, 1.0, 0.4), 140.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	_pill(Rect2(16, 14, 170, 40), Color(0.05, 0.06, 0.12, 0.7), 20)
-	_text(Vector2(30, 43), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
+	_text(Vector2(30, 60), "ÜBRIG  %d" % alive, 24, Color(1, 0.9, 0.5))
 	_pill(Rect2(16, 60, 130, 34), Color(0.05, 0.06, 0.12, 0.7), 17)
-	_text(Vector2(30, 85), "KILLS  %d" % kills, 20)
+	_text(Vector2(30, 100), "KILLS  %d" % kills, 20)
 	# Kill-Feed
 	var fy := 118.0
 	for kf in kill_feed:
@@ -764,6 +764,8 @@ func _check_live_args() -> void:
 				show_fps = true
 			if kv[0] == "solo":
 				solo = true
+			if kv[0] == "map" and kv.size() > 1 and kv[1] == "duester":
+				map_theme = 3   # Dunkle Karte nur über ?map=duester
 			if kv[0] == "live":
 				go = true
 			elif kv[0] == "demo":
@@ -799,7 +801,7 @@ func _load_save() -> void:
 		save_skin = str(cfg.get_value("pass", "skin", "char_player"))
 		muted = bool(cfg.get_value("settings", "muted", false))
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
-		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 3
+		map_theme = int(cfg.get_value("settings", "map_theme", 0)) % 4
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
 		var hd = cfg.get_value("hub", "data", {})
@@ -860,7 +862,7 @@ func _update_menu_buttons() -> void:
 	_set_side(sound_btn, "TON\nAUS" if muted else "TON\nAN")
 	_set_side(mode_btn, "HARDCORE" if hardcore else "NORMAL")
 	_set_side(team_btn, "TEAM\n" + ["SOLO", "DUO", "TRIO", "QUATTRO"][team_size - 1])
-	_set_side(map_btn, "KARTE\n" + ["WIESE", "WÜSTE", "SCHNEE"][map_theme])
+	_set_side(map_btn, "KARTE\n" + ["WIESE", "WÜSTE", "SCHNEE", "DÜSTER"][map_theme])
 	if mode_btn:
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
@@ -990,7 +992,7 @@ func _draw_minimap() -> void:
 	var basis := Transform2D(Vector2(1, 0), Vector2(0, VIEW_TILT), Vector2.ZERO) * Transform2D(VIEW_ANGLE, Vector2.ZERO)
 	var mt := Transform2D(0.0, Vector2(sc, sc), 0.0, m.size / 2.0) * basis * Transform2D(0.0, -center_pos)
 	m.draw_set_transform_matrix(mt)
-	m.draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), [Color(0.35, 0.65, 0.35), Color(0.85, 0.72, 0.45), Color(0.9, 0.94, 0.98)][map_theme])
+	m.draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), [Color(0.35, 0.65, 0.35), Color(0.85, 0.72, 0.45), Color(0.9, 0.94, 0.98), Color(0.12, 0.12, 0.16)][map_theme])
 	for road in ROADS:
 		m.draw_rect(road, Color(0.45, 0.47, 0.52))
 	for r in obstacles:
@@ -1182,7 +1184,7 @@ func _radial_texture(inner: Color, outer: Color) -> GradientTexture2D:
 func _generate_trees() -> void:
 	_tile_world()
 	_build_obstacle_grid()
-	for i in 540:   # weniger Bäume (vorher 900 Versuche)
+	for i in 0:   # keine Bäume mehr
 		var p := Vector2(randf_range(30, MAP_SIZE.x - 30), randf_range(30, MAP_SIZE.y - 30))
 		if _is_free(p, TREE_RADIUS + 40.0) and not _near_tree(p, 60.0) and not _on_road(p, 40.0) and p.distance_to(Vector2(2400, 3300)) > 120:
 			trees.append(p)
@@ -2444,15 +2446,17 @@ func _draw_outdoor() -> void:
 
 	# ----- Boden (flach, mit Transformation) -----
 	draw_set_transform_matrix(view)
-	draw_rect(Rect2(-2500, -2500, MAP_SIZE.x + 5000, MAP_SIZE.y + 5000), [Color(0.22, 0.5, 0.72), Color(0.15, 0.6, 0.65), Color(0.35, 0.55, 0.75)][map_theme])
+	draw_rect(Rect2(-2500, -2500, MAP_SIZE.x + 5000, MAP_SIZE.y + 5000), [Color(0.22, 0.5, 0.72), Color(0.15, 0.6, 0.65), Color(0.35, 0.55, 0.75), Color(0.03, 0.03, 0.05)][map_theme])
 	# Wasser: animierte Wellenringe und Schaum am Strand
 	for w in 5:
 		var off := 120.0 + w * 150.0 + sin(t_now * 0.8 + w * 1.7) * 26.0
 		draw_rect(Rect2(-60 - off, -60 - off, MAP_SIZE.x + 120 + off * 2.0, MAP_SIZE.y + 120 + off * 2.0), Color(1, 1, 1, 0.07), false, 6.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(40.0 + sin(t_now * 1.6) * 14.0), Color(0.75, 0.92, 1, 0.5), false, 10.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(14.0), Color(0.85, 0.75, 0.5), false, 22.0)
-	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62))
-	if map_theme == 1:
+	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62) if map_theme != 3 else Color(0.08, 0.08, 0.11))
+	if map_theme == 3:
+		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.14, 0.14, 0.19))
+	elif map_theme == 1:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.9, 0.76, 0.46))
 	elif map_theme == 2:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.92, 0.95, 0.99))
@@ -2475,6 +2479,8 @@ func _draw_outdoor() -> void:
 			gc = Color(1, 0.9, 0.6, 0.18) if gb[2] else Color(0.75, 0.5, 0.2, 0.16)
 		elif map_theme == 2:
 			gc = Color(1, 1, 1, 0.5) if gb[2] else Color(0.65, 0.78, 0.95, 0.22)
+		elif map_theme == 3:
+			gc = Color(0.5, 0.5, 0.7, 0.10) if gb[2] else Color(0.0, 0.0, 0.05, 0.25)
 		_disc(gb[0], gb[1], gc)
 		_disc(gb[0], gb[1] * 0.6, gc)
 
@@ -2957,7 +2963,7 @@ func _sync_units3d() -> void:
 							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b)})
 						continue
 					if now - int(b.get("dead_at", -99999)) < 1800:
-						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": true, "look": _look(b), "tint": _tint(b)})
+						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": now - int(b.get("dead_at", -99999)) < 900, "look": _look(b), "tint": _tint(b)})
 					continue
 				units3d.update_unit("bot%d" % i, {
 					"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "moving": b.get("moving", false),

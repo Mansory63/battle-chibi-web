@@ -243,6 +243,25 @@ func _ensure_viewer(nm: String) -> String:
 		join(nm, _weakest_team())
 	return nm
 
+const REINFORCE_EVERY := 50
+var team_total_likes: Array = [0, 0, 0, 0]
+var reinforce_pending: Array = [0, 0, 0, 0]
+
+# Verstärkung auf einen toten Platz des Teams setzen
+func _spawn_reinforce() -> void:
+	if state != "round":
+		return
+	for k in 4:
+		if int(reinforce_pending[k]) <= 0:
+			continue
+		for b in _team_bots(k):
+			if not b["alive"] and not b["viewer"] and Time.get_ticks_msec() - int(b.get("dead_at", 0)) > 1500:
+				_reset_bot(b, k, "Verstärkung", false, m._nearest_free(_centroid(k) + Vector2.from_angle(randf() * TAU) * 90.0, m.BOT_RADIUS))
+				_equip(b, "pistol", 1)
+				reinforce_pending[k] = int(reinforce_pending[k]) - 1
+				m._spark_burst(b["pos"], TEAM_COLORS[k], 20, 300.0)
+				break
+
 func likes(nm: String, n: int) -> void:
 	nm = _clean(nm)
 	var tm := -1
@@ -255,6 +274,13 @@ func likes(nm: String, n: int) -> void:
 			if team_likes[k] < team_likes[tm]:
 				tm = k
 	team_likes[tm] += maxi(1, n)
+	# Verstärkung: alle 50 Likes ein Kämpfer, max. 3 wartend
+	var before: int = int(team_total_likes[tm]) / REINFORCE_EVERY
+	team_total_likes[tm] += maxi(1, n)
+	var after: int = int(team_total_likes[tm]) / REINFORCE_EVERY
+	if after > before and state == "round":
+		reinforce_pending[tm] = mini(3, int(reinforce_pending[tm]) + (after - before))
+		_toast("%s bekommt Verstärkung (%d wartend)" % [TEAM_NAMES[tm], reinforce_pending[tm]], TEAM_COLORS[tm])
 	if team_likes[tm] >= LIKE_GOAL:
 		team_likes[tm] = 0
 		_banner("LIKE-KISTE für %s!" % TEAM_NAMES[tm], TEAM_COLORS[tm], 3.0)
@@ -462,6 +488,7 @@ func start_round() -> void:
 	round_no += 1
 	t = 0.0
 	state = "round"
+	reinforce_pending = [0, 0, 0, 0]
 	winner = -1
 	round_kills = [0, 0, 0, 0]
 	crate_t = 30.0
@@ -561,6 +588,8 @@ func end_round() -> void:
 # ---------- pro Bild ----------
 func update(delta: float) -> void:
 	_poll_ws()
+	if Engine.get_process_frames() % 30 == 0:
+		_spawn_reinforce()
 	if demo:
 		_demo(delta)
 	var now := Time.get_ticks_msec()
@@ -718,7 +747,7 @@ func on_kill(i: int) -> void:
 	m._spark_burst(b["pos"], Color(1, 1, 1), 10, 300.0)
 	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 10, 360.0)
 	splats.append({"pos": b["pos"], "col": col, "r": randf_range(34.0, 56.0), "seed": randf() * TAU})
-	if splats.size() > 90:
+	if splats.size() > 400:
 		splats.pop_front()
 	var wk: String = b["weapon"]
 	if m.WEAPONS.has(wk) or wk == "katana":
