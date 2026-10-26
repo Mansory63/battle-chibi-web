@@ -3,7 +3,8 @@ extends RefCounted
 # Ereignisse kommen über: JS (window.bcLive), WebSocket (?ws=ws://localhost:PORT), Demo (?demo=1) oder Testtasten.
 
 const ROUND_TIME := 300.0
-const PAUSE_TIME := 20.0
+const PAUSE_TIME := 40.0      # 20 s Ergebnis + 20 s Erklärung nach jeder Runde
+const EXPLAIN_TIME := 20.0     # Erklärung (Spielregeln) vor jeder Runde
 const SLOTS := 12                  # Kämpfer pro Team (4 x 12 = 48)
 const HP := 170.0
 const START_R := 3400.0   # Startkreis liegt außerhalb der Karte und schrumpft ins Spielfeld
@@ -106,6 +107,10 @@ func begin(main, opts := {}) -> void:
 	if OS.has_feature("web"):
 		m._web_started()
 	start_round()
+	# Einstiegs-Erklärung vor der ersten Runde (zählt nicht als Runde)
+	round_no -= 1
+	state = "pause"
+	pause_t = EXPLAIN_TIME
 
 func _setup_js() -> void:
 	if not OS.has_feature("web"):
@@ -628,7 +633,7 @@ func update(delta: float) -> void:
 			check_t = 0.3
 			alive_t = [0, 0, 0, 0]
 			for i in SLOTS * 4:
-				if m.bots[i]["alive"]:
+				if m.bots[i]["alive"] and int(m.bots[i]["team"]) - 1 >= 0 and int(m.bots[i]["team"]) - 1 <= 3:
 					alive_t[int(m.bots[i]["team"]) - 1] += 1
 			var teams := 0
 			for k in 4:
@@ -1084,7 +1089,7 @@ func draw_hud(vs: Vector2) -> void:
 	m._text(Vector2(foot_x, vs.y - 57), join_hint, 19 if vs.x < 620.0 else 24, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(foot_x, vs.y - 24), bonus_hint, 14 if vs.x < 620.0 else 16, Color(0.85, 0.92, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
-		if pause_t > 10.0:
+		if pause_t > EXPLAIN_TIME:
 			_draw_results(vs)   # Ergebnis der letzten Runde
 		else:
 			_draw_rules(vs)     # Spielregeln kurz vor der nächsten Runde
