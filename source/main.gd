@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261026072918"
+const BUILD := "20261026073118"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -1556,7 +1556,11 @@ func _tile_world() -> void:
 		specials[kept.size()] = sp[0]
 		if sp[0] == "prison":
 			prison_idx = kept.size()
-		kept.append(sp[1])
+			kept.append(sp[1])
+		else:
+			# Wahrzeichen: nur der Kern blockiert, damit niemand daran hängen bleibt
+			var r: Rect2 = sp[1]
+			kept.append(Rect2(r.position + r.size * 0.3, r.size * 0.4))
 	obstacles = kept
 
 func _is_special(i: int) -> bool:
