@@ -82,11 +82,11 @@ const LOOT_COLORS := {
 	"revolver": Color(0.6, 0.6, 0.65), "crossbow": Color(0.7, 0.5, 0.3), "laser": Color(0.3, 0.95, 0.95), "katana": Color(0.85, 0.9, 1.0), "hammer": Color(0.8, 0.6, 0.3),
 }
 # Bodenloot: wenig, vor allem Heilung, Nahkampf und einfache Waffen. Die guten Sachen sind in Kisten.
-const LOOT_WEIGHTED := ["heal", "heal", "heal", "shield", "shield", "bat", "pan", "extinguisher", "bat", "pistol", "pistol", "smg", "shotgun", "jump", "power", "speed", "revolver", "katana", "hammer"]
+const LOOT_WEIGHTED := ["heal", "heal", "heal", "shield", "shield", "pistol", "pistol", "ak", "minigun", "rocket", "jump", "power", "speed"]
 const RARITY_NAMES := ["Common", "Rare", "Epic", "Legendary"]
 const RARITY_COLORS := [Color(0.35, 0.85, 0.4), Color(0.3, 0.6, 1.0), Color(0.7, 0.4, 1.0), Color(1.0, 0.78, 0.15)]
 const RARITY_MULT := [1.0, 1.15, 1.3, 1.5]
-const CHEST_WEAPONS := [["pistol", "smg", "shotgun", "revolver"], ["smg", "shotgun", "ak", "revolver", "crossbow"], ["ak", "shotgun", "sniper", "minigun", "crossbow", "laser"], ["minigun", "rocket", "sniper", "ak", "laser"]]
+const CHEST_WEAPONS := [["pistol"], ["pistol", "ak"], ["ak", "minigun"], ["minigun", "rocket", "ak"]]
 const MELEE := {
 	"fist": {"name": "Fists", "damage": 10.0, "cooldown": 0.45, "range": 58.0},
 	"bat": {"name": "Baseball bat", "damage": 24.0, "cooldown": 0.6, "range": 72.0},

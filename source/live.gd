@@ -19,8 +19,8 @@ const TEAM_COLORS := [Color(1.0, 0.3, 0.3), Color(0.35, 0.6, 1.0), Color(0.3, 0.
 const TIER_NAMES := ["", "RARE", "EPIC", "LEGENDARY"]
 const LOOT_KINDS := ["pistol"]  # Waffen nur per Geschenk/Kauf, am Boden nur Pistole
 # Geschenk-Name (klein geschrieben) -> Waffe. Anpassbar; unbekannte Geschenke werden nach Münzwert zugeordnet.
-const GIFT_WEAPONS := {"rose": "pistol", "tiktok": "smg", "gg": "sniper", "finger heart": "shotgun", "ice cream cone": "ak",
-	"doughnut": "katana", "hand hearts": "minigun", "money gun": "rocket"}
+# Es gibt nur noch vier Waffen: Pistole, AK, Minigun, Raketenwerfer
+const GIFT_WEAPONS := {"rose": "pistol", "ice cream cone": "ak", "hand hearts": "minigun", "money gun": "rocket"}
 const FILLER_NAMES := ["Luki", "Mia", "Jonas", "Lena", "Tim", "Anna", "Ben", "Emma", "Finn", "Sofia", "Noah", "Lara", "Paul", "Nina", "Leo", "Zoe", "Max", "Ida", "Elias", "Jana", "Ali", "Yara", "Kian", "Mira"]
 const SKINS := ["char_player", "char_red", "char_green", "char_yellow", "char_purple", "char_orange", "char_cyan", "char_pink"]
 
@@ -393,8 +393,8 @@ func gift(nm: String, gname: String, coins: int) -> void:
 		return
 	var wk: String = GIFT_WEAPONS.get(gname.to_lower(), "")
 	if wk == "":
-		var pool: Array = ["pistol", "smg", "ak", "shotgun", "sniper", "minigun", "rocket"]
-		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 6)]
+		var pool: Array = ["pistol", "ak", "minigun", "rocket"]
+		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 3)]
 	var rar := 1 if coins < 10 else (2 if coins < 100 else 3)
 	_give_weapon(nm, wk, rar)
 	# Kiste nur bei bezahltem Geschenk: sichtbar, dass jemand bezahlt hat
