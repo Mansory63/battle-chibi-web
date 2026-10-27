@@ -1239,6 +1239,10 @@ func draw_hud(vs: Vector2) -> void:
 	var foot_w := minf(vs.x - 20.0, 680.0)
 	var foot_x := (vs.x - foot_w) * 0.5
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
+	# Preisleiste unten: Shop in Münzen, Geschenke in Diamanten (1 Diamant = 1 Münze)
+	m._pill(Rect2(foot_x, vs.y - 150, foot_w, 50), Color(0.05, 0.06, 0.12, 0.8), 24)
+	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  !shield 5 coins  ·  !heal 10 coins  ·  !revive 15 coins", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x, vs.y - 118), "GIFTS:  1 diamond = 1 coin  ·  bigger gifts = stronger weapons", 14 if vs.x < 620.0 else 16, Color(0.7, 0.9, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):

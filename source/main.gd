@@ -561,7 +561,7 @@ func _draw_fx_inner() -> void:
 		live.draw_hud(vs)
 	if show_fps:
 		_text(Vector2(vs.x - 150, 40), "FPS %d" % fps_shown, 22, Color(0.4, 1.0, 0.4), 140.0, HORIZONTAL_ALIGNMENT_RIGHT)
-	elif phase == "play":
+	elif phase == "play" and not live_mode:
 		_draw_hud(vs)
 		var hb := 112.0 * ZOOM / 1.15
 		_fx_bar2(_fx_screen(player_pos), health, Color(0.3, 0.95, 0.4), hb)
