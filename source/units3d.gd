@@ -242,16 +242,89 @@ func _make_unit(skin: String) -> Dictionary:
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()
 	pivot.add_child(yaw)
-	var model: Node3D = _scene_for(skin).instantiate()
+	var model: Node3D
+	if skin == "reaper":
+		model = _build_reaper()
+	else:
+		model = _scene_for(skin).instantiate()
 	yaw.add_child(model)
 	_add_outline(model, _outline_mat(0.018))
 	pivot.scale = Vector3.ONE * UNIT_SCALE
 	unit_root.add_child(pivot)
-	var ap: AnimationPlayer = model.find_child("AnimationPlayer", true, false)
-	var hand: Node3D = model.find_child("arm-right", true, false)
+	var ap: AnimationPlayer = model.find_child("AnimationPlayer", true, false) if skin != "reaper" else null
+	var hand: Node3D = model.find_child("arm-right", true, false) if skin != "reaper" else null
 	var d := {"pivot": pivot, "yaw": yaw, "model": model, "ap": ap, "hand": hand, "skin": skin,
 		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0}
 	return d
+
+# Sensenmann-Boss aus einfachen Formen: schwarze Kutte, Kapuze, glühende Augen, Sense
+func _reaper_mat(col: Color, emis := Color(0, 0, 0), rough := 0.9) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.roughness = rough
+	if emis.r + emis.g + emis.b > 0.0:
+		m.emission_enabled = true
+		m.emission = emis
+		m.emission_energy_multiplier = 2.6
+	return m
+
+func _reaper_part(parent: Node3D, mesh: Mesh, mat: Material, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.set_meta("keep_mat", true)
+	mi.position = pos
+	mi.rotation = rot
+	parent.add_child(mi)
+	return mi
+
+func _build_reaper() -> Node3D:
+	var root := Node3D.new()
+	var robe_mat := _reaper_mat(Color(0.05, 0.03, 0.08), Color(0, 0, 0), 0.95)
+	var trim_mat := _reaper_mat(Color(0.35, 0.02, 0.05), Color(0.9, 0.05, 0.1))
+	var eye_mat := _reaper_mat(Color(1, 0.2, 0.1), Color(1, 0.25, 0.1))
+	var bone_mat := _reaper_mat(Color(0.82, 0.8, 0.74), Color(0, 0, 0), 0.7)
+	var wood_mat := _reaper_mat(Color(0.14, 0.1, 0.08))
+	var blade_mat := _reaper_mat(Color(0.7, 0.72, 0.78), Color(0.35, 0.05, 0.1), 0.25)
+	# Kutte: lange, nach unten breiter werdende Säule
+	var robe := CylinderMesh.new()
+	robe.top_radius = 0.13
+	robe.bottom_radius = 0.42
+	robe.height = 1.0
+	_reaper_part(root, robe, robe_mat, Vector3(0, 0.5, 0))
+	# Roter Saum unten
+	var hem := CylinderMesh.new()
+	hem.top_radius = 0.42
+	hem.bottom_radius = 0.44
+	hem.height = 0.05
+	_reaper_part(root, hem, trim_mat, Vector3(0, 0.03, 0))
+	# Kapuze: Kegel über dem Kopf
+	var hood := CylinderMesh.new()
+	hood.top_radius = 0.0
+	hood.bottom_radius = 0.17
+	hood.height = 0.24
+	_reaper_part(root, hood, robe_mat, Vector3(0, 1.12, 0))
+	# Schädel im Schatten der Kapuze
+	var skull := SphereMesh.new()
+	skull.radius = 0.1
+	skull.height = 0.2
+	_reaper_part(root, skull, bone_mat, Vector3(0, 1.02, 0.03))
+	# Glühende Augen
+	var eye := SphereMesh.new()
+	eye.radius = 0.028
+	eye.height = 0.056
+	_reaper_part(root, eye, eye_mat, Vector3(-0.04, 1.03, 0.12))
+	_reaper_part(root, eye, eye_mat, Vector3(0.04, 1.03, 0.12))
+	# Sense: Stiel in der Hand, Klinge oben
+	var handle := CylinderMesh.new()
+	handle.top_radius = 0.02
+	handle.bottom_radius = 0.02
+	handle.height = 1.6
+	_reaper_part(root, handle, wood_mat, Vector3(0.36, 0.75, 0.08), Vector3(0, 0, deg_to_rad(-8)))
+	var blade := BoxMesh.new()
+	blade.size = Vector3(0.03, 0.42, 0.66)
+	_reaper_part(root, blade, blade_mat, Vector3(0.2, 1.46, 0.24), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
+	return root
 
 func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
 	var ap: AnimationPlayer = d["ap"]
@@ -312,6 +385,8 @@ func _apply_look(d: Dictionary, look: String, tint: Color) -> void:
 
 func _walk_look(n: Node, look: String, tint: Color) -> void:
 	for c in n.get_children():
+		if c is MeshInstance3D and c.has_meta("keep_mat"):
+			continue
 		if c is MeshInstance3D:
 			if look == "zombie":
 				# Knochen-Soldat: komplett weiß, Textur wird ersetzt

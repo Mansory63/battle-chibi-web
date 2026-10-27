@@ -3,7 +3,7 @@ extends RefCounted
 # Ereignisse kommen über: JS (window.bcLive), WebSocket (?ws=ws://localhost:PORT), Demo (?demo=1) oder Testtasten.
 
 const ROUND_TIME := 300.0
-const PAUSE_TIME := 50.0      # 50 s Pause: erst 20 s Ergebnis, dann Erklärung + Anmeldung für die nächste Runde
+const PAUSE_TIME := 40.0      # 40 s Pause: erst 10 s Ergebnis, dann Erklärung + Anmeldung für die nächste Runde
 const EXPLAIN_TIME := 30.0     # letzte 30 s der Pause: Erklärung + Warteschlange
 const QUEUE_DROP_MS := 90000   # wer 90 s lang nicht aktiv war (Stream verlassen), fliegt aus der Warteschlange
 const SLOTS := 12                  # Kämpfer pro Team (4 x 12 = 48)
@@ -529,13 +529,16 @@ func _spawn_boss() -> void:
 	b["maxhp"] = 700.0
 	b["scale"] = 2.1
 	b["boss"] = true
-	b["skin"] = "char_red"
+	b["skin"] = "reaper"
 	_equip(b, "minigun", 3)
 	focus = SLOTS * 4
 	focus_lock = 4.0
 	focus_t = 4.0
-	m.shake = 0.8
-	m._spark_burst(b["pos"], TEAM_COLORS[4], 40, 480.0)
+	m.shake = 1.4
+	# Einschlag: Trümmer und Knochensplitter fliegen weit
+	m._spark_burst(b["pos"], TEAM_COLORS[4], 70, 620.0)
+	m._spark_burst(b["pos"], Color(0.95, 0.93, 0.85), 60, 520.0)
+	m._spark_burst(b["pos"], Color(0.35, 0.02, 0.05), 40, 380.0)
 	_banner("BOSS INCOMING!", TEAM_COLORS[4], 4.0)
 	_say("The boss appears. Defeat it for legendary weapons")
 
@@ -1308,12 +1311,10 @@ func _draw_results(vs: Vector2) -> void:
 
 # Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
 const HOW_TO_PLAY := [
-	"CHAT RED/BLUE/GREEN/YELLOW",
-	"LIKES = REINFORCEMENTS",
-	"GIFTS = WEAPON + CRATE",
-	"!SHIELD !HEAL !REVIVE = SHOP",
-	"CIRCLE SHRINKS - LAST ONE WINS",
-	"CHAT: RULES, SHOP, GIFT, LIKES",
+	"1. CHAT YOUR TEAM COLOR",
+	"2. LIKES = MORE FIGHTERS",
+	"3. GIFTS = WEAPONS",
+	"4. LAST TEAM STANDING WINS",
 ]
 
 func _draw_pause_info(vs: Vector2) -> void:
