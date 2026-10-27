@@ -2204,7 +2204,7 @@ func _update_bots(delta: float) -> void:
 					bots[tid]["lh"] = i
 					var dmm: float = (bot_dmg_mult * 1.5 if live_mode else 1.0)
 					if zomb:
-						dmm = 0.2 if live_mode else 0.3
+						dmm = 0.1 if live_mode else 0.3
 					bots[tid]["health"] -= float(MELEE[b["weapon"]]["damage"]) * dmm
 					_spark_burst(bots[tid]["pos"], Color(1, 0.9, 0.5), 4, 120.0)
 					if bots[tid]["health"] <= 0.0:
