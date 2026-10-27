@@ -206,8 +206,8 @@ func _team_from_text(low: String) -> int:
 
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
-	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: heal · shield · revive · ak · smg · ...", "5. The circle shrinks. Last one standing wins"],
-	"shop": ["shield = +50 shield (5 coins)", "heal = heal to full health (10 coins)", "revive = bring a dead player back (15 coins)", "weapons: pistol 3 · smg 5 · shotgun 8 · ak 10 · sniper 12 · minigun 15 · rocket 20 coins"],
+	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
+	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "weapons: !pistol 3 · !smg 5 · !shotgun 8 · !ak 10 · !sniper 12 · !minigun 15 · !rocket 20 coins"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
@@ -258,9 +258,11 @@ func chat(nm: String, text: String) -> void:
 const SHOP := {"shield": 5, "heal": 10, "revive": 15}
 const SHOP_WEAPONS := {"pistol": 3, "smg": 5, "shotgun": 8, "ak": 10, "sniper": 12, "minigun": 15, "rocket": 20}
 
-# Erkennt Kaufwörter mit oder ohne "!" (z.B. "heal", "!heal", "ak", "!ak")
+# Kaufbefehle brauchen das Sonderzeichen "!" (z.B. "!heal", "!ak")
 func _shop_word(low: String) -> String:
-	var w := low.trim_prefix("!").strip_edges()
+	if not low.begins_with("!"):
+		return ""
+	var w := low.substr(1).strip_edges()
 	if SHOP.has(w) or SHOP_WEAPONS.has(w):
 		return w
 	return ""
@@ -1259,7 +1261,7 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	# Preisleiste unten: Shop in Münzen, Geschenke in Diamanten (1 Diamant = 1 Münze)
 	m._pill(Rect2(foot_x, vs.y - 150, foot_w, 50), Color(0.05, 0.06, 0.12, 0.8), 24)
-	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  heal 10  ·  shield 5  ·  revive 15  ·  ak 10  ·  smg 5  (coins)", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  !heal 10  ·  !shield 5  ·  !revive 15  ·  !ak 10  ·  !smg 5  (coins)", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(foot_x, vs.y - 118), "GIFTS:  1 diamond = 1 coin  ·  bigger gifts = stronger weapons", 14 if vs.x < 620.0 else 16, Color(0.7, 0.9, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
