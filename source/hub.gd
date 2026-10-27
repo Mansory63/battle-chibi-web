@@ -53,8 +53,8 @@ class Ico extends Control:
 			"team":
 				for i in 3:
 					var o := (i - 1) * r * 0.55
-					draw_circle(c + Vector2(o, -r * 0.25 + (0 if i == 1 else r * 0.12)), r * 0.28, col)
-					draw_rect(Rect2(c.x + o - r * 0.26, c.y + r * 0.1 + (0 if i == 1 else r * 0.12), r * 0.52, r * 0.5), col)
+					draw_circle(c + Vector2(o, -r * 0.25 + (0.0 if i == 1 else r * 0.12)), r * 0.28, col)
+					draw_rect(Rect2(c.x + o - r * 0.26, c.y + r * 0.1 + (0.0 if i == 1 else r * 0.12), r * 0.52, r * 0.5), col)
 			"map":
 				draw_colored_polygon(PackedVector2Array([c + Vector2(-r, -r * 0.6), c + Vector2(-r * 0.33, -r * 0.8), c + Vector2(r * 0.33, -r * 0.6), c + Vector2(r, -r * 0.8), c + Vector2(r, r * 0.6), c + Vector2(r * 0.33, r * 0.8), c + Vector2(-r * 0.33, r * 0.6), c + Vector2(-r, r * 0.8)]), col)
 				draw_line(c + Vector2(-r * 0.33, -r * 0.8), c + Vector2(-r * 0.33, r * 0.6), INK, 2.0)
@@ -136,7 +136,7 @@ func _lbl(parent: Control, t: String, pos: Vector2, sz: Vector2, fs: int, col :=
 	l.add_theme_font_size_override("font_size", fs)
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", INK)
-	l.add_theme_constant_override("outline_size", maxi(3, fs / 5))
+	l.add_theme_constant_override("outline_size", maxi(3, int(fs / 5.0)))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
@@ -161,7 +161,7 @@ func _button(parent: Control, text: String, pos: Vector2, sz: Vector2, col: Colo
 	b.add_theme_color_override("font_hover_color", fcol)
 	b.add_theme_color_override("font_pressed_color", fcol)
 	b.add_theme_color_override("font_outline_color", INK)
-	b.add_theme_constant_override("outline_size", maxi(3, fs / 5))
+	b.add_theme_constant_override("outline_size", maxi(3, int(fs / 5.0)))
 	b.add_theme_stylebox_override("normal", _sb(col))
 	b.add_theme_stylebox_override("hover", _sb(col.lightened(0.15)))
 	b.add_theme_stylebox_override("pressed", _sb(col.darkened(0.15)))
@@ -344,7 +344,7 @@ func _build_skins() -> void:
 		var e: Array = m.SKINS[i]
 		var col: Color = _rarity(e[0])
 		var x: int = 24 + (i % 4) * 290
-		var y: int = 76 + (i / 4) * 230
+		var y: int = 76 + floori(i / 4.0) * 230
 		var unlocked: bool = lvl >= e[0]
 		var sel: bool = m.save_skin == e[1]
 		var card := _box(pan, Vector2(x, y), Vector2(270, 212), col.darkened(0.55), 18, 6, GOLD if sel else col)

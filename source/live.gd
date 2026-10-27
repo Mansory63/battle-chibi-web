@@ -1027,7 +1027,7 @@ func draw_ground() -> void:
 
 func _fmt_time(sec: float) -> String:
 	var s := maxi(0, int(ceil(sec)))
-	return "%d:%02d" % [s / 60, s % 60]
+	return "%d:%02d" % [floori(s / 60.0), s % 60]
 
 func draw_hud(vs: Vector2) -> void:
 	# 3D-Figuren liegen über dem 2D-Fenster: in der Erklärung ausblenden, damit der Text lesbar ist

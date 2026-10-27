@@ -6,6 +6,7 @@ extends CanvasLayer
 # Funktioniert mit Touch und mit Maus am PC.
 
 signal ability_pressed
+@warning_ignore("unused_signal")
 signal action_pressed
 signal pause_pressed
 
