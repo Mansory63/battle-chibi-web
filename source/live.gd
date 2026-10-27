@@ -936,7 +936,7 @@ func _boss_dead(b: Dictionary) -> void:
 	if kl >= 0 and kl < SLOTS * 4 and int(m.bots[kl]["team"]) - 1 >= 0 and int(m.bots[kl]["team"]) - 1 <= 3:
 		var kt := int(m.bots[kl]["team"]) - 1
 		round_kills[kt] += 2
-		_banner("K.O.! BOSS DOWN - %s WINS!" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
+		_banner("K.O.! BOSS DOWN - %s +2 KILLS" % TEAM_NAMES[kt], TEAM_COLORS[kt], 4.0)
 		_say("Team %s defeated the boss" % TEAM_NAMES[kt])
 	else:
 		_banner("K.O.! BOSS DOWN!", TEAM_COLORS[4], 3.0)
