@@ -368,8 +368,15 @@ func likes(nm: String, n: int) -> void:
 		# Likes des Zuschauers werden zu Münzen für den Shop (10 Likes = 1 Münze)
 		var v: Dictionary = viewers[nm]
 		v["like_acc"] = int(v.get("like_acc", 0)) + maxi(1, n)
-		v["coins"] = int(v["coins"]) + int(v["like_acc"]) / LIKES_PER_COIN
+		var earned: int = int(v["like_acc"]) / LIKES_PER_COIN
+		v["coins"] = int(v["coins"]) + earned
 		v["like_acc"] = int(v["like_acc"]) % LIKES_PER_COIN
+		if earned > 0:
+			# Visuelle Belohnung: Gold-Funken an der eigenen Figur und Meldung
+			var bi := _find_bot(nm)
+			if bi >= 0 and m.bots[bi]["alive"]:
+				m._spark_burst(m.bots[bi]["pos"], Color(1.0, 0.85, 0.25), 18, 260.0)
+			_toast("%s +%d coin (%d)" % [nm, earned, int(v["coins"])], Color(1.0, 0.85, 0.25))
 	else:
 		tm = 0
 		for k in 4:
