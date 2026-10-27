@@ -3053,7 +3053,7 @@ func _sync_units3d() -> void:
 		if outdoor:
 			for i in bots.size():
 				var b: Dictionary = bots[i]
-				if (b["pos"] as Vector2).distance_squared_to(player_pos) > 900.0 * 900.0:
+				if not live_mode and (b["pos"] as Vector2).distance_squared_to(player_pos) > 900.0 * 900.0:
 					continue
 				if not b["alive"]:
 					if live_mode:

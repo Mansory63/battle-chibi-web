@@ -1128,6 +1128,8 @@ func draw_hud(vs: Vector2) -> void:
 		var nfs := int(17 * ui)
 		m.fx.draw_string_outline(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, 6, Color(0.06, 0.05, 0.1, 0.95))
 		m.fx.draw_string(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, nc)
+		if b["viewer"] and viewers.has(nm):
+			_coin_bar(Vector2(sp.x, ty + 5.0), int(viewers[nm]["coins"]))
 		if i == focus:
 			m.fx.draw_string(f, Vector2(sp.x - 90, ty - 22 * ui), "★", HORIZONTAL_ALIGNMENT_CENTER, 180, int(22 * ui), Color(1, 0.9, 0.3))
 	# Gesundheitsleiste aller sichtbaren Zombies; gruen = feindlich, nicht unsterblich.
@@ -1185,7 +1187,7 @@ func draw_hud(vs: Vector2) -> void:
 		for z in range(SLOTS * 4 + 1, m.bots.size()):
 			if m.bots[z].get("zombie", false) and m.bots[z]["alive"]:
 				remaining_z += 1
-		m._text(Vector2(12, 162), "KNOCHEN: %d | KILLS: %d" % [remaining_z, zombie_kills], 14, Color(0.5, 1.0, 0.35), minf(260.0, vs.x - 20.0))
+		m._text(Vector2(12, 162), "BONES: %d | KILLS: %d" % [remaining_z, zombie_kills], 14, Color(0.5, 1.0, 0.35), minf(260.0, vs.x - 20.0))
 	# Kill-Feed links
 	var fy := 192.0 if boss["alive"] and boss["boss"] else 170.0
 	for kf in m.kill_feed:
@@ -1321,6 +1323,22 @@ func _draw_nuke(vs: Vector2) -> void:
 		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "ONLY %s SURVIVED" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Große Schrift mit dicker dunkler Umrandung, zentriert, optional mit Schlag-Effekt
+# Münz-Leiste unter dem Namen: zeigt den Fortschritt bis zur nächsten Shop-Stufe (5 / 10 / 15 Münzen)
+func _coin_bar(center: Vector2, coins: int) -> void:
+	var stages := [5, 10, 15]
+	var goal := 15
+	for s in stages:
+		if coins < s:
+			goal = s
+			break
+	var f: Font = ThemeDB.fallback_font
+	var w := 56.0
+	var fill := clampf(float(coins) / float(goal), 0.0, 1.0)
+	var r := Rect2(center.x - w * 0.5, center.y, w, 5.0)
+	m.fx.draw_rect(r, Color(0.05, 0.05, 0.1, 0.8))
+	m.fx.draw_rect(Rect2(r.position, Vector2(w * fill, 5.0)), Color(1.0, 0.85, 0.25))
+	m.fx.draw_string(f, Vector2(center.x - 60, center.y + 13.0), "%d/%d COINS" % [coins, goal], HORIZONTAL_ALIGNMENT_CENTER, 120, 10, Color(1, 0.9, 0.5))
+
 func _big_text(vs: Vector2, t: String, size: int, col: Color, punch: float) -> void:
 	var f: Font = m.ui_font()
 	m.fx.draw_set_transform(vs * 0.5, 0.0, Vector2(punch, punch))
