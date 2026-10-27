@@ -388,7 +388,7 @@ func gift(nm: String, gname: String, coins: int) -> void:
 	v["coins"] = int(v["coins"]) + coins
 	var tm: int = v["team"]
 	topsup[tm][nm] = int(topsup[tm].get(nm, 0)) + coins
-	if gname.to_lower().contains("universe") or coins >= NUKE_COINS:
+	if gname.to_lower().contains("universe") or gname.to_lower().contains("galaxy") or coins >= NUKE_COINS:
 		nuke(nm)
 		return
 	var wk: String = GIFT_WEAPONS.get(gname.to_lower(), "")
