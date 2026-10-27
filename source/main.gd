@@ -2193,7 +2193,7 @@ func _update_bots(delta: float) -> void:
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius and not zomb:
 			# außerhalb der Zone: zurück zur Mitte
 			step = ZONE_CENTER - b["pos"]
-		elif has_target and dist < (900.0 if zomb else 280.0) and elapsed > 10.0 and MELEE.has(b["weapon"]):
+		elif has_target and dist < (900.0 if zomb else (eng_r if live_mode else 280.0)) and elapsed > 10.0 and MELEE.has(b["weapon"]):
 			# Nur Nahkampf: direkt auf das Ziel zu
 			step = to_t
 			if b["cd"] <= 0.0 and dist < MELEE[b["weapon"]]["range"] + PLAYER_RADIUS:

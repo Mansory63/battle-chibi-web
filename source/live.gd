@@ -57,6 +57,10 @@ var topsup: Array = [{}, {}, {}, {}]
 var splats: Array = []
 # Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
 const BOSS_SPAWN_AT := 100.0
+const BOSS_DEADLINE := 280.0      # Boss fällt spätestens hier, auch ohne Treffer (Sanduhr)
+const BONE_WAVE_EVERY := 20.0      # alle 20 s rückt eine neue Welle Knochen-Krieger mit Schwert aus dem Gefängnis aus
+const BONE_WAVE_SIZE := 4
+const ZOMBIE_DECAY := 1.5          # Knochen-Krieger verlieren pro Sekunde so viel Leben und sterben mit der Zeit
 const BOSS_WARNING := 8.0
 const NUKE_WARN := 5.0   # Countdown 5-4-3-2-1, dann Einschlag
 const NUKE_PIX := 1.0    # Pixel-Pilz blitzt nach dem Einschlag 1 Sekunde auf
@@ -103,6 +107,7 @@ var fn_i := 0
 var boss_done := false
 var boss_spawn_pos := Vector2.ZERO
 var zombie_kills := 0
+var bone_next := 15.0
 
 # ---------- Start ----------
 func begin(main, opts := {}) -> void:
@@ -580,6 +585,7 @@ func start_round() -> void:
 	crate_t = 30.0
 	crate_next = randi() % 4
 	boss_done = false
+	bone_next = 15.0
 	boss_spawn_pos = m._nearest_free(m.ZONE_CENTER, m.BOT_RADIUS)
 	zombie_kills = 0
 	splats.clear()
@@ -642,6 +648,54 @@ func _spawn_loot() -> void:
 
 func _add_loot(p: Vector2) -> void:
 	m.loot.append({"pos": p, "kind": LOOT_KINDS[randi() % LOOT_KINDS.size()], "rar": 1 + m._random_rarity([65, 27, 8])})
+
+# Auto-Spawn: Knochen-Krieger kommen wellenweise aus dem Gefängnis, bewaffnet mit Schwert (Katana)
+func _bone_wave_update() -> void:
+	if t < bone_next:
+		return
+	bone_next = t + BONE_WAVE_EVERY
+	if not m.prison_open:
+		m._outbreak()
+	var door: Vector2 = m._prison_door()
+	if arena_small:
+		door = m._nearest_free(m.ZONE_CENTER + Vector2(-420.0, 100.0), m.BOT_RADIUS)
+	var n := 0
+	for i in range(m.BOT_COUNT, m.bots.size()):
+		var z: Dictionary = m.bots[i]
+		if not z.get("zombie", false) or z["alive"]:
+			continue
+		if n >= BONE_WAVE_SIZE:
+			break
+		m._revive_zombie(z, door, n)
+		_equip(z, "katana", 0)
+		n += 1
+	for i in range(m.BOT_COUNT, m.bots.size()):
+		var z2: Dictionary = m.bots[i]
+		if z2.get("zombie", false) and z2["alive"] and z2["weapon"] == "fist":
+			_equip(z2, "katana", 0)
+
+func _boss_alive() -> bool:
+	for j in m.bots.size():
+		if m.bots[j]["alive"] and int(m.bots[j]["team"]) == 5:
+			return true
+	return false
+
+# Knochen-Krieger sterben mit der Zeit; der Boss verliert ab Spawn so viel Leben, dass er garantiert vor Rundenende fällt
+func _decay_units(delta: float) -> void:
+	for i in m.bots.size():
+		var b: Dictionary = m.bots[i]
+		if not b["alive"]:
+			continue
+		if b.get("zombie", false):
+			b["health"] = float(b["health"]) - ZOMBIE_DECAY * delta
+			if float(b["health"]) <= 0.0:
+				b["lh"] = -2
+				m._kill_bot(i)
+		elif b.get("boss", false) and int(b["team"]) == 5:
+			var span := maxf(1.0, BOSS_DEADLINE - BOSS_SPAWN_AT)
+			b["health"] = float(b["health"]) - float(b["maxhp"]) / span * delta
+			if float(b["health"]) <= 0.0:
+				m._kill_bot(i)
 
 func end_round() -> void:
 	var best := -1
@@ -732,6 +786,8 @@ func update(delta: float) -> void:
 			boss_done = true
 			_spawn_boss()
 		m._update_bots(delta)
+		_decay_units(delta)
+		_bone_wave_update()
 		if t > 240.0:
 			for i in SLOTS * 4:
 				var b: Dictionary = m.bots[i]
@@ -751,7 +807,7 @@ func update(delta: float) -> void:
 			for k in 4:
 				if alive_t[k] > 0:
 					teams += 1
-			if teams <= 1 and t > 3.0:
+			if teams <= 1 and t > 3.0 and not _boss_alive():
 				end_round()
 			elif t > ROUND_TIME + 45.0:
 				end_round()
