@@ -206,8 +206,8 @@ func _team_from_text(low: String) -> int:
 
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
-	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !shield · !heal · !revive", "5. The circle shrinks. Last one standing wins"],
-	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)"],
+	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: heal · shield · revive · ak · smg · ...", "5. The circle shrinks. Last one standing wins"],
+	"shop": ["shield = +50 shield (5 coins)", "heal = heal to full health (10 coins)", "revive = bring a dead player back (15 coins)", "weapons: pistol 3 · smg 5 · shotgun 8 · ak 10 · sniper 12 · minigun 15 · rocket 20 coins"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
@@ -248,19 +248,28 @@ func chat(nm: String, text: String) -> void:
 	var tm := _team_from_text(low)
 	if tm >= 0:
 		join(nm, tm)
-	elif low.begins_with("!") and SHOP.has(low.substr(1).strip_edges()):
-		_buy(_clean(nm), low.substr(1).strip_edges())
+	elif _shop_word(low) != "":
+		_buy(_clean(nm), _shop_word(low))
 	elif low.contains("show me") and viewers.has(_clean(nm)):
 		show_queue.append(_clean(nm))
 		_toast("%s will be shown" % _clean(nm))
 
 # Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
 const SHOP := {"shield": 5, "heal": 10, "revive": 15}
+const SHOP_WEAPONS := {"pistol": 3, "smg": 5, "shotgun": 8, "ak": 10, "sniper": 12, "minigun": 15, "rocket": 20}
+
+# Erkennt Kaufwörter mit oder ohne "!" (z.B. "heal", "!heal", "ak", "!ak")
+func _shop_word(low: String) -> String:
+	var w := low.trim_prefix("!").strip_edges()
+	if SHOP.has(w) or SHOP_WEAPONS.has(w):
+		return w
+	return ""
 
 func _buy(nm: String, item: String) -> void:
 	if not viewers.has(nm) or state != "round":
 		return
-	var price: int = SHOP[item]
+	var is_weapon := SHOP_WEAPONS.has(item)
+	var price: int = SHOP_WEAPONS[item] if is_weapon else SHOP[item]
 	var v: Dictionary = viewers[nm]
 	if int(v["coins"]) < price:
 		_toast("%s: not enough coins for %s (%d)" % [nm, item, price], Color(1, 0.6, 0.3))
@@ -270,6 +279,15 @@ func _buy(nm: String, item: String) -> void:
 		_toast("%s is not on the field right now" % nm, Color(1, 0.6, 0.3))
 		return
 	var b: Dictionary = m.bots[i]
+	if is_weapon:
+		if not b["alive"]:
+			_toast("%s is dead – only a revive helps" % nm, Color(1, 0.6, 0.3))
+			return
+		_equip(b, item, 0)
+		v["coins"] = int(v["coins"]) - price
+		m._spark_burst(b["pos"], Color(1.0, 0.85, 0.3), 24, 300.0)
+		_toast("%s equips %s (-%d coins)" % [nm, m.WEAPONS[item]["name"], price], Color(0.5, 1.0, 0.6))
+		return
 	if item == "revive":
 		if b["alive"]:
 			_toast("%s is still alive – revive only works on the dead" % nm, Color(1, 0.6, 0.3))
@@ -1241,7 +1259,7 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	# Preisleiste unten: Shop in Münzen, Geschenke in Diamanten (1 Diamant = 1 Münze)
 	m._pill(Rect2(foot_x, vs.y - 150, foot_w, 50), Color(0.05, 0.06, 0.12, 0.8), 24)
-	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  !shield 5 coins  ·  !heal 10 coins  ·  !revive 15 coins", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  heal 10  ·  shield 5  ·  revive 15  ·  ak 10  ·  smg 5  (coins)", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(foot_x, vs.y - 118), "GIFTS:  1 diamond = 1 coin  ·  bigger gifts = stronger weapons", 14 if vs.x < 620.0 else 16, Color(0.7, 0.9, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)

@@ -745,8 +745,13 @@ func _menu_button(text: String, col: Color) -> Button:
 	return b
 
 func _on_menu_play() -> void:
+	# Einzelspielermodus entfernt: Play startet immer den Live-Modus
 	if phase == "over" or phase == "won":
 		get_tree().reload_current_scene()
+		return
+	if not live_mode:
+		menu_layer.visible = false
+		start_live({})
 		return
 	menu_layer.visible = false
 	touch.visible = true
@@ -800,7 +805,8 @@ func _check_live_args() -> void:
 				opts["arena"] = kv[1].uri_decode()
 			elif kv[0] == "zone" and kv.size() > 1:
 				opts["zone_speed"] = float(kv[1].uri_decode())
-	if go and not solo:
+	# Einzelspieler ist entfernt, es gibt nur noch den Live-Modus
+	if go or solo:
 		start_live(opts)
 
 func _show_end_menu(title: String) -> void:
