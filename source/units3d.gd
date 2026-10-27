@@ -97,11 +97,22 @@ func setup(host: Node, layer_index := 1) -> void:
 	sun.shadow_opacity = 0.55
 	viewport.add_child(sun)
 	sun.look_at_from_position(Vector3(0, 0, 0), Vector3(0.55, -1.0, 0.45), Vector3.UP)
+	# Fülllicht von hinten-links: nimmt den harten Schatten weg, Figuren wirken plastischer
+	var fill := DirectionalLight3D.new()
+	fill.light_energy = 0.45
+	fill.light_color = Color(0.85, 0.92, 1.0)
+	fill.shadow_enabled = false
+	viewport.add_child(fill)
+	fill.look_at_from_position(Vector3(0, 0, 0), Vector3(-0.6, -0.5, -0.7), Vector3.UP)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.85, 0.88, 1.0)
 	env.ambient_light_energy = 0.75
+	# Satte Farben und etwas mehr Kontrast (Comic-/Brawl-Look)
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.18
+	env.adjustment_contrast = 1.08
 	var we := WorldEnvironment.new()
 	we.environment = env
 	viewport.add_child(we)
@@ -248,7 +259,7 @@ func _make_unit(skin: String) -> Dictionary:
 	else:
 		model = _scene_for(skin).instantiate()
 	yaw.add_child(model)
-	_add_outline(model, _outline_mat(0.018))
+	_add_outline(model, _outline_mat(0.03))
 	pivot.scale = Vector3.ONE * UNIT_SCALE
 	unit_root.add_child(pivot)
 	var ap: AnimationPlayer = model.find_child("AnimationPlayer", true, false) if skin != "reaper" else null
