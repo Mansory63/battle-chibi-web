@@ -206,7 +206,7 @@ func _team_from_text(low: String) -> int:
 
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
-	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team · 10 likes = 1 coin for you", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
+	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
 	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "Galaxy gift = atomic bomb next round", "weapons: send the gift – Rose pistol · TikTok uzi · GG sniper · Finger Heart shotgun · Ice Cream Cone AK · Hand Hearts minigun · Money Gun rocket"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
@@ -340,7 +340,6 @@ func _ensure_viewer(nm: String) -> String:
 	return nm
 
 const REINFORCE_EVERY := 400   # alle 400 Likes des Teams ein Verstärkungs-Kämpfer
-const LIKES_PER_COIN := 10     # 10 Likes = 1 Münze für den eigenen Shop
 var team_total_likes: Array = [0, 0, 0, 0]
 var reinforce_pending: Array = [0, 0, 0, 0]
 
@@ -365,18 +364,10 @@ func likes(nm: String, n: int) -> void:
 	if viewers.has(nm):
 		tm = int(viewers[nm]["team"])
 		viewers[nm]["last"] = Time.get_ticks_msec()
-		# Likes des Zuschauers werden zu Münzen für den Shop (10 Likes = 1 Münze)
-		var v: Dictionary = viewers[nm]
-		v["like_acc"] = int(v.get("like_acc", 0)) + maxi(1, n)
-		var earned: int = int(v["like_acc"]) / LIKES_PER_COIN
-		v["coins"] = int(v["coins"]) + earned
-		v["like_acc"] = int(v["like_acc"]) % LIKES_PER_COIN
-		if earned > 0:
-			# Visuelle Belohnung: Gold-Funken an der eigenen Figur und Meldung
-			var bi := _find_bot(nm)
-			if bi >= 0 and m.bots[bi]["alive"]:
-				m._spark_burst(m.bots[bi]["pos"], Color(1.0, 0.85, 0.25), 18, 260.0)
-			_toast("%s +%d coin (%d)" % [nm, earned, int(v["coins"])], Color(1.0, 0.85, 0.25))
+		# Visuelle Belohnung: kleine Funken in der Teamfarbe an der eigenen Figur (keine Münzen)
+		var bi := _find_bot(nm)
+		if bi >= 0 and m.bots[bi]["alive"]:
+			m._spark_burst(m.bots[bi]["pos"], TEAM_COLORS[tm], 6, 200.0)
 	else:
 		tm = 0
 		for k in 4:
