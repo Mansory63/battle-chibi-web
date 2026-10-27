@@ -2170,6 +2170,9 @@ func _update_bots(delta: float) -> void:
 					var o: Dictionary = bots[j]
 					if not o["alive"] or int(o["team"]) == team or (zomb and int(o["team"]) == 5):
 						continue
+					# Knochen-Krieger jagen nur Spieler und Zuschauer
+					if zomb and not o.get("viewer", false):
+						continue
 					var dd: float = o["pos"].distance_to(b["pos"])
 					var sc: float = dd * (0.6 if (focus_t >= 0 and int(o["team"]) == focus_t) else 1.0)
 					if dd < rng and sc < best_sc:
