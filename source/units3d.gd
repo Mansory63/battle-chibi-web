@@ -54,6 +54,7 @@ func setup(host: Node, layer_index := 1) -> void:
 	else:
 		res_scale = 1.0
 		viewport.msaa_3d = Viewport.MSAA_2X
+		Engine.max_fps = 60  # PC: ohne Grenze läuft die Grafikkarte auf Vollast und wird heiß
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	rect = TextureRect.new()

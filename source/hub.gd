@@ -214,7 +214,7 @@ func _build_top() -> void:
 	gem_lbl = _pill(self, "gem", 930, 130)
 	win_lbl = _pill(self, "trophy", 1070, 130)
 	# Titel (wird im Endbildschirm für Ergebnis genutzt)
-	m.menu_title = _lbl(self, "BATTLECHIBI", Vector2(310, 6), Vector2(440, 72), 46, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	m.menu_title = _lbl(self, "BATTLEYAROO", Vector2(310, 6), Vector2(440, 72), 46, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	m.menu_title.add_theme_constant_override("outline_size", 10)
 
 # ---------- Kampf-Tab ----------

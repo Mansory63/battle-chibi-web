@@ -613,13 +613,14 @@ func _draw_fx_inner() -> void:
 		_fdisc(_fx_screen(sp["pos"]) + sp["o"] * ZOOM, 5.5 * (1.0 - k2 * 0.6), c)
 	var f2 := ThemeDB.fallback_font
 	for p in popups:
-		var k3: float = p["t"] / 0.9
-		var sp2 := _fx_screen(p["pos"]) + Vector2(-20, -100.0 * ZOOM / 1.15 - 46.0 * k3)
+		var k3: float = p["t"] / float(p.get("life", 0.9))
+		var sp2 := _fx_screen(p["pos"]) + Vector2(-20 + float(p.get("dx", 0.0)), -100.0 * ZOOM / 1.15 - 46.0 * k3)
 		var c2: Color = p["col"]
 		c2.a = 1.0 - k3 * k3
 		var sc := 1.0 + 0.5 * maxf(0.0, 1.0 - k3 * 6.0)
-		fx.draw_string_outline(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, int(28 * sc), 7, Color(0.1, 0.08, 0.1, c2.a))
-		fx.draw_string(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, int(28 * sc), c2)
+		var fs := int(float(p.get("sz", 28)) * sc)
+		fx.draw_string_outline(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, fs, 7, Color(0.1, 0.08, 0.1, c2.a))
+		fx.draw_string(f2, sp2, p["text"], HORIZONTAL_ALIGNMENT_CENTER, 40, fs, c2)
 
 func _fx_bar2(sp: Vector2, hp: float, col: Color, up: float) -> void:
 	var w := 54.0
@@ -1797,7 +1798,7 @@ func _process(delta: float) -> void:
 
 	for p in popups:
 		p["t"] += delta
-	popups = popups.filter(func(p): return p["t"] < 0.9)
+	popups = popups.filter(func(p): return p["t"] < float(p.get("life", 0.9)))
 	damage_flash = maxf(0.0, damage_flash - delta)
 	hit_marker = maxf(0.0, hit_marker - delta)
 	shake = maxf(0.0, shake - delta * 2.2)
@@ -2043,7 +2044,7 @@ func _melee_attack(owner_id: int, origin: Vector2, dir: Vector2, kind: String) -
 			var to_b: Vector2 = b["pos"] - origin
 			if to_b.length() < rng + BOT_RADIUS and to_b.normalized().dot(dir.normalized()) > 0.3:
 				b["health"] -= dmg
-				_popup(b["pos"], dmg, Color(1, 0.95, 0.5))
+				_hit_popup(b["pos"], dmg, float(b["health"]) <= 0.0)
 				_play_sfx("hit", -2.0)
 				if b["health"] <= 0.0:
 					_kill_bot(i, true)
@@ -2413,7 +2414,24 @@ func _popup(pos: Vector2, amount: float, col: Color) -> void:
 	_spark_burst(pos, col, clampi(6 + int(amount / 8.0), 6, 16), 150.0 + clampf(amount * 2.0, 0.0, 120.0))
 	if col.g > 0.9:
 		hit_marker = 0.18
-	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col})
+	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col, "sz": 28, "life": 0.9, "dx": 0.0})
+
+func _hit_popup(pos: Vector2, amount: float, kill := false) -> void:
+	# Schadenszahl beim Treffer: weiß normal, orange stark, gold beim Abschuss
+	var col := Color(1, 1, 1)
+	var sz := 26
+	if kill:
+		col = Color(1.0, 0.84, 0.2)
+		sz = 36
+	elif amount >= 40.0:
+		col = Color(1.0, 0.55, 0.12)
+		sz = 34
+	elif amount >= 15.0:
+		col = Color(1.0, 0.8, 0.45)
+		sz = 30
+	_spark_burst(pos, col, clampi(6 + int(amount / 8.0), 6, 16), 150.0 + clampf(amount * 2.0, 0.0, 120.0))
+	hit_marker = 0.18
+	popups.append({"pos": pos, "text": str(int(round(amount))), "t": 0.0, "col": col, "sz": sz, "life": 0.6, "dx": randf_range(-16.0, 16.0)})
 
 func _kill_bot(i: int, by_player := false) -> void:
 	if not bots[i]["alive"]:
@@ -2473,7 +2491,7 @@ func _update_bullets(delta: float) -> void:
 					b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
 					b["lh"] = ow
 					if ow == -1:
-						_popup(b["pos"], bl["damage"], Color(1, 0.95, 0.5))
+						_hit_popup(b["pos"], bl["damage"], float(b["health"]) <= 0.0)
 					if b["health"] <= 0.0:
 						_kill_bot(i, ow == -1)
 				break

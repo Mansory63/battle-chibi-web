@@ -1308,12 +1308,12 @@ func _draw_results(vs: Vector2) -> void:
 
 # Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
 const HOW_TO_PLAY := [
-	"CHAT RED, BLUE, GREEN OR YELLOW TO JOIN",
-	"LIKES = REINFORCEMENTS FOR YOUR TEAM",
-	"GIFTS = WEAPON + CRATE FOR YOUR TEAM",
-	"!SHIELD  !HEAL  !REVIVE = SHOP",
-	"CIRCLE SHRINKS - LAST ONE STANDING WINS",
-	"CHAT: RULES, SHOP, GIFT, LIKES, QUEUE, NUKE",
+	"CHAT RED/BLUE/GREEN/YELLOW",
+	"LIKES = REINFORCEMENTS",
+	"GIFTS = WEAPON + CRATE",
+	"!SHIELD !HEAL !REVIVE = SHOP",
+	"CIRCLE SHRINKS - LAST ONE WINS",
+	"CHAT: RULES, SHOP, GIFT, LIKES",
 ]
 
 func _draw_pause_info(vs: Vector2) -> void:
