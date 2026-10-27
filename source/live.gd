@@ -60,6 +60,7 @@ const BOSS_SPAWN_AT := 100.0
 const BOSS_DEADLINE := 280.0      # Boss fällt spätestens hier, auch ohne Treffer (Sanduhr)
 const BONE_WAVE_EVERY := 20.0      # alle 20 s rückt eine neue Welle Knochen-Krieger mit Schwert aus dem Gefängnis aus
 const BONE_WAVE_SIZE := 4
+const BONE_MAX_ALIVE := 6         # nie mehr als 6 Knochen gleichzeitig auf dem Feld (Bots können sie nicht besiegen)
 const ZOMBIE_DECAY := 1.5          # Knochen-Krieger verlieren pro Sekunde so viel Leben und sterben mit der Zeit
 const BOSS_WARNING := 8.0
 const NUKE_WARN := 5.0   # Countdown 5-4-3-2-1, dann Einschlag
@@ -673,6 +674,16 @@ func _bone_wave_update() -> void:
 		var z2: Dictionary = m.bots[i]
 		if z2.get("zombie", false) and z2["alive"] and z2["weapon"] == "fist":
 			_equip(z2, "katana", 0)
+	# Obergrenze: überzählige Knochen gehen zurück ins Gefängnis
+	var alive_z := 0
+	for i in range(m.BOT_COUNT, m.bots.size()):
+		var z3: Dictionary = m.bots[i]
+		if z3.get("zombie", false) and z3["alive"]:
+			alive_z += 1
+			if alive_z > BONE_MAX_ALIVE:
+				z3["alive"] = false
+				z3["dead_at"] = -99999
+				z3["pos"] = Vector2(-500, -500)
 
 func _boss_alive() -> bool:
 	for j in m.bots.size():
