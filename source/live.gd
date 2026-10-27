@@ -207,7 +207,7 @@ func _team_from_text(low: String) -> int:
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
 	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
-	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "weapons: !pistol 3 · !smg 5 · !shotgun 8 · !ak 10 · !sniper 12 · !minigun 15 · !rocket 20 coins"],
+	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "!nuke = atomic bomb next round (40 coins)", "weapons: !pistol 3 · !smg 5 · !shotgun 8 · !ak 10 · !sniper 12 · !minigun 15 · !rocket 20 coins"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
@@ -255,7 +255,7 @@ func chat(nm: String, text: String) -> void:
 		_toast("%s will be shown" % _clean(nm))
 
 # Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
-const SHOP := {"shield": 5, "heal": 10, "revive": 15}
+const SHOP := {"shield": 5, "heal": 10, "revive": 15, "nuke": 40}
 const SHOP_WEAPONS := {"pistol": 3, "smg": 5, "shotgun": 8, "ak": 10, "sniper": 12, "minigun": 15, "rocket": 20}
 
 # Kaufbefehle brauchen das Sonderzeichen "!" (z.B. "!heal", "!ak")
@@ -275,6 +275,11 @@ func _buy(nm: String, item: String) -> void:
 	var v: Dictionary = viewers[nm]
 	if int(v["coins"]) < price:
 		_toast("%s: not enough coins for %s (%d)" % [nm, item, price], Color(1, 0.6, 0.3))
+		return
+	if item == "nuke":
+		v["coins"] = int(v["coins"]) - price
+		_toast("%s buys the atomic bomb (-%d coins)" % [nm, price], Color(1, 0.5, 0.1))
+		nuke(nm)
 		return
 	var i := _find_bot(nm)
 	if i < 0:
@@ -1259,10 +1264,8 @@ func draw_hud(vs: Vector2) -> void:
 	var foot_w := minf(vs.x - 20.0, 680.0)
 	var foot_x := (vs.x - foot_w) * 0.5
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
-	# Preisleiste unten: Shop in Münzen, Geschenke in Diamanten (1 Diamant = 1 Münze)
-	m._pill(Rect2(foot_x, vs.y - 150, foot_w, 50), Color(0.05, 0.06, 0.12, 0.8), 24)
-	m._text(Vector2(foot_x, vs.y - 142), "SHOP:  !heal 10  ·  !shield 5  ·  !revive 15  ·  !ak 10  ·  !smg 5  (coins)", 16 if vs.x < 620.0 else 18, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(foot_x, vs.y - 118), "GIFTS:  1 diamond = 1 coin  ·  bigger gifts = stronger weapons", 14 if vs.x < 620.0 else 16, Color(0.7, 0.9, 1.0), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+	# Shop unten: Kacheln mit Bild und Preisschild (Münzen)
+	_draw_shop(vs, foot_x, foot_w)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
@@ -1347,6 +1350,56 @@ func _draw_nuke(vs: Vector2) -> void:
 		m._text(Vector2(vs.x * 0.5 - 340, vs.y * 0.14), "ONLY %s SURVIVED" % nuke_survivor.to_upper(), 40, Color(1, 0.9, 0.3, clampf(7.0 - tb, 0.0, 1.0)), 680.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Große Schrift mit dicker dunkler Umrandung, zentriert, optional mit Schlag-Effekt
+# Shop-Leiste: Hilfsitems oben, Waffen darunter, jede Kachel mit Bild und Preisschild
+func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
+	var top := vs.y - 300.0
+	m._pill(Rect2(fx, top, fw, 130), Color(0.05, 0.06, 0.12, 0.85), 18)
+	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", SHOP["nuke"]]]
+	var t1 := minf(84.0, (fw - 16.0) / 4.0)
+	var x1 := fx + (fw - 4.0 * t1) * 0.5
+	for k in util.size():
+		_shop_tile(Vector2(x1 + k * t1, top + 8.0), t1 - 6.0, str(util[k][0]), int(util[k][1]))
+	var guns := ["pistol", "smg", "shotgun", "ak", "sniper", "minigun", "rocket"]
+	var t2 := minf(72.0, (fw - 16.0) / 7.0)
+	var x2 := fx + (fw - 7.0 * t2) * 0.5
+	for k in guns.size():
+		_shop_tile(Vector2(x2 + k * t2, top + 70.0), t2 - 6.0, guns[k], int(SHOP_WEAPONS[guns[k]]))
+
+func _shop_tile(p: Vector2, w: float, key: String, price: int) -> void:
+	var h := 56.0
+	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.13, 0.15, 0.24, 0.95))
+	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.45, 0.5, 0.7, 0.9), false, 1.5)
+	var c := p + Vector2(w * 0.5, h * 0.42)
+	var s := minf(w, h) * 0.3
+	match key:
+		"heal":
+			m.fx.draw_rect(Rect2(c - Vector2(s, s), Vector2(2 * s, 2 * s)), Color(1, 1, 1))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.3, s * 0.85), Vector2(s * 0.6, s * 1.7)), Color(0.9, 0.15, 0.15))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.85, s * 0.3), Vector2(s * 1.7, s * 0.6)), Color(0.9, 0.15, 0.15))
+		"revive":
+			m.fx.draw_circle(c, s, Color(0.3, 0.9, 0.4))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.25, s * 0.7), Vector2(s * 0.5, s * 1.4)), Color(1, 1, 1))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.7, s * 0.25), Vector2(s * 1.4, s * 0.5)), Color(1, 1, 1))
+		"shield":
+			var sh := PackedVector2Array([c + Vector2(-s, -s), c + Vector2(s, -s), c + Vector2(s, 0.1 * s), c + Vector2(0, s * 1.2), c + Vector2(-s, 0.1 * s)])
+			m.fx.draw_colored_polygon(sh, Color(0.3, 0.7, 1.0))
+		"nuke":
+			m.fx.draw_circle(c, s, Color(1.0, 0.85, 0.2))
+			for a in 3:
+				var ang := TAU * a / 3.0 - PI / 2.0
+				m.fx.draw_circle(c + Vector2.from_angle(ang) * s * 0.45, s * 0.3, Color(0.15, 0.1, 0.0))
+			m.fx.draw_circle(c, s * 0.2, Color(0.15, 0.1, 0.0))
+		_:
+			var tex: Texture2D = m.tex_guns.get(key, null)
+			if tex:
+				var ts := tex.get_size()
+				var k2 := minf((w - 12.0) / ts.x, (h - 24.0) / ts.y)
+				var sz := ts * k2
+				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
+	# Preisschild
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 16.0, w - 4.0, 14.0), Color(1, 0.85, 0.25))
+	m._text(Vector2(p.x + 2.0, p.y + h - 17.0), str(price), 12, Color(0.2, 0.1, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
+
 # Münz-Leiste unter dem Namen: zeigt den Fortschritt bis zur nächsten Shop-Stufe (5 / 10 / 15 Münzen)
 func _coin_bar(center: Vector2, coins: int) -> void:
 	var stages := [5, 10, 15]
