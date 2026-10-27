@@ -1196,6 +1196,12 @@ func draw_hud(vs: Vector2) -> void:
 		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
 		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d alive · %d kills · %d rnd%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
 		m._text(Vector2(cx + 10, cy + 39), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
+		# Countdown: Balken und Zahl bis zum nächsten Verstärkungs-Kämpfer (Likes)
+		var into: int = int(team_total_likes[k]) % REINFORCE_EVERY
+		var likes_left: int = REINFORCE_EVERY - into
+		m.fx.draw_rect(Rect2(cx, cy + 48.0, cw, 6.0), Color(0.05, 0.05, 0.1, 0.85))
+		m.fx.draw_rect(Rect2(cx, cy + 48.0, cw * float(into) / float(REINFORCE_EVERY), 6.0), col)
+		m._text(Vector2(cx + 4.0, cy + 56.0), "%d more likes = +1 fighter" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
 		# Like-Leiste
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))
 		m.fx.draw_rect(Rect2(cx, cy + 46, cw * clampf(float(team_likes[k]) / LIKE_GOAL, 0.0, 1.0), 6), col)
