@@ -57,6 +57,7 @@ var topsup: Array = [{}, {}, {}, {}]
 var splats: Array = []
 # Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
 const BOSS_SPAWN_AT := 100.0
+const INTRO_TIME := 4.0           # Start-Animation: Teamkarten und Countdown, Figuren stehen still
 const BOSS_DEADLINE := 280.0      # Boss fällt spätestens hier, auch ohne Treffer (Sanduhr)
 const BONE_WAVE_EVERY := 20.0      # alle 20 s rückt eine neue Welle Knochen-Krieger mit Schwert aus dem Gefängnis aus
 const BONE_WAVE_SIZE := 4
@@ -825,7 +826,8 @@ func update(delta: float) -> void:
 		if not boss_done and t >= BOSS_SPAWN_AT:
 			boss_done = true
 			_spawn_boss()
-		m._update_bots(delta)
+		if t > INTRO_TIME:
+			m._update_bots(delta)
 		_decay_units(delta)
 		_bone_wave_update()
 		if t > 240.0:
@@ -1129,6 +1131,7 @@ func _fmt_time(sec: float) -> String:
 	return "%d:%02d" % [floori(s / 60.0), s % 60]
 
 func draw_hud(vs: Vector2) -> void:
+	_draw_intro(vs)
 	# 3D-Figuren liegen über dem 2D-Fenster: in der Erklärung ausblenden, damit der Text lesbar ist
 	if m.units3d != null and m.units3d.layer != null:
 		m.units3d.layer.visible = state != "pause"
@@ -1436,6 +1439,34 @@ func _coin_bar(center: Vector2, coins: int) -> void:
 	m.fx.draw_rect(r, Color(0.05, 0.05, 0.1, 0.8))
 	m.fx.draw_rect(Rect2(r.position, Vector2(w * fill, 5.0)), Color(1.0, 0.85, 0.25))
 	m.fx.draw_string(f, Vector2(center.x - 60, center.y + 13.0), "%d/%d COINS" % [coins, goal], HORIZONTAL_ALIGNMENT_CENTER, 120, 10, Color(1, 0.9, 0.5))
+
+# Start-Animation: Teamkarten mit Kämpferzahl, Modus-Titel und Countdown 3-2-1-FIGHT
+func _draw_intro(vs: Vector2) -> void:
+	if state != "round" or t >= INTRO_TIME:
+		return
+	var a := clampf(1.0 - maxf(0.0, t - (INTRO_TIME - 0.6)) / 0.6, 0.0, 1.0)
+	m.fx.draw_rect(Rect2(Vector2.ZERO, vs), Color(0.04, 0.05, 0.12, 0.72 * a))
+	var small := vs.x < 620.0
+	m._text(Vector2(0, vs.y * 0.14), "LAST TEAM STANDING", 34 if small else 48, Color(1, 0.9, 0.4, a), vs.x, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(0, vs.y * 0.14 + 54), "Chat your team color to join", 18, Color(0.9, 0.95, 1.0, a), vs.x, HORIZONTAL_ALIGNMENT_CENTER)
+	var cw := minf(200.0, (vs.x - 40.0) / 4.0 - 10.0)
+	var x0 := vs.x * 0.5 - (cw + 10.0) * 2.0 + 5.0
+	for k in 4:
+		var alive := 0
+		for i in SLOTS * 4:
+			if m.bots[i]["alive"] and int(m.bots[i]["team"]) == k + 1:
+				alive += 1
+		var cx := x0 + k * (cw + 10.0)
+		var cy := vs.y * 0.36
+		var col: Color = TEAM_COLORS[k]
+		m._pill(Rect2(cx, cy, cw, 150), Color(col.r * 0.4, col.g * 0.4, col.b * 0.4, 0.92 * a), 16)
+		m._text(Vector2(cx, cy + 14), TEAM_NAMES[k], 26, Color(col.r, col.g, col.b, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(cx, cy + 58), str(alive), 42, Color(1, 1, 1, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(cx, cy + 118), "FIGHTERS", 14, Color(0.9, 0.95, 1.0, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
+	# Countdown in der Mitte: 3, 2, 1, dann FIGHT
+	var label := str(3 - int(t)) if t < 3.0 else "FIGHT!"
+	var size := 220 if t < 3.0 else (150 if small else 190)
+	_big_text(vs, label, size, Color(1, 0.9, 0.4), 1.0)
 
 func _big_text(vs: Vector2, t: String, size: int, col: Color, punch: float) -> void:
 	var f: Font = m.ui_font()
