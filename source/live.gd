@@ -207,7 +207,7 @@ func _team_from_text(low: String) -> int:
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
 	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
-	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "!nuke = atomic bomb next round (40 coins)", "weapons: !pistol 3 · !smg 5 · !shotgun 8 · !ak 10 · !sniper 12 · !minigun 15 · !rocket 20 coins"],
+	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "Galaxy gift = atomic bomb next round", "weapons: !pistol 3 · !smg 5 · !shotgun 8 · !ak 10 · !sniper 12 · !minigun 15 · !rocket 20 coins"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
@@ -255,7 +255,7 @@ func chat(nm: String, text: String) -> void:
 		_toast("%s will be shown" % _clean(nm))
 
 # Shop: Befehle im Chat, bezahlt mit Münzen aus Geschenken
-const SHOP := {"shield": 5, "heal": 10, "revive": 15, "nuke": 40}
+const SHOP := {"shield": 5, "heal": 10, "revive": 15}
 const SHOP_WEAPONS := {"pistol": 3, "smg": 5, "shotgun": 8, "ak": 10, "sniper": 12, "minigun": 15, "rocket": 20}
 
 # Kaufbefehle brauchen das Sonderzeichen "!" (z.B. "!heal", "!ak")
@@ -1354,7 +1354,7 @@ func _draw_nuke(vs: Vector2) -> void:
 func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	var top := vs.y - 300.0
 	m._pill(Rect2(fx, top, fw, 130), Color(0.05, 0.06, 0.12, 0.85), 18)
-	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", SHOP["nuke"]]]
+	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
 	var t1 := minf(84.0, (fw - 16.0) / 4.0)
 	var x1 := fx + (fw - 4.0 * t1) * 0.5
 	for k in util.size():
@@ -1398,7 +1398,8 @@ func _shop_tile(p: Vector2, w: float, key: String, price: int) -> void:
 				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
 	# Preisschild
 	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 16.0, w - 4.0, 14.0), Color(1, 0.85, 0.25))
-	m._text(Vector2(p.x + 2.0, p.y + h - 17.0), str(price), 12, Color(0.2, 0.1, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
+	var label := "GALAXY" if price < 0 else str(price)
+	m._text(Vector2(p.x + 2.0, p.y + h - 17.0), label, 12 if price >= 0 else 9, Color(0.2, 0.1, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Münz-Leiste unter dem Namen: zeigt den Fortschritt bis zur nächsten Shop-Stufe (5 / 10 / 15 Münzen)
 func _coin_bar(center: Vector2, coins: int) -> void:
