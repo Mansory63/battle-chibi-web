@@ -1390,29 +1390,53 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 
 func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 	var h := 80.0
-	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.13, 0.15, 0.24, 0.95))
-	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.45, 0.5, 0.7, 0.9), false, 1.5)
+	# Kachel mit Verlauf: oben heller, unten dunkler
+	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.12, 0.14, 0.24, 0.95))
+	m.fx.draw_rect(Rect2(p, Vector2(w, h * 0.45)), Color(0.2, 0.23, 0.36, 0.55))
+	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.5, 0.56, 0.78, 0.9), false, 1.5)
 	var c := p + Vector2(w * 0.5, h * 0.4)
 	var s := minf(w, h) * 0.26
+	# Bodenschatten für den 3D-Effekt
+	m.fx.draw_circle(c + Vector2(0, s * 1.05), s * 0.85, Color(0, 0, 0, 0.35))
 	match key:
 		"heal":
-			m.fx.draw_rect(Rect2(c - Vector2(s, s), Vector2(2 * s, 2 * s)), Color(1, 1, 1))
-			m.fx.draw_rect(Rect2(c - Vector2(s * 0.3, s * 0.85), Vector2(s * 0.6, s * 1.7)), Color(0.9, 0.15, 0.15))
-			m.fx.draw_rect(Rect2(c - Vector2(s * 0.85, s * 0.3), Vector2(s * 1.7, s * 0.6)), Color(0.9, 0.15, 0.15))
+			# Medipack als kleine 3D-Kiste: weißer Körper, rote Kante, Kreuz
+			var box := Rect2(c - Vector2(s, s), Vector2(2 * s, 2 * s))
+			m.fx.draw_rect(Rect2(box.position + Vector2(0, s * 0.18), box.size), Color(0.7, 0.72, 0.8))
+			m.fx.draw_rect(box, Color(1, 1, 1))
+			m.fx.draw_rect(Rect2(box.position, Vector2(2 * s, s * 0.22)), Color(1, 0.95, 0.95))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.3, s * 0.85), Vector2(s * 0.6, s * 1.7)), Color(0.85, 0.1, 0.12))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.85, s * 0.3), Vector2(s * 1.7, s * 0.6)), Color(0.85, 0.1, 0.12))
+			m.fx.draw_rect(Rect2(c - Vector2(s * 0.3, s * 0.85), Vector2(s * 0.25, s * 1.7)), Color(1, 0.35, 0.35, 0.8))
 		"revive":
+			# Rosa 3D-Herz: dunkle Unterlage, Körper, Glanz
 			var hc := Color(1.0, 0.3, 0.55)
+			var hd := Color(0.6, 0.1, 0.32)
+			var hp := PackedVector2Array([c + Vector2(-s * 1.05, -s * 0.05), c + Vector2(s * 1.05, -s * 0.05), c + Vector2(0, s * 1.1)])
+			var hp_dark := PackedVector2Array([c + Vector2(-s * 1.05, s * 0.2), c + Vector2(s * 1.05, s * 0.2), c + Vector2(0, s * 1.3)])
+			m.fx.draw_circle(c + Vector2(-s * 0.5, -s * 0.2 + s * 0.2), s * 0.55, hd)
+			m.fx.draw_circle(c + Vector2(s * 0.5, -s * 0.2 + s * 0.2), s * 0.55, hd)
+			m.fx.draw_colored_polygon(hp_dark, hd)
 			m.fx.draw_circle(c + Vector2(-s * 0.5, -s * 0.2), s * 0.55, hc)
 			m.fx.draw_circle(c + Vector2(s * 0.5, -s * 0.2), s * 0.55, hc)
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 1.05, -s * 0.05), c + Vector2(s * 1.05, -s * 0.05), c + Vector2(0, s * 1.1)]), hc)
-			m.fx.draw_circle(c + Vector2(-s * 0.55, -s * 0.35), s * 0.18, Color(1, 1, 1, 0.85))
+			m.fx.draw_colored_polygon(hp, hc)
+			m.fx.draw_circle(c + Vector2(-s * 0.55, -s * 0.4), s * 0.2, Color(1, 1, 1, 0.9))
 		"shield":
+			# Blauer 3D-Schild: dunkle Kante, Körper, heller Innenteil, weißer Rand
 			var sh := PackedVector2Array([c + Vector2(-s, -s * 0.9), c + Vector2(s, -s * 0.9), c + Vector2(s, s * 0.1), c + Vector2(0, s * 1.2), c + Vector2(-s, s * 0.1)])
+			var sh_dark := PackedVector2Array([c + Vector2(-s, -s * 0.7), c + Vector2(s, -s * 0.7), c + Vector2(s, s * 0.3), c + Vector2(0, s * 1.4), c + Vector2(-s, s * 0.3)])
+			m.fx.draw_colored_polygon(sh_dark, Color(0.1, 0.3, 0.65))
 			m.fx.draw_colored_polygon(sh, Color(0.25, 0.65, 1.0))
+			var sh_in := PackedVector2Array([c + Vector2(-s * 0.55, -s * 0.6), c + Vector2(s * 0.2, -s * 0.6), c + Vector2(s * 0.2, s * 0.2), c + Vector2(-s * 0.55, s * 0.2)])
+			m.fx.draw_colored_polygon(sh_in, Color(0.6, 0.85, 1.0, 0.8))
 			var sh_edge := sh.duplicate()
 			sh_edge.append(sh[0])
 			m.fx.draw_polyline(sh_edge, Color(1, 1, 1), 2.0)
 		"nuke":
-			m.fx.draw_circle(c, s, Color(1.0, 0.85, 0.2))
+			# Atom-Kugel in 3D: dunkler Rand, gelber Körper, Glanz, drei schwarze Flügel
+			m.fx.draw_circle(c, s, Color(0.7, 0.5, 0.05))
+			m.fx.draw_circle(c + Vector2(-s * 0.1, -s * 0.12), s * 0.88, Color(1.0, 0.85, 0.2))
+			m.fx.draw_circle(c + Vector2(-s * 0.35, -s * 0.4), s * 0.22, Color(1, 1, 0.8, 0.8))
 			for a in 3:
 				var ang := TAU * a / 3.0 - PI / 2.0
 				m.fx.draw_circle(c + Vector2.from_angle(ang) * s * 0.45, s * 0.3, Color(0.15, 0.1, 0.0))
@@ -1424,20 +1448,20 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 				var k2 := minf((w - 12.0) / ts.x, (h - 24.0) / ts.y)
 				var sz := ts * k2
 				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
-	# Preisschild
-	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(1, 0.85, 0.25))
+	# Preisschild: dunkle Leiste mit heller, gut lesbarer Schrift
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(0.06, 0.08, 0.16))
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(1, 0.85, 0.25), false, 1.5)
 	# Passt der Name nicht ins Preisschild, läuft er als Laufschrift durch
 	var fs := 16 if label.length() <= 4 else 13
 	var room := maxi(1, int((w - 4.0) / (fs * 0.6)))
 	if label.length() <= room:
-		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), label, fs, Color(0.1, 0.05, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), label, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 	else:
 		var full := label + "   "
 		var start := int(Time.get_ticks_msec() / 180.0) % full.length()
 		var win := (full + full).substr(start, room)
-		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), win, fs, Color(0.1, 0.05, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_LEFT)
+		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), win, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_LEFT)
 
-# Münz-Leiste unter dem Namen: zeigt den Fortschritt bis zur nächsten Shop-Stufe (5 / 10 / 15 Münzen)
 func _coin_bar(center: Vector2, coins: int) -> void:
 	var stages := [5, 10, 15]
 	var goal := 15
