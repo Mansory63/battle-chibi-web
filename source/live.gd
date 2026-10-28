@@ -1195,30 +1195,27 @@ func draw_hud(vs: Vector2) -> void:
 		var cx := x0 + k * (cw + 8.0)
 		var cy := 96.0
 		var col: Color = TEAM_COLORS[k]
-		m._pill(Rect2(cx, cy, cw, 44), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
-		m._text(Vector2(cx + 10, cy + 20), TEAM_NAMES[k], 17, col, cw - 12.0)
+		m._pill(Rect2(cx, cy, cw, 66), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
+		m._text(Vector2(cx + 10, cy + 19), TEAM_NAMES[k], 17, col, cw - 12.0)
 		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d alive · %d kills · %d rnd%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
-		m._text(Vector2(cx + 10, cy + 39), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
+		m._text(Vector2(cx + 10, cy + 37), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
 		# Countdown: Balken und Zahl bis zum nächsten Verstärkungs-Kämpfer (Likes)
 		var into: int = int(team_total_likes[k]) % REINFORCE_EVERY
 		var likes_left: int = REINFORCE_EVERY - into
-		m.fx.draw_rect(Rect2(cx, cy + 48.0, cw, 6.0), Color(0.05, 0.05, 0.1, 0.85))
-		m.fx.draw_rect(Rect2(cx, cy + 48.0, cw * float(into) / float(REINFORCE_EVERY), 6.0), col)
-		m._text(Vector2(cx + 4.0, cy + 56.0), "%d more likes = +1 fighter" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
-		# Like-Leiste
-		m.fx.draw_rect(Rect2(cx, cy + 46, cw, 6), Color(0.1, 0.1, 0.15, 0.8))
-		m.fx.draw_rect(Rect2(cx, cy + 46, cw * clampf(float(team_likes[k]) / LIKE_GOAL, 0.0, 1.0), 6), col)
+		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, cw - 8.0, 5.0), Color(0.05, 0.05, 0.1, 0.85))
+		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, (cw - 8.0) * float(into) / float(REINFORCE_EVERY), 5.0), col)
+		m._text(Vector2(cx + 4.0, cy + 54.0), "%d more likes = +1 fighter" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
 	var boss: Dictionary = m.bots[SLOTS * 4]
 	if boss["alive"] and boss["boss"]:
 		var bw := minf(vs.x - 40.0, 420.0)
 		var bx := vs.x * 0.5 - bw * 0.5
-		m._pill(Rect2(bx - 4, 150, bw + 8, 22), Color(0.05, 0.03, 0.1, 0.85), 11)
-		m.fx.draw_rect(Rect2(bx, 154, bw * clampf(float(boss["health"]) / 700.0, 0.0, 1.0), 14), TEAM_COLORS[4])
-		m._text(Vector2(bx, 168), "BOSS", 13, Color.WHITE, bw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._pill(Rect2(bx - 4, 172, bw + 8, 22), Color(0.05, 0.03, 0.1, 0.85), 11)
+		m.fx.draw_rect(Rect2(bx, 176, bw * clampf(float(boss["health"]) / 700.0, 0.0, 1.0), 14), TEAM_COLORS[4])
+		m._text(Vector2(bx, 190), "BOSS", 13, Color.WHITE, bw, HORIZONTAL_ALIGNMENT_CENTER)
 	# Boss-Countdown zusätzlich sichtbar, wenn der Bodenmarker verdeckt ist.
 	if state == "round" and not boss_done and t >= BOSS_SPAWN_AT - BOSS_WARNING:
 		var remaining := maxi(0, int(ceil(BOSS_SPAWN_AT - t)))
-		m._text(Vector2(vs.x * 0.5 - 160, 195), "BOSS IN %d" % remaining, 27, Color(1.0, 0.3, 0.16), 320, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(vs.x * 0.5 - 160, 206), "BOSS IN %d" % remaining, 27, Color(1.0, 0.3, 0.16), 320, HORIZONTAL_ALIGNMENT_CENTER)
 	# Zombie-Hinweis: Zombies sind verwundbar und koennen sterben.
 	if m.prison_open:
 		var remaining_z := 0
@@ -1279,6 +1276,17 @@ func draw_hud(vs: Vector2) -> void:
 	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	# Shop unten: Kacheln mit Bild und Preisschild (Münzen)
 	_draw_shop(vs, foot_x, foot_w)
+	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
+	const TIPS := [
+		"Chat: Team-Farbe schreiben (RED, BLUE, GREEN, YELLOW) = Kämpfer für dein Team",
+		"Likes: Likes bringen Kämpfer. Der Balken oben zeigt, wie viele noch fehlen",
+		"Geschenke = Waffen: Rose = Pistole, Ice Cream = AK, Hands = Minigun, Money Gun = Rocket",
+		"Shop im Chat: !heal, !shield, !revive wirkt nur auf den Namen, der geschrieben wurde",
+		"Galaxy-Geschenk = Atombombe. Der Preis steht unten an der Kachel",
+		"Letztes Team, das übrig bleibt, gewinnt. Der Boss muss vor Ablauf besiegt werden",
+	]
+	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
+	m._text(Vector2(foot_x + 10.0, vs.y - 80), "TIPP: " + str(TIPS[tip_i]), 14 if vs.x >= 620.0 else 12, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
@@ -1384,20 +1392,25 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 	var h := 80.0
 	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.13, 0.15, 0.24, 0.95))
 	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.45, 0.5, 0.7, 0.9), false, 1.5)
-	var c := p + Vector2(w * 0.5, h * 0.42)
-	var s := minf(w, h) * 0.3
+	var c := p + Vector2(w * 0.5, h * 0.4)
+	var s := minf(w, h) * 0.26
 	match key:
 		"heal":
 			m.fx.draw_rect(Rect2(c - Vector2(s, s), Vector2(2 * s, 2 * s)), Color(1, 1, 1))
 			m.fx.draw_rect(Rect2(c - Vector2(s * 0.3, s * 0.85), Vector2(s * 0.6, s * 1.7)), Color(0.9, 0.15, 0.15))
 			m.fx.draw_rect(Rect2(c - Vector2(s * 0.85, s * 0.3), Vector2(s * 1.7, s * 0.6)), Color(0.9, 0.15, 0.15))
 		"revive":
-			m.fx.draw_circle(c, s, Color(0.3, 0.9, 0.4))
-			m.fx.draw_rect(Rect2(c - Vector2(s * 0.25, s * 0.7), Vector2(s * 0.5, s * 1.4)), Color(1, 1, 1))
-			m.fx.draw_rect(Rect2(c - Vector2(s * 0.7, s * 0.25), Vector2(s * 1.4, s * 0.5)), Color(1, 1, 1))
+			var hc := Color(1.0, 0.3, 0.55)
+			m.fx.draw_circle(c + Vector2(-s * 0.5, -s * 0.2), s * 0.55, hc)
+			m.fx.draw_circle(c + Vector2(s * 0.5, -s * 0.2), s * 0.55, hc)
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 1.05, -s * 0.05), c + Vector2(s * 1.05, -s * 0.05), c + Vector2(0, s * 1.1)]), hc)
+			m.fx.draw_circle(c + Vector2(-s * 0.55, -s * 0.35), s * 0.18, Color(1, 1, 1, 0.85))
 		"shield":
-			var sh := PackedVector2Array([c + Vector2(-s, -s), c + Vector2(s, -s), c + Vector2(s, 0.1 * s), c + Vector2(0, s * 1.2), c + Vector2(-s, 0.1 * s)])
-			m.fx.draw_colored_polygon(sh, Color(0.3, 0.7, 1.0))
+			var sh := PackedVector2Array([c + Vector2(-s, -s * 0.9), c + Vector2(s, -s * 0.9), c + Vector2(s, s * 0.1), c + Vector2(0, s * 1.2), c + Vector2(-s, s * 0.1)])
+			m.fx.draw_colored_polygon(sh, Color(0.25, 0.65, 1.0))
+			var sh_edge := sh.duplicate()
+			sh_edge.append(sh[0])
+			m.fx.draw_polyline(sh_edge, Color(1, 1, 1), 2.0)
 		"nuke":
 			m.fx.draw_circle(c, s, Color(1.0, 0.85, 0.2))
 			for a in 3:
@@ -1412,17 +1425,17 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 				var sz := ts * k2
 				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
 	# Preisschild
-	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 16.0, w - 4.0, 14.0), Color(1, 0.85, 0.25))
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(1, 0.85, 0.25))
 	# Passt der Name nicht ins Preisschild, läuft er als Laufschrift durch
-	var fs := 15 if label.length() <= 4 else 12
-	var room := maxi(1, int((w - 4.0) / (fs * 0.58)))
+	var fs := 16 if label.length() <= 4 else 13
+	var room := maxi(1, int((w - 4.0) / (fs * 0.6)))
 	if label.length() <= room:
-		m._text(Vector2(p.x + 2.0, p.y + h - 17.0), label, fs, Color(0.2, 0.1, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), label, fs, Color(0.1, 0.05, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 	else:
 		var full := label + "   "
 		var start := int(Time.get_ticks_msec() / 180.0) % full.length()
 		var win := (full + full).substr(start, room)
-		m._text(Vector2(p.x + 2.0, p.y + h - 17.0), win, fs, Color(0.2, 0.1, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_LEFT)
+		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), win, fs, Color(0.1, 0.05, 0.0), w - 4.0, HORIZONTAL_ALIGNMENT_LEFT)
 
 # Münz-Leiste unter dem Namen: zeigt den Fortschritt bis zur nächsten Shop-Stufe (5 / 10 / 15 Münzen)
 func _coin_bar(center: Vector2, coins: int) -> void:
@@ -1535,12 +1548,12 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var k := clampf(vs.x / 420.0, 0.9, 1.4)
 	var pw := minf(vs.x - 20.0, 620.0)
 	var px := vs.x * 0.5 - pw * 0.5
-	var ph := 150.0 * k + HOW_TO_PLAY.size() * 26.0 * k
+	var ph := 178.0 * k + HOW_TO_PLAY.size() * 26.0 * k
 	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(0.75, 0.45, 1.0, 0.9), 24)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 22)
-	m._text(Vector2(px, py + 10 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 52 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 20 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 62 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
 	for i in mini(3, queue_names.size()):
 		shown.append(str(queue_names[i]).substr(0, 10))
@@ -1548,8 +1561,8 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var names_txt := ", ".join(shown)
 	if more > 0:
 		names_txt += "  +%d more" % more
-	m._text(Vector2(px, py + 88 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	var y := py + 128.0 * k
+	m._text(Vector2(px, py + 96 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := py + 134.0 * k
 	for line in HOW_TO_PLAY:
 		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
 		y += 26.0 * k

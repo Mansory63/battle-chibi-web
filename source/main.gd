@@ -9,7 +9,7 @@ extends Node2D
 const MAP_SIZE := Vector2(4800, 3600)
 const PLAYER_RADIUS := 22.0
 const BOT_RADIUS := 22.0
-const BUILD := "20261028000051"
+const BUILD := "20261028074012"
 const BOT_COUNT := 49
 const LOOT_COUNT := 190
 const CHEST_COUNT := 64
@@ -2176,11 +2176,13 @@ func _update_bots(delta: float) -> void:
 					var o: Dictionary = bots[j]
 					if not o["alive"] or int(o["team"]) == team or (zomb and int(o["team"]) == 5):
 						continue
-					# Knochen-Krieger jagen nur Spieler und Zuschauer
-					if zomb and not o.get("viewer", false):
+					# Knochen-Krieger greifen Spieler, Zuschauer und Bots der Teams an (Zuschauer bevorzugt), nicht andere Knochen
+					if zomb and o.get("zombie", false):
 						continue
 					var dd: float = o["pos"].distance_to(b["pos"])
 					var sc: float = dd * (0.6 if (focus_t >= 0 and int(o["team"]) == focus_t) else 1.0)
+					if zomb and not o.get("viewer", false):
+						sc *= 1.6
 					if dd < rng and sc < best_sc:
 						best_sc = sc
 						bt = j
@@ -2202,7 +2204,7 @@ func _update_bots(delta: float) -> void:
 		if b["pos"].distance_to(ZONE_CENTER) > zone_radius and not zomb:
 			# außerhalb der Zone: zurück zur Mitte
 			step = ZONE_CENTER - b["pos"]
-		elif has_target and dist < (900.0 if zomb else (eng_r if live_mode else 280.0)) and elapsed > 10.0 and MELEE.has(b["weapon"]):
+		elif has_target and dist < (900.0 if zomb else (eng_r if live_mode else 280.0)) and (zomb or elapsed > 10.0) and MELEE.has(b["weapon"]):
 			# Nur Nahkampf: direkt auf das Ziel zu
 			step = to_t
 			if b["cd"] <= 0.0 and dist < MELEE[b["weapon"]]["range"] + PLAYER_RADIUS:
