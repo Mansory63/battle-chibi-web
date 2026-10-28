@@ -12,7 +12,7 @@ const SKIN_MODELS := {
 # Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
 const SPRITE_UNITS := true
 const SPRITE_HERO := {"char_player": "hero1", "char_red": "hero2", "char_green": "hero3", "char_yellow": "hero4", "char_purple": "hero1", "char_orange": "hero2", "char_cyan": "hero3", "char_pink": "hero4"}
-const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0}
+const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0, "hit": 12.0}
 # Waffen-Sprites (CC0): Pistole, Gewehr, schwere Waffe. Nahkampfwaffen werden nicht angezeigt
 const WEAPON_SPR := {"pistol": "weapon1", "smg": "weapon1", "ak": "weapon2", "shotgun": "weapon2", "sniper": "weapon2", "minigun": "weapon3", "rocket": "weapon3"}
 var _spr_cache := {}
@@ -324,8 +324,17 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 		set_name = "foe1"
 	spr.modulate = Color(0.92, 0.95, 1.0) if zombie else Color.WHITE
 	var anim := "idle"
+	# Treffer: kurze Trefferpose, wenn die Lebenspunkte gesunken sind (0,2 s)
+	var hp_now: float = float(e.get("health", -1.0))
+	if hp_now >= 0.0:
+		if d.has("hp_prev") and hp_now < float(d["hp_prev"]) - 0.5:
+			d["hit_t"] = Time.get_ticks_msec()
+		d["hp_prev"] = hp_now
+	var hit_recent: bool = d.has("hit_t") and Time.get_ticks_msec() - int(d["hit_t"]) < 200
 	if not e.get("alive", true):
 		anim = "death"
+	elif hit_recent:
+		anim = "hit"
 	elif e.get("moving", false) or e.get("jumping", false) or e.get("falling", false):
 		anim = "walk"
 	var key := set_name + "_" + anim

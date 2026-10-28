@@ -3101,7 +3101,7 @@ func _sync_units3d() -> void:
 		if falling:
 			lift = 110.0
 		units3d.update_unit("player", {
-			"skin": save_skin, "screen": (_w(player_pos) - cam_center) * ZOOM + vsize * 0.5 + (Vector2(0, -110 * ZOOM) if falling else Vector2.ZERO), "scale": ZOOM,
+			"health": float(health), "skin": save_skin, "screen": (_w(player_pos) - cam_center) * ZOOM + vsize * 0.5 + (Vector2(0, -110 * ZOOM) if falling else Vector2.ZERO), "scale": ZOOM,
 			"world": player_pos, "aimw": facing if not falling else Vector2(0, 1),
 			"lift": lift, "aim": _screen_dir(facing) if not falling else Vector2.DOWN,
 			"moving": player_moving, "fast": board_timer > 0.0 or speed_timer > 0.0 or sprinting, "weapon": wk,
@@ -3119,10 +3119,10 @@ func _sync_units3d() -> void:
 					if live_mode:
 						var dtb := now - int(b.get("dead_at", -99999))
 						if dtb < 320:
-							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b)})
+							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b), "health": float(b["health"])})
 						continue
 					if now - int(b.get("dead_at", -99999)) < 1800:
-						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": now - int(b.get("dead_at", -99999)) < 900, "look": _look(b), "tint": _tint(b)})
+						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": now - int(b.get("dead_at", -99999)) < 900, "look": _look(b), "tint": _tint(b), "health": float(b["health"])})
 					continue
 				units3d.update_unit("bot%d" % i, {
 					"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "moving": b.get("moving", false),
