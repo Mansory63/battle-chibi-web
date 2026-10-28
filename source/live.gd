@@ -1413,20 +1413,21 @@ func _draw_nuke(vs: Vector2) -> void:
 # Große Schrift mit dicker dunkler Umrandung, zentriert, optional mit Schlag-Effekt
 # Shop-Leiste: Hilfsitems oben, Waffen darunter, jede Kachel mit Bild und Preisschild
 func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
-	var top := vs.y - 350.0
-	m._pill(Rect2(fx, top, fw, 176), Color(0.05, 0.06, 0.12, 0.85), 18)
+	# Eine Reihe mit acht Kacheln direkt über der Tipp-Leiste, damit der Kampf frei bleibt
+	var top := vs.y - 186.0
+	# Breite begrenzt, damit die Leiste nicht unter die Aktionsknöpfe rechts reicht
+	fw = minf(fw, 580.0)
+	m._pill(Rect2(fx, top, fw, 92), Color(0.05, 0.06, 0.12, 0.85), 18)
 	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
-	var t1 := minf(120.0, (fw - 16.0) / 4.0)
-	var x1 := fx + (fw - 4.0 * t1) * 0.5
-	for k in util.size():
-		_shop_tile(Vector2(x1 + k * t1, top + 8.0), t1 - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "GALAXY")
 	var guns := ["pistol", "ak", "minigun", "rocket"]   # die vier Waffen zur Auswahl
 	# Preis der Waffe = das Geschenk, das sie bringt
 	var gift_tag := {"pistol": "Rose", "smg": "TikTok", "shotgun": "Finger", "ak": "Ice Cream", "sniper": "GG", "minigun": "Hands", "rocket": "Money Gun"}
-	var t2 := minf(120.0, (fw - 16.0) / 4.0)
-	var x2 := fx + (fw - 4.0 * t2) * 0.5
+	var tw := minf(96.0, (fw - 16.0) / 8.0)
+	var x0 := fx + (fw - 8.0 * tw) * 0.5
+	for k in util.size():
+		_shop_tile(Vector2(x0 + k * tw, top + 6.0), tw - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "GALAXY")
 	for k in guns.size():
-		_shop_tile(Vector2(x2 + k * t2, top + 92.0), t2 - 6.0, guns[k], str(gift_tag[guns[k]]))
+		_shop_tile(Vector2(x0 + (k + 4) * tw, top + 6.0), tw - 6.0, guns[k], str(gift_tag[guns[k]]))
 
 # Seitenansicht der kaufbaren Waffen, gezeichnet (keine Textur): Pistole, AK, Minigun, Raketenwerfer
 func _gun_icon(key: String, c: Vector2, u: float) -> void:
