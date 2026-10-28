@@ -1388,6 +1388,48 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	for k in guns.size():
 		_shop_tile(Vector2(x2 + k * t2, top + 92.0), t2 - 6.0, guns[k], str(gift_tag[guns[k]]))
 
+# Seitenansicht der kaufbaren Waffen, gezeichnet (keine Textur): Pistole, AK, Minigun, Raketenwerfer
+func _gun_icon(key: String, c: Vector2, u: float) -> void:
+	var steel := Color(0.36, 0.38, 0.44)
+	var steel_hi := Color(0.62, 0.66, 0.72)
+	var dark := Color(0.13, 0.13, 0.16)
+	match key:
+		"pistol":
+			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.6 * u), Vector2(2.6 * u, 0.5 * u)), steel)
+			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.6 * u), Vector2(2.6 * u, 0.14 * u)), steel_hi)
+			m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, -0.1 * u), Vector2(1.1 * u, 0.42 * u)), steel.darkened(0.15))
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(0.2 * u, 0.32 * u), c + Vector2(1.05 * u, 0.32 * u), c + Vector2(0.85 * u, 1.45 * u), c + Vector2(0.3 * u, 1.45 * u)]), Color(0.3, 0.12, 0.2))
+			m.fx.draw_line(c + Vector2(-0.15 * u, 0.42 * u), c + Vector2(0.45 * u, 0.42 * u), dark, 2.0)
+			m.fx.draw_rect(Rect2(c + Vector2(1.1 * u, -0.6 * u), Vector2(0.2 * u, 0.12 * u)), dark)
+		"ak":
+			var wood := Color(0.62, 0.42, 0.22)
+			var wood_hi := Color(0.8, 0.6, 0.35)
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-1.7 * u, -0.1 * u), c + Vector2(-0.6 * u, -0.25 * u), c + Vector2(-0.5 * u, 0.3 * u), c + Vector2(-1.7 * u, 0.5 * u)]), wood)
+			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.35 * u), Vector2(1.5 * u, 0.5 * u)), steel)
+			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.35 * u), Vector2(1.5 * u, 0.12 * u)), steel_hi)
+			m.fx.draw_rect(Rect2(c + Vector2(0.9 * u, -0.2 * u), Vector2(1.1 * u, 0.2 * u)), dark)
+			m.fx.draw_rect(Rect2(c + Vector2(0.2 * u, -0.1 * u), Vector2(0.9 * u, 0.3 * u)), wood_hi)
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-0.1 * u, 0.15 * u), c + Vector2(0.35 * u, 0.15 * u), c + Vector2(0.25 * u, 1.0 * u), c + Vector2(-0.05 * u, 1.0 * u)]), dark)
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(0.45 * u, 0.15 * u), c + Vector2(0.8 * u, 0.15 * u), c + Vector2(0.65 * u, 0.9 * u), c + Vector2(0.4 * u, 0.9 * u)]), wood)
+		"minigun":
+			m.fx.draw_rect(Rect2(c + Vector2(-1.2 * u, -0.5 * u), Vector2(1.1 * u, 1.0 * u)), Color(0.8, 0.2, 0.2))
+			m.fx.draw_rect(Rect2(c + Vector2(-1.2 * u, -0.5 * u), Vector2(1.1 * u, 0.18 * u)), Color(1, 0.5, 0.45))
+			for bi in 4:
+				var by := -0.45 * u + bi * 0.25 * u
+				m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, by), Vector2(1.9 * u, 0.17 * u)), steel)
+				m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, by), Vector2(1.9 * u, 0.06 * u)), steel_hi)
+			m.fx.draw_rect(Rect2(c + Vector2(1.55 * u, -0.6 * u), Vector2(0.2 * u, 0.9 * u)), dark)
+			m.fx.draw_rect(Rect2(c + Vector2(-1.0 * u, 0.5 * u), Vector2(0.4 * u, 0.9 * u)), dark)
+			m.fx.draw_circle(c + Vector2(-0.8 * u, -0.7 * u), 0.3 * u, dark)
+		"rocket":
+			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.4 * u), Vector2(2.6 * u, 0.75 * u)), Color(0.3, 0.6, 0.35))
+			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.4 * u), Vector2(2.6 * u, 0.16 * u)), Color(0.55, 0.85, 0.5))
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(1.1 * u, -0.3 * u), c + Vector2(1.6 * u, -0.3 * u), c + Vector2(1.6 * u, 0.3 * u), c + Vector2(1.1 * u, 0.3 * u)]), Color(0.85, 0.85, 0.9))
+			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(1.6 * u, -0.3 * u), c + Vector2(2.0 * u, 0.0), c + Vector2(1.6 * u, 0.3 * u)]), Color(0.9, 0.25, 0.2))
+			m.fx.draw_rect(Rect2(c + Vector2(-0.5 * u, 0.35 * u), Vector2(0.4 * u, 0.7 * u)), dark)
+			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.6 * u), Vector2(0.5 * u, 0.2 * u)), dark)
+
+# Seitenansicht der kaufbaren Waffen, gezeichnet (keine Textur): Pistole, AK, Minigun, Raketenwerfer
 func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 	var h := 80.0
 	# Kachel mit Verlauf: oben heller, unten dunkler
@@ -1441,6 +1483,8 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 				var ang := TAU * a / 3.0 - PI / 2.0
 				m.fx.draw_circle(c + Vector2.from_angle(ang) * s * 0.45, s * 0.3, Color(0.15, 0.1, 0.0))
 			m.fx.draw_circle(c, s * 0.2, Color(0.15, 0.1, 0.0))
+		"pistol", "ak", "minigun", "rocket":
+			_gun_icon(key, c, s)
 		_:
 			var tex: Texture2D = m.tex_guns.get(key, null)
 			if tex:
