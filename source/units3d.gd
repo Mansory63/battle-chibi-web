@@ -435,63 +435,108 @@ func _reaper_part(parent: Node3D, mesh: Mesh, mat: Material, pos: Vector3, rot :
 func _build_reaper() -> Node3D:
 	var root := Node3D.new()
 	var robe_mat := _reaper_mat(Color(0.05, 0.03, 0.08), Color(0, 0, 0), 0.95)
+	var inner_mat := _reaper_mat(Color(0.02, 0.01, 0.03), Color(0, 0, 0), 1.0)
 	var trim_mat := _reaper_mat(Color(0.35, 0.02, 0.05), Color(0.9, 0.05, 0.1))
-	var eye_mat := _reaper_mat(Color(1, 0.2, 0.1), Color(1, 0.25, 0.1))
+	var eye_mat := _reaper_mat(Color(1, 0.25, 0.1), Color(1, 0.3, 0.1))
 	var bone_mat := _reaper_mat(Color(0.82, 0.8, 0.74), Color(0, 0, 0), 0.7)
 	var wood_mat := _reaper_mat(Color(0.14, 0.1, 0.08))
-	var blade_mat := _reaper_mat(Color(0.7, 0.72, 0.78), Color(0.35, 0.05, 0.1), 0.25)
-	# Kutte: lange, nach unten breiter werdende Säule
+	var blade_mat := _reaper_mat(Color(0.72, 0.74, 0.8), Color(0.4, 0.06, 0.12), 0.22)
+	var aura_mat := StandardMaterial3D.new()
+	aura_mat.albedo_color = Color(0.6, 0.02, 0.08, 0.14)
+	aura_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	aura_mat.emission_enabled = true
+	aura_mat.emission = Color(0.8, 0.05, 0.1)
+	aura_mat.emission_energy_multiplier = 0.6
+	aura_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	aura_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Aura: roter Schimmer um die Gestalt (Halbtransparenz)
+	var aura := SphereMesh.new()
+	aura.radius = 0.62
+	aura.height = 1.7
+	_reaper_part(root, aura, aura_mat, Vector3(0, 0.95, 0))
+	# Kutte: nach unten ausladende Säule, 16 Seiten für weiche Form
 	var robe := CylinderMesh.new()
-	robe.top_radius = 0.13
-	robe.bottom_radius = 0.42
-	robe.height = 1.0
-	_reaper_part(root, robe, robe_mat, Vector3(0, 0.5, 0))
-	# Roter Saum unten
-	var hem := CylinderMesh.new()
-	hem.top_radius = 0.42
-	hem.bottom_radius = 0.44
-	hem.height = 0.05
-	_reaper_part(root, hem, trim_mat, Vector3(0, 0.03, 0))
-	# Kapuze: Kegel über dem Kopf
-	var hood := CylinderMesh.new()
-	hood.top_radius = 0.0
-	hood.bottom_radius = 0.24
-	hood.height = 0.4
-	_reaper_part(root, hood, robe_mat, Vector3(0, 1.14, 0))
-	# Schultern der Kutte
+	robe.top_radius = 0.17
+	robe.bottom_radius = 0.5
+	robe.height = 1.3
+	robe.radial_segments = 16
+	_reaper_part(root, robe, robe_mat, Vector3(0, 0.66, 0))
+	# Roter Saum und zerfetzte Kanten unten
+	var hem := TorusMesh.new()
+	hem.inner_radius = 0.44
+	hem.outer_radius = 0.52
+	hem.rings = 16
+	_reaper_part(root, hem, trim_mat, Vector3(0, 0.05, 0), Vector3(0, 0, 0))
+	for i in 7:
+		var a := TAU * float(i) / 7.0 + 0.2
+		var tatter := BoxMesh.new()
+		tatter.size = Vector3(0.12, 0.12, 0.03)
+		_reaper_part(root, tatter, robe_mat, Vector3(cos(a) * 0.5, 0.1, sin(a) * 0.5), Vector3(0, -a + PI * 0.5, 0.0))
+	# Schultern
 	var shoulders := SphereMesh.new()
 	shoulders.radius = 0.3
-	shoulders.height = 0.42
-	_reaper_part(root, shoulders, robe_mat, Vector3(0, 0.92, 0))
-	# Dunkle Öffnung der Kapuze: davor sitzt der Schädel
-	var hole := SphereMesh.new()
-	hole.radius = 0.15
-	hole.height = 0.2
-	_reaper_part(root, hole, robe_mat, Vector3(0, 1.1, 0.07))
-	# Schädel im Schatten der Kapuze
+	shoulders.height = 0.4
+	_reaper_part(root, shoulders, robe_mat, Vector3(0, 1.2, 0))
+	# Kapuze: Kegel mit Wulst am Rand
+	var hood := CylinderMesh.new()
+	hood.top_radius = 0.02
+	hood.bottom_radius = 0.27
+	hood.height = 0.5
+	hood.radial_segments = 16
+	_reaper_part(root, hood, robe_mat, Vector3(0, 1.42, -0.02), Vector3(deg_to_rad(-8), 0, 0))
+	var rim := TorusMesh.new()
+	rim.inner_radius = 0.2
+	rim.outer_radius = 0.28
+	_reaper_part(root, rim, robe_mat, Vector3(0, 1.2, 0.0), Vector3(deg_to_rad(90), 0, 0))
+	# Dunkles Innere der Kapuze, davor der Schädel mit Kiefer
+	var void_disc := CylinderMesh.new()
+	void_disc.top_radius = 0.16
+	void_disc.bottom_radius = 0.16
+	void_disc.height = 0.02
+	_reaper_part(root, void_disc, inner_mat, Vector3(0, 1.3, 0.14), Vector3(deg_to_rad(90), 0, 0))
 	var skull := SphereMesh.new()
-	skull.radius = 0.1
-	skull.height = 0.2
-	_reaper_part(root, skull, bone_mat, Vector3(0, 1.02, 0.03))
-	# Glühende Augen
+	skull.radius = 0.12
+	skull.height = 0.22
+	_reaper_part(root, skull, bone_mat, Vector3(0, 1.31, 0.1))
+	var jaw := BoxMesh.new()
+	jaw.size = Vector3(0.12, 0.04, 0.1)
+	_reaper_part(root, jaw, bone_mat, Vector3(0, 1.22, 0.1))
+	# Glühende Augen in den Höhlen
 	var eye := SphereMesh.new()
-	eye.radius = 0.045
-	eye.height = 0.09
-	_reaper_part(root, eye, eye_mat, Vector3(-0.06, 1.1, 0.17))
-	_reaper_part(root, eye, eye_mat, Vector3(0.06, 1.1, 0.17))
-	# Sense: Stiel in der Hand, Klinge oben
+	eye.radius = 0.034
+	eye.height = 0.068
+	_reaper_part(root, eye, eye_mat, Vector3(-0.05, 1.33, 0.19))
+	_reaper_part(root, eye, eye_mat, Vector3(0.05, 1.33, 0.19))
+	# Knochenarme und Hände: linke Hand vor dem Körper, rechte an der Sense
+	var arm := CylinderMesh.new()
+	arm.top_radius = 0.035
+	arm.bottom_radius = 0.025
+	arm.height = 0.5
+	_reaper_part(root, arm, robe_mat, Vector3(0.3, 1.0, 0.1), Vector3(0, 0, deg_to_rad(-25)))
+	_reaper_part(root, arm, robe_mat, Vector3(-0.3, 0.98, 0.14), Vector3(deg_to_rad(-50), 0, deg_to_rad(20)))
+	var hand := SphereMesh.new()
+	hand.radius = 0.055
+	hand.height = 0.11
+	_reaper_part(root, hand, bone_mat, Vector3(-0.3, 0.78, 0.26))
+	_reaper_part(root, hand, bone_mat, Vector3(0.42, 0.78, 0.12))
+	# Sense: gerader Stiel, Klinge als gebogener Bogen aus Segmenten
 	var handle := CylinderMesh.new()
-	handle.top_radius = 0.02
-	handle.bottom_radius = 0.02
-	handle.height = 2.0
-	_reaper_part(root, handle, wood_mat, Vector3(0.36, 0.9, 0.08), Vector3(0, 0, deg_to_rad(-8)))
-	var blade := BoxMesh.new()
-	blade.size = Vector3(0.05, 0.55, 0.9)
-	_reaper_part(root, blade, blade_mat, Vector3(0.22, 1.9, 0.3), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
-	# Haken der Sense: schmale Spitze nach unten
-	var hook := BoxMesh.new()
-	hook.size = Vector3(0.05, 0.2, 0.28)
-	_reaper_part(root, hook, blade_mat, Vector3(0.18, 1.62, 0.0), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
+	handle.top_radius = 0.022
+	handle.bottom_radius = 0.022
+	handle.height = 2.4
+	handle.radial_segments = 8
+	_reaper_part(root, handle, wood_mat, Vector3(0.42, 1.2, 0.12), Vector3(0, 0, deg_to_rad(-6)))
+	var center := Vector2(0.42, 1.55)
+	var radius := 0.65
+	var segs := 9
+	for i in segs:
+		var a0 := 1.5 + (2.9 - 1.5) * float(i) / float(segs)
+		var a1 := 1.5 + (2.9 - 1.5) * float(i + 1) / float(segs)
+		var am := (a0 + a1) * 0.5
+		var p := center + Vector2(cos(am), sin(am)) * radius
+		var seg := BoxMesh.new()
+		seg.size = Vector3(0.05, radius * (a1 - a0) + 0.08, 0.1)
+		_reaper_part(root, seg, blade_mat, Vector3(p.x, p.y, 0.12), Vector3(0, 0, am - PI * 0.5))
 	return root
 
 func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
@@ -648,6 +693,9 @@ func update_unit(id: String, e: Dictionary) -> void:
 	# Siegerpose: Hüpfen am Yaw-Knoten (ändert nicht die Bodenposition)
 	if e.get("victory", false) and alive_now:
 		d["yaw"].position.y = absf(sin(float(now_ms) / 1000.0 * 6.0)) * 0.12 * UNIT_SCALE
+	elif d.has("yaw") and d["skin"] == "reaper" and alive_now:
+		# Sensenmann schwebt langsam auf und ab
+		d["yaw"].position.y = (0.1 + 0.05 * sin(float(now_ms) / 1000.0 * 2.0)) * UNIT_SCALE
 	elif d.has("yaw"):
 		d["yaw"].position.y = 0.0
 	# Rückstoß: Waffe ruckt beim Schießen nach hinten und kippt leicht hoch

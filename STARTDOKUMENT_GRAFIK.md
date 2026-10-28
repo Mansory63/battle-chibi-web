@@ -53,6 +53,6 @@ Branch: `grafik-overhaul` (Backup des Vorstands: `backup/stand-2026-10-28`). Nic
 - **Web-Build:** lädt ohne Konsolenfehler (Playwright-Test).
 
 ## Offen
-- Sensenmann-Boss ist noch prozedural und nicht überarbeitet.
+- Sensenmann-Boss: neu gebaut (Kapuze mit Schädel und glühenden Augen, Knochenhände, gebogene Sense, roter Schimmer, schwebt). Nur als Standbild geprüft, nicht im Kampf.
 - Angriffspose für die Sprite-Variante fehlt (3D-Variante hat sie).
 - Echte Leistung auf einem PC mit GPU und Windows-Build auf Windows noch nicht geprüft.
