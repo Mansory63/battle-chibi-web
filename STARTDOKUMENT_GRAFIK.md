@@ -41,3 +41,18 @@ Branch: `grafik-overhaul` (Backup des Vorstands: `backup/stand-2026-10-28`). Nic
 
 ## Veraltete Dateien
 `live.gd`, `main.gd`, `units3d.gd` im Hauptverzeichnis sind alte Kopien (Stand 26.10.). Maßgeblich ist `source/`.
+
+## Stand 28.10. (Nachtrag)
+- **Profilbilder:** Relay (`relay/tiktok-relay.js`) schickt Zuschauer-Avatare einmal pro Name als Base64; das Spiel zeigt sie als runde Bubbles in Teamfarbe. Ungetestet mit echtem TikTok-Live (Pakete `tiktok-live-connector` und `ws` auf dem PC per `npm install` nötig).
+- **Befehle:** Geschenk-Zuordnung vervollständigt (8 Geschenke), Waffenkauf per Chat (`!`-Wörter), Shop-Labels korrigiert. Automatischer Test `test_commands.gd`: 28/28 bestanden.
+- **Hochformat:** Layout für Portrait (540x960) mit angepasstem Shop und Tipp-Leiste.
+- **Pause:** Qualitätsprofil (niedrig/mittel/hoch) und „Reduzierte Effekte“ über Pausenmenü, gespeichert.
+- **Kamera:** Neigung VIEW_TILT 0.80 (ca. 53° nach unten).
+- **Figuren (3D-Modelle aktiv, Sprite-Variante aus):** Treffer-Reaktion, Sieg-Pose mit Hüpfen, Wachsen beim Wiederbeleben, Rückstoß beim Schuss.
+- **Stresstest:** 15 Minuten Logik-Test ohne Rendering, 5 Runden, keine Fehler. Echte Bildrate ist auf diesem Server nicht messbar (kein GPU).
+- **Web-Build:** lädt ohne Konsolenfehler (Playwright-Test).
+
+## Offen
+- Sensenmann-Boss ist noch prozedural und nicht überarbeitet.
+- Angriffspose für die Sprite-Variante fehlt (3D-Variante hat sie).
+- Echte Leistung auf einem PC mit GPU und Windows-Build auf Windows noch nicht geprüft.
