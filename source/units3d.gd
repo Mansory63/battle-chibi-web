@@ -56,12 +56,10 @@ func setup(host: Node, layer_index := 1) -> void:
 	viewport.own_world_3d = true
 	# Nur echte Handys (iPhone/Android) bekommen das schlanke Profil; PC/OBS bleibt voll scharf
 	if OS.has_feature("web_ios") or OS.has_feature("web_android"):
-		res_scale = 0.8
-		viewport.msaa_3d = Viewport.MSAA_DISABLED
+		apply_quality(0)
 		Engine.max_fps = 30  # gleichmäßige Bilder statt Ruckeln
 	else:
-		res_scale = 1.0
-		viewport.msaa_3d = Viewport.MSAA_2X
+		apply_quality(1)
 		Engine.max_fps = 60  # PC: ohne Grenze läuft die Grafikkarte auf Vollast und wird heiß
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
@@ -133,6 +131,23 @@ func _resize() -> void:
 	camera.size = s.y
 	vsize = s
 	_apply_camera()
+
+# Qualitaetsprofile: 0 = Niedrig, 1 = Mittel, 2 = Hoch
+const QUALITY_NAMES := ["LOW", "MEDIUM", "HIGH"]
+func apply_quality(q: int) -> void:
+	q = clampi(q, 0, 2)
+	match q:
+		0:
+			res_scale = 0.8
+			viewport.msaa_3d = Viewport.MSAA_DISABLED
+		1:
+			res_scale = 1.0
+			viewport.msaa_3d = Viewport.MSAA_2X
+		2:
+			res_scale = 1.0
+			viewport.msaa_3d = Viewport.MSAA_4X   # nur im Hoch-Profil, Leistung vorher messen
+	if viewport != null and camera != null:
+		_resize()
 
 # Automatische Qualitaetsanpassung: bei niedriger Bildrate Renderaufloesung senken
 func lower_quality() -> bool:

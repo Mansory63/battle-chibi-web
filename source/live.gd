@@ -1659,12 +1659,13 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var k := clampf(vs.x / 420.0, 0.9, 1.4)
 	var pw := minf(vs.x - 20.0, 620.0)
 	var px := vs.x * 0.5 - pw * 0.5
-	var ph := 196.0 * k + HOW_TO_PLAY.size() * 26.0 * k
-	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
+	# Rahmen umschliesst Infos oben und die Pausen-Knöpfe darunter (Knöpfe bei y 280)
+	var ph := 520.0 * k
+	var py := 150.0 * k   # unter dem großen PAUSE-Titel
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(0.75, 0.45, 1.0, 0.9), 24)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 22)
-	m._text(Vector2(px, py + 34 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 74 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 14 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 44 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
 	for i in mini(3, queue_names.size()):
 		shown.append(str(queue_names[i]).substr(0, 10))
@@ -1672,11 +1673,8 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var names_txt := ", ".join(shown)
 	if more > 0:
 		names_txt += "  +%d more" % more
-	m._text(Vector2(px, py + 108 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	var y := py + 146.0 * k
-	for line in HOW_TO_PLAY:
-		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
-		y += 26.0 * k
+	# Namensliste entfällt im Pausenfenster: sie würde unter den Knöpfen liegen
+	# Spielregeln stehen nicht mehr im Pausenfenster: sie wurden von den Knöpfen überdeckt
 
 # Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
 func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:

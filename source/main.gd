@@ -128,6 +128,7 @@ var sfx_players: Array[AudioStreamPlayer] = []
 var music_player: AudioStreamPlayer
 var muted := false
 var reduced_fx := false   # Einstellung: weniger Erschütterung und Blitze
+var quality := 1          # 0 = niedrig, 1 = mittel, 2 = hoch
 var minimap: Control
 var save_xp := 0
 var save_skin := "char_player"
@@ -222,6 +223,7 @@ var pause_layer: CanvasLayer
 var pause_info: Label
 var pause_sound_btn: Button
 var pause_fx_btn: Button
+var pause_quality_btn: Button
 const CHEST_OPEN_TIME := 3.0
 var chest_item: Dictionary = {}
 var chest_timer := 0.0
@@ -653,7 +655,8 @@ func _build_pause() -> void:
 	title.add_theme_constant_override("outline_size", 12)
 	pstage.add_child(title)
 	pause_info = Label.new()
-	pause_info.position = Vector2(240, 195)
+	pause_info.position = Vector2(240, 88)
+	pause_info.visible = false   # Text wird im Pausenfenster (live.gd) gezeichnet
 	pause_info.size = Vector2(800, 70)
 	pause_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pause_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -662,7 +665,7 @@ func _build_pause() -> void:
 	pause_info.add_theme_constant_override("outline_size", 6)
 	pstage.add_child(pause_info)
 	var box := VBoxContainer.new()
-	box.position = Vector2(440, 280)
+	box.position = Vector2(440, 292)
 	box.size = Vector2(400, 380)
 	box.add_theme_constant_override("separation", 16)
 	pstage.add_child(box)
@@ -675,11 +678,25 @@ func _build_pause() -> void:
 	resume.shortcut = sc
 	box.add_child(resume)
 	pause_sound_btn = _menu_button("", Color(0.3, 0.3, 0.4))
+	pause_sound_btn.custom_minimum_size = Vector2(400, 60)
+	pause_sound_btn.add_theme_font_size_override("font_size", 26)
 	pause_sound_btn.pressed.connect(func():
 		_toggle_sound()
 		_update_menu_buttons())
 	box.add_child(pause_sound_btn)
+	pause_quality_btn = _menu_button("", Color(0.3, 0.3, 0.4))
+	pause_quality_btn.custom_minimum_size = Vector2(400, 60)
+	pause_quality_btn.add_theme_font_size_override("font_size", 26)
+	pause_quality_btn.pressed.connect(func():
+		quality = (quality + 1) % 3
+		if units3d != null:
+			units3d.apply_quality(quality)
+		_write_save()
+		_update_menu_buttons())
+	box.add_child(pause_quality_btn)
 	pause_fx_btn = _menu_button("", Color(0.3, 0.3, 0.4))
+	pause_fx_btn.custom_minimum_size = Vector2(400, 60)
+	pause_fx_btn.add_theme_font_size_override("font_size", 26)
 	pause_fx_btn.pressed.connect(func():
 		reduced_fx = not reduced_fx
 		_write_save()
@@ -841,6 +858,7 @@ func _load_save() -> void:
 		save_skin = str(cfg.get_value("pass", "skin", "char_player"))
 		muted = bool(cfg.get_value("settings", "muted", false))
 		reduced_fx = bool(cfg.get_value("settings", "reduced_fx", false))
+		quality = clampi(int(cfg.get_value("settings", "quality", 1)), 0, 2)
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
 		map_theme = int(cfg.get_value("settings", "map_theme", 3)) % 4
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
@@ -851,6 +869,8 @@ func _load_save() -> void:
 				hub_data[k] = hd[k]
 	if not _skin_unlocked(save_skin):
 		save_skin = "char_player"
+	if units3d != null:
+		units3d.apply_quality(quality)
 
 func _write_save() -> void:
 	var cfg := ConfigFile.new()
@@ -858,6 +878,7 @@ func _write_save() -> void:
 	cfg.set_value("pass", "skin", save_skin)
 	cfg.set_value("settings", "muted", muted)
 	cfg.set_value("settings", "reduced_fx", reduced_fx)
+	cfg.set_value("settings", "quality", quality)
 	cfg.set_value("settings", "hardcore", hardcore)
 	cfg.set_value("settings", "map_theme", map_theme)
 	cfg.set_value("settings", "team_size", team_size)
@@ -909,6 +930,8 @@ func _update_menu_buttons() -> void:
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
 		pause_sound_btn.text = "SOUND OFF" if muted else "SOUND ON"
+	if pause_quality_btn:
+		pause_quality_btn.text = "GRAPHICS: " + ["LOW", "MEDIUM", "HIGH"][quality]
 	if pause_fx_btn:
 		pause_fx_btn.text = "EFFECTS: REDUCED" if reduced_fx else "EFFECTS: FULL"
 	if hub:
