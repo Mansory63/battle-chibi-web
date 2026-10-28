@@ -20,7 +20,8 @@ const TIER_NAMES := ["", "RARE", "EPIC", "LEGENDARY"]
 const LOOT_KINDS := ["pistol"]  # Waffen nur per Geschenk/Kauf, am Boden nur Pistole
 # Geschenk-Name (klein geschrieben) -> Waffe. Anpassbar; unbekannte Geschenke werden nach Münzwert zugeordnet.
 # Es gibt nur noch vier Waffen: Pistole, AK, Minigun, Raketenwerfer
-const GIFT_WEAPONS := {"rose": "pistol", "ice cream cone": "ak", "hand hearts": "minigun", "money gun": "rocket"}
+# Geschenk -> Waffe (entspricht der Hilfe im Spiel)
+const GIFT_WEAPONS := {"rose": "pistol", "tiktok": "smg", "gg": "sniper", "finger heart": "shotgun", "ice cream cone": "ak", "doughnut": "katana", "hand hearts": "minigun", "money gun": "rocket"}
 const FILLER_NAMES := ["Luki", "Mia", "Jonas", "Lena", "Tim", "Anna", "Ben", "Emma", "Finn", "Sofia", "Noah", "Lara", "Paul", "Nina", "Leo", "Zoe", "Max", "Ida", "Elias", "Jana", "Ali", "Yara", "Kian", "Mira"]
 const SKINS := ["char_player", "char_red", "char_green", "char_yellow", "char_purple", "char_orange", "char_cyan", "char_pink"]
 
@@ -170,6 +171,8 @@ func ingest(d) -> void:
 	var data: Dictionary = d["data"] if d.get("data") is Dictionary else d
 	var ev := str(d.get("event", d.get("type", ""))).to_lower()
 	var nm := str(data.get("nickname", data.get("uniqueId", data.get("name", data.get("user", ""))))).strip_edges()
+	if data.get("avatar") is String and nm != "":
+		_store_avatar(_clean(nm), str(data["avatar"]))
 	match ev:
 		"chat", "comment":
 			chat(nm, str(data.get("comment", data.get("text", ""))))
@@ -184,6 +187,32 @@ func ingest(d) -> void:
 		"join":
 			if data.has("team"):
 				join(nm, int(data["team"]))
+
+# Profilbild eines Zuschauers: Base64-Daten aus dem Relay -> rundes 48-px-Bild (einmal pro Zuschauer)
+var avatar_tex: Dictionary = {}   # Zuschauername -> ImageTexture
+func _store_avatar(key: String, data_url: String) -> void:
+	if avatar_tex.has(key) or avatar_tex.size() >= 200:
+		return
+	var parts := data_url.split(",", true, 1)
+	if parts.size() != 2:
+		return
+	var raw := Marshalls.base64_to_raw(parts[1])
+	var img := Image.new()
+	var err: int = img.load_png_from_buffer(raw) if parts[0].contains("png") else img.load_jpg_from_buffer(raw)
+	if err != OK or img.is_empty():
+		err = img.load_png_from_buffer(raw)
+		if err != OK:
+			avatar_tex[key] = null   # unlesbar: Buchstaben-Ersatz verwenden
+			return
+	img.resize(48, 48, Image.INTERPOLATE_BILINEAR)
+	# Runde Maske: Pixel außerhalb des Kreises werden transparent
+	for y in 48:
+		for x in 48:
+			if Vector2(x - 23.5, y - 23.5).length() > 23.5:
+				var c := img.get_pixel(x, y)
+				c.a = 0.0
+				img.set_pixel(x, y, c)
+	avatar_tex[key] = ImageTexture.create_from_image(img)
 
 func _clean(n: String) -> String:
 	var out := ""
@@ -266,7 +295,7 @@ func _shop_word(low: String) -> String:
 	if not low.begins_with("!"):
 		return ""
 	var w := low.substr(1).strip_edges()
-	if SHOP.has(w):
+	if SHOP.has(w) or SHOP_WEAPONS.has(w):
 		return w
 	return ""
 
@@ -1193,6 +1222,12 @@ func draw_hud(vs: Vector2) -> void:
 			nm = "♛ " + nm
 		var nc := Color.WHITE if b["viewer"] else Color(0.8, 0.85, 0.9, 0.85)
 		var ty := sp.y - hb - 12.0
+		# Profilbild-Bubble über dem Namen (nur Zuschauer mit geladenem Bild)
+		var akey := str(b["name"])
+		if b["viewer"] and avatar_tex.get(akey) != null:
+			var ar := 17.0 * ui
+			m.fx.draw_texture_rect(avatar_tex[akey], Rect2(sp.x - ar, ty - ar * 2.0 - 8.0, ar * 2.0, ar * 2.0), false)
+			m.fx.draw_arc(Vector2(sp.x, ty - ar - 8.0), ar, 0.0, TAU, 32, col, 3.0)
 		var nfs := int(17 * ui)
 		m.fx.draw_string_outline(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, 6, Color(0.06, 0.05, 0.1, 0.95))
 		m.fx.draw_string(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, nc)
@@ -1426,7 +1461,7 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
 	var guns := ["pistol", "ak", "minigun", "rocket"]   # die vier Waffen zur Auswahl
 	# Preis der Waffe = das Geschenk, das sie bringt
-	var gift_tag := {"pistol": "Rose", "smg": "TikTok", "shotgun": "Finger", "ak": "Ice Cream", "sniper": "GG", "minigun": "Hands", "rocket": "Money Gun"}
+	var gift_tag := {"pistol": "Rose", "smg": "TikTok", "shotgun": "Finger Heart", "ak": "Ice Cream", "sniper": "GG", "minigun": "Hand Hearts", "rocket": "Money Gun"}
 	var tw := minf(96.0, (fw - 16.0) / 8.0)
 	var x0 := fx + (fw - 8.0 * tw) * 0.5
 	for k in util.size():

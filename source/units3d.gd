@@ -10,7 +10,7 @@ const SKIN_MODELS := {
 	"char_cyan": "character-female-c", "char_pink": "character-female-d",
 }
 # Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
-const SPRITE_UNITS := true
+const SPRITE_UNITS := false   # alte 3D-Figuren (wurden als besser bewertet); Sprite-Figuren auf true setzen
 const SPRITE_HERO := {"char_player": "hero1", "char_red": "hero2", "char_green": "hero3", "char_yellow": "hero4", "char_purple": "hero1", "char_orange": "hero2", "char_cyan": "hero3", "char_pink": "hero4"}
 const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0, "hit": 12.0}
 # Waffen-Sprites (CC0): Pistole, Gewehr, schwere Waffe. Nahkampfwaffen werden nicht angezeigt
