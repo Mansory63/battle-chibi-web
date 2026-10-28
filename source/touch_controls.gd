@@ -65,7 +65,7 @@ func _sprint_center() -> Vector2:
 	return _ability_center() + Vector2(0, -ABILITY_RADIUS * 2.0 - 14.0)
 
 func _pause_center() -> Vector2:
-	return Vector2(size.x * 0.5, 14.0 + PAUSE_RADIUS)
+	return Vector2(14.0 + PAUSE_RADIUS, 14.0 + PAUSE_RADIUS)
 
 func _process(_delta: float) -> void:
 	_update_size()

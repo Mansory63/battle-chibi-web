@@ -13,6 +13,8 @@ const SKIN_MODELS := {
 const SPRITE_UNITS := true
 const SPRITE_HERO := {"char_player": "hero1", "char_red": "hero2", "char_green": "hero3", "char_yellow": "hero4", "char_purple": "hero1", "char_orange": "hero2", "char_cyan": "hero3", "char_pink": "hero4"}
 const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0}
+# Waffen-Sprites (CC0): Pistole, Gewehr, schwere Waffe. Nahkampfwaffen werden nicht angezeigt
+const WEAPON_SPR := {"pistol": "weapon1", "smg": "weapon1", "ak": "weapon2", "shotgun": "weapon2", "sniper": "weapon2", "minigun": "weapon3", "rocket": "weapon3"}
 var _spr_cache := {}
 
 const UNIT_SCALE := 118.0
@@ -277,21 +279,34 @@ func _make_sprite_unit(skin: String) -> Dictionary:
 	var holder := Node3D.new()
 	yaw.add_child(holder)
 	var spr := Sprite3D.new()
+	if skin == "reaper":
+		spr.pixel_size = 2.3 / 256.0
 	spr.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	spr.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	spr.pixel_size = 1.1 / 256.0
 	spr.shaded = false
-	spr.offset = Vector2(0, -128)
+	spr.offset = Vector2(0, 0)
 	holder.add_child(spr)
+	var wsp := Sprite3D.new()
+	wsp.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	wsp.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	wsp.pixel_size = 0.8 / 256.0
+	wsp.shaded = false
+	wsp.position = Vector3(0.28, 0.42, 0.02)
+	wsp.visible = false
+	holder.add_child(wsp)
 	pivot.scale = Vector3.ONE * UNIT_SCALE
 	unit_root.add_child(pivot)
 	return {"pivot": pivot, "yaw": yaw, "model": holder, "ap": null, "hand": null, "skin": skin,
-		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0, "sprite": spr, "set": "", "anim_key": "", "t0": Time.get_ticks_msec()}
+		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0, "sprite": spr, "wsprite": wsp, "set": "", "anim_key": "", "t0": Time.get_ticks_msec()}
 
 func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 	var spr: Sprite3D = d["sprite"]
 	var zombie: bool = str(e.get("look", "")) == "zombie"
-	var set_name: String = "foe2" if zombie else str(SPRITE_HERO.get(str(e.get("skin", d["skin"])), "hero1"))
+	var skin_now := str(e.get("skin", d["skin"]))
+	var set_name: String = "foe2" if zombie else str(SPRITE_HERO.get(skin_now, "hero1"))
+	if skin_now == "reaper":
+		set_name = "foe1"
 	spr.modulate = Color(0.92, 0.95, 1.0) if zombie else Color.WHITE
 	var anim := "idle"
 	if not e.get("alive", true):
@@ -313,12 +328,22 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 	else:
 		idx = idx % frames.size()
 	spr.texture = frames[idx]
+	spr.offset = Vector2(0, frames[idx].get_height() * 0.5)
 	var aim: Vector2 = e.get("aim", Vector2.DOWN)
 	if absf(aim.x) > 0.2:
 		spr.flip_h = aim.x < 0.0
+	var wsp: Sprite3D = d["wsprite"]
+	var wname: String = str(WEAPON_SPR.get(str(e.get("weapon", "")), ""))
+	if wname != "" and e.get("alive", true):
+		wsp.texture = load("res://assets/sprites/" + wname + ".png")
+		wsp.visible = true
+		wsp.flip_h = spr.flip_h
+		wsp.position.x = -0.28 if spr.flip_h else 0.28
+	else:
+		wsp.visible = false
 
 func _make_unit(skin: String) -> Dictionary:
-	if SPRITE_UNITS and skin != "reaper":
+	if SPRITE_UNITS:
 		return _make_sprite_unit(skin)
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()

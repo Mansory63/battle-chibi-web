@@ -1204,7 +1204,7 @@ func draw_hud(vs: Vector2) -> void:
 		var likes_left: int = REINFORCE_EVERY - into
 		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, cw - 8.0, 5.0), Color(0.05, 0.05, 0.1, 0.85))
 		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, (cw - 8.0) * float(into) / float(REINFORCE_EVERY), 5.0), col)
-		m._text(Vector2(cx + 4.0, cy + 54.0), "%d more likes = +1 fighter" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
+		m._text(Vector2(cx + 4.0, cy + 54.0), "+1 in %d likes" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
 	var boss: Dictionary = m.bots[SLOTS * 4]
 	if boss["alive"] and boss["boss"]:
 		var bw := minf(vs.x - 40.0, 420.0)
@@ -1278,12 +1278,12 @@ func draw_hud(vs: Vector2) -> void:
 	_draw_shop(vs, foot_x, foot_w)
 	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
 	const TIPS := [
-		"Chat: type your team color (RED, BLUE, GREEN, YELLOW) = fighters for your team",
-		"Likes = more fighters. The bar on top shows how many likes are left",
-		"Gifts = weapons: Rose = Pistol, Ice Cream = AK, Hands = Minigun, Money Gun = Rocket",
-		"Chat shop: !heal, !shield, !revive only affects the name that was written",
-		"Galaxy gift = atomic bomb. The price is shown on the tile below",
-		"Last team standing wins. The boss must be defeated before time runs out",
+		"Chat: type RED, BLUE, GREEN or YELLOW = fighters",
+		"Likes = more fighters. The top bar shows how many",
+		"Gifts = weapons (see the shop tiles)",
+		"Chat shop: !heal !shield !revive (on your name)",
+		"Galaxy gift = atomic bomb",
+		"Last team standing wins. Beat the boss in time!",
 	]
 	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
 	m._text(Vector2(foot_x + 10.0, vs.y - 80), "TIP: " + str(TIPS[tip_i]), 14 if vs.x >= 620.0 else 12, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1616,12 +1616,12 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var k := clampf(vs.x / 420.0, 0.9, 1.4)
 	var pw := minf(vs.x - 20.0, 620.0)
 	var px := vs.x * 0.5 - pw * 0.5
-	var ph := 178.0 * k + HOW_TO_PLAY.size() * 26.0 * k
+	var ph := 196.0 * k + HOW_TO_PLAY.size() * 26.0 * k
 	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(0.75, 0.45, 1.0, 0.9), 24)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 22)
-	m._text(Vector2(px, py + 20 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 62 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 34 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 74 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
 	for i in mini(3, queue_names.size()):
 		shown.append(str(queue_names[i]).substr(0, 10))
@@ -1629,8 +1629,8 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var names_txt := ", ".join(shown)
 	if more > 0:
 		names_txt += "  +%d more" % more
-	m._text(Vector2(px, py + 96 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	var y := py + 134.0 * k
+	m._text(Vector2(px, py + 108 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := py + 146.0 * k
 	for line in HOW_TO_PLAY:
 		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
 		y += 26.0 * k
