@@ -127,6 +127,7 @@ var sfx: Dictionary = {}
 var sfx_players: Array[AudioStreamPlayer] = []
 var music_player: AudioStreamPlayer
 var muted := false
+var reduced_fx := false   # Einstellung: weniger Erschütterung und Blitze
 var minimap: Control
 var save_xp := 0
 var save_skin := "char_player"
@@ -220,6 +221,7 @@ var paused_away := false
 var pause_layer: CanvasLayer
 var pause_info: Label
 var pause_sound_btn: Button
+var pause_fx_btn: Button
 const CHEST_OPEN_TIME := 3.0
 var chest_item: Dictionary = {}
 var chest_timer := 0.0
@@ -585,6 +587,8 @@ func _draw_fx_inner() -> void:
 			_fdisc(sp, 3.5, Color(1, 1, 0.9, 1))
 	# Mündungsfeuer
 	for f in flashes:
+		if reduced_fx and not f["big"]:
+			continue   # bei reduzierten Effekten nur große Mündungsblitze
 		var fp := _fx_screen(f["pos"]) + Vector2(0, -30.0 * ZOOM)
 		var fd := _screen_dir(f["dir"])
 		var sz := 26.0 if f["big"] else 17.0
@@ -675,6 +679,12 @@ func _build_pause() -> void:
 		_toggle_sound()
 		_update_menu_buttons())
 	box.add_child(pause_sound_btn)
+	pause_fx_btn = _menu_button("", Color(0.3, 0.3, 0.4))
+	pause_fx_btn.pressed.connect(func():
+		reduced_fx = not reduced_fx
+		_write_save()
+		_update_menu_buttons())
+	box.add_child(pause_fx_btn)
 	var quit_btn := _menu_button("GIVE UP", Color(0.8, 0.3, 0.3))
 	quit_btn.pressed.connect(func():
 		get_tree().paused = false
@@ -830,6 +840,7 @@ func _load_save() -> void:
 		save_xp = int(cfg.get_value("pass", "xp", 0))
 		save_skin = str(cfg.get_value("pass", "skin", "char_player"))
 		muted = bool(cfg.get_value("settings", "muted", false))
+		reduced_fx = bool(cfg.get_value("settings", "reduced_fx", false))
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
 		map_theme = int(cfg.get_value("settings", "map_theme", 3)) % 4
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
@@ -846,6 +857,7 @@ func _write_save() -> void:
 	cfg.set_value("pass", "xp", save_xp)
 	cfg.set_value("pass", "skin", save_skin)
 	cfg.set_value("settings", "muted", muted)
+	cfg.set_value("settings", "reduced_fx", reduced_fx)
 	cfg.set_value("settings", "hardcore", hardcore)
 	cfg.set_value("settings", "map_theme", map_theme)
 	cfg.set_value("settings", "team_size", team_size)
@@ -897,6 +909,8 @@ func _update_menu_buttons() -> void:
 		mode_btn.add_theme_stylebox_override("normal", _style_for(Color(0.75, 0.15, 0.15) if hardcore else Color(0.3, 0.6, 0.4)))
 	if pause_sound_btn:
 		pause_sound_btn.text = "SOUND OFF" if muted else "SOUND ON"
+	if pause_fx_btn:
+		pause_fx_btn.text = "EFFECTS: REDUCED" if reduced_fx else "EFFECTS: FULL"
 	if hub:
 		hub.refresh()
 
@@ -1808,7 +1822,7 @@ func _process(delta: float) -> void:
 	damage_flash = maxf(0.0, damage_flash - delta)
 	hit_marker = maxf(0.0, hit_marker - delta)
 	shake = maxf(0.0, shake - delta * 2.2)
-	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake * 16.0
+	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake * 16.0 * (0.25 if reduced_fx else 1.0)
 	for f in flashes:
 		f["t"] += delta
 	flashes = flashes.filter(func(f): return f["t"] < 0.07)
