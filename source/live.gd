@@ -2,7 +2,7 @@ extends RefCounted
 # TikTok-Live-Modus: automatische Runden, 4 Teams, Zuschauer = Kämpfer mit Namen.
 # Ereignisse kommen über: JS (window.bcLive), WebSocket (?ws=ws://localhost:PORT), Demo (?demo=1) oder Testtasten.
 
-const ROUND_TIME := 300.0
+const ROUND_TIME := 180.0
 const PAUSE_TIME := 40.0      # 40 s Pause: erst 10 s Ergebnis, dann Erklärung + Anmeldung für die nächste Runde
 const EXPLAIN_TIME := 30.0     # letzte 30 s der Pause: Erklärung + Warteschlange
 const QUEUE_DROP_MS := 90000   # wer 90 s lang nicht aktiv war (Stream verlassen), fliegt aus der Warteschlange
@@ -56,9 +56,9 @@ var winner := -1
 var topsup: Array = [{}, {}, {}, {}]
 var splats: Array = []
 # Atombombe (teuerstes Geschenk): Warnung, Blitz, Pilzwolke, nur Knochen bleiben
-const BOSS_SPAWN_AT := 100.0
+const BOSS_SPAWN_AT := 60.0
 const INTRO_TIME := 4.0           # Start-Animation: Teamkarten und Countdown, Figuren stehen still
-const BOSS_DEADLINE := 280.0      # Boss fällt spätestens hier, auch ohne Treffer (Sanduhr)
+const BOSS_DEADLINE := 165.0      # Boss fällt spätestens hier, auch ohne Treffer (Sanduhr)
 const BONE_WAVE_EVERY := 20.0      # alle 20 s rückt eine neue Welle Knochen-Krieger mit Schwert aus dem Gefängnis aus
 const BONE_WAVE_SIZE := 4
 const BONE_MAX_ALIVE := 6         # nie mehr als 6 Knochen gleichzeitig auf dem Feld (Bots können sie nicht besiegen)
@@ -109,6 +109,8 @@ var fn_i := 0
 var boss_done := false
 var boss_spawn_pos := Vector2.ZERO
 var zombie_kills := 0
+var streak_kills := {}
+var warned_30 := false
 var bone_next := 15.0
 
 # ---------- Start ----------
@@ -402,6 +404,7 @@ func gift(nm: String, gname: String, coins: int) -> void:
 		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 3)]
 	var rar := 1 if coins < 10 else (2 if coins < 100 else 3)
 	_give_weapon(nm, wk, rar)
+	_gift_moment(nm, gname, tm)
 	# Kiste nur bei bezahltem Geschenk: sichtbar, dass jemand bezahlt hat
 	if coins > 0:
 		_drop_crate(tm, 1)
@@ -613,6 +616,8 @@ func start_round() -> void:
 	reinforce_pending = [0, 0, 0, 0]
 	winner = -1
 	round_kills = [0, 0, 0, 0]
+	streak_kills.clear()
+	warned_30 = false
 	crate_t = 30.0
 	crate_next = randi() % 4
 	boss_done = false
@@ -794,6 +799,10 @@ func update(delta: float) -> void:
 		m.flashes.clear()
 		for bi in m.bots.size():
 			m.bots[bi]["cd"] = maxf(float(m.bots[bi]["cd"]), 1.0)  # in der Pause schießt niemand
+	if state == "round" and not warned_30 and t >= ROUND_TIME - 30.0:
+		warned_30 = true
+		_banner("30 SECONDS LEFT!", Color(1, 0.35, 0.3), 2.5)
+		m.shake = maxf(m.shake, 0.4)
 	queue_t -= delta
 	if queue_t <= 0.0:
 		queue_t = 0.5
@@ -915,6 +924,15 @@ func _pick_focus() -> void:
 	if cands.size() > 0:
 		focus = cands[randi() % mini(4, cands.size())][1]
 
+func _gift_moment(nm: String, gname: String, tm: int) -> void:
+	var col: Color = TEAM_COLORS[clampi(tm, 0, 4)]
+	var bi := _find_bot(nm)
+	if bi >= 0:
+		m._spark_burst(m.bots[bi]["pos"], col, 40, 520.0)
+		m._spark_burst(m.bots[bi]["pos"], Color(1, 1, 1), 16, 360.0)
+	m.shake = maxf(m.shake, 0.6)
+	_banner("%s sent %s!" % [nm, gname.capitalize()], col, 2.5)
+
 func on_kill(i: int) -> void:
 	var b: Dictionary = m.bots[i]
 	var k := int(b["team"]) - 1
@@ -946,6 +964,22 @@ func on_kill(i: int) -> void:
 	if kl >= 0 and kl < m.bots.size() and int(m.bots[kl]["team"]) != int(b["team"]) and int(m.bots[kl]["team"]) <= 4:
 		round_kills[int(m.bots[kl]["team"]) - 1] += 1
 		kname = str(m.bots[kl]["name"])
+		var sk := int(streak_kills.get(kname, 0)) + 1
+		streak_kills[kname] = sk
+		var tag := ""
+		match sk:
+			2:
+				tag = "DOUBLE KILL"
+			3:
+				tag = "TRIPLE KILL"
+			5:
+				tag = "UNSTOPPABLE"
+			7:
+				tag = "GODLIKE"
+		if tag != "":
+			_banner("%s - %s!" % [tag, kname], TEAM_COLORS[int(m.bots[kl]["team"]) - 1], 2.5)
+			m.shake = maxf(m.shake, 0.5)
+			_say("%s %s" % [tag.to_lower(), kname])
 		if m.bots[kl]["viewer"]:
 			viewers[kname]["kills"] = int(viewers[kname]["kills"]) + 1
 	if OS.get_environment("LIVEDBG") != "" and t < 30.0:
