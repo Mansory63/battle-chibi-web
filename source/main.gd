@@ -707,6 +707,12 @@ func _build_pause() -> void:
 		get_tree().reload_current_scene())
 	box.add_child(quit_btn)
 
+# Siegerpose: Figuren des Siegerteams, solange die Runde in der Pause steht
+func _is_round_winner(b: Dictionary) -> bool:
+	if not live_mode or live == null:
+		return false
+	return str(live.state) == "pause" and int(live.winner) >= 0 and int(b["team"]) - 1 == int(live.winner)
+
 func _toggle_pause() -> void:
 	if phase != "play" and phase != "fall":
 		return
@@ -3119,10 +3125,10 @@ func _sync_units3d() -> void:
 					if live_mode:
 						var dtb := now - int(b.get("dead_at", -99999))
 						if dtb < 320:
-							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b), "health": float(b["health"])})
+							units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": b["weapon"], "alive": true, "visible": true, "scale": 1.0 + float(dtb) / 320.0 * 0.9, "look": _look(b), "tint": _tint(b), "health": float(b["health"]), "victory": _is_round_winner(b), "firing": now - int(flash_t.get(i, -9999)) < 260})
 						continue
 					if now - int(b.get("dead_at", -99999)) < 1800:
-						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": now - int(b.get("dead_at", -99999)) < 900, "look": _look(b), "tint": _tint(b), "health": float(b["health"])})
+						units3d.update_unit("bot%d" % i, {"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "weapon": "", "alive": false, "visible": now - int(b.get("dead_at", -99999)) < 900, "look": _look(b), "tint": _tint(b), "health": float(b["health"]), "victory": _is_round_winner(b), "firing": now - int(flash_t.get(i, -9999)) < 260})
 					continue
 				units3d.update_unit("bot%d" % i, {
 					"skin": b["skin"], "world": b["pos"], "aimw": b["aim"], "moving": b.get("moving", false),

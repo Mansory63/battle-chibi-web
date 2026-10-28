@@ -324,6 +324,20 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 		set_name = "foe1"
 	spr.modulate = Color(0.92, 0.95, 1.0) if zombie else Color.WHITE
 	var anim := "idle"
+	var now_ms := Time.get_ticks_msec()
+	# Wiedererscheinen: Figur blendet in 0,4 s ein
+	if e.get("alive", true) and not d.get("alive_prev", true):
+		d["spawn_t"] = now_ms
+	d["alive_prev"] = e.get("alive", true)
+	if e.get("alive", true) and d.has("spawn_t"):
+		spr.modulate.a = clampf((now_ms - int(d["spawn_t"])) / 400.0, 0.0, 1.0)
+	elif e.get("alive", true):
+		spr.modulate.a = 1.0
+	# Schuss-Rückstoß: Startzeit bei steigender Flanke
+	var firing_now: bool = e.get("firing", false)
+	if firing_now and not d.get("firing_prev", false):
+		d["fire_t"] = now_ms
+	d["firing_prev"] = firing_now
 	# Treffer: kurze Trefferpose, wenn die Lebenspunkte gesunken sind (0,2 s)
 	var hp_now: float = float(e.get("health", -1.0))
 	if hp_now >= 0.0:
@@ -331,8 +345,11 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 			d["hit_t"] = Time.get_ticks_msec()
 		d["hp_prev"] = hp_now
 	var hit_recent: bool = d.has("hit_t") and Time.get_ticks_msec() - int(d["hit_t"]) < 200
+	var victory: bool = e.get("victory", false) and e.get("alive", true)
 	if not e.get("alive", true):
 		anim = "death"
+	elif victory:
+		anim = "idle"   # Siegerpose: Idle mit Hüpfen, siehe unten
 	elif hit_recent:
 		anim = "hit"
 	elif e.get("moving", false) or e.get("jumping", false) or e.get("falling", false):
@@ -356,13 +373,20 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 	var aim: Vector2 = e.get("aim", Vector2.DOWN)
 	if absf(aim.x) > 0.2:
 		spr.flip_h = aim.x < 0.0
+	# Siegerpose: kurzes Hüpfen auf der Stelle
+	spr.position.y = absf(sin(float(Time.get_ticks_msec()) / 1000.0 * 6.0)) * 0.12 if victory else 0.0
 	var wsp: Sprite3D = d["wsprite"]
 	var wname: String = str(WEAPON_SPR.get(str(e.get("weapon", "")), ""))
 	if wname != "" and e.get("alive", true):
 		wsp.texture = load("res://assets/sprites/" + wname + ".png")
 		wsp.visible = true
 		wsp.flip_h = spr.flip_h
-		wsp.position.x = -0.28 if spr.flip_h else 0.28
+		# Rückstoß: Waffe fährt beim Schuss 120 ms lang nach hinten
+		var kick := 0.0
+		if d.has("fire_t"):
+			kick = 0.1 * maxf(0.0, 1.0 - float(now_ms - int(d["fire_t"])) / 120.0)
+		var base := -0.28 if spr.flip_h else 0.28
+		wsp.position.x = base + (kick if not spr.flip_h else -kick)
 	else:
 		wsp.visible = false
 
