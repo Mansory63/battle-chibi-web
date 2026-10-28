@@ -2561,7 +2561,10 @@ func _draw_outdoor() -> void:
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(40.0 + sin(t_now * 1.6) * 14.0), Color(0.75, 0.92, 1, 0.5), false, 10.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120).grow(14.0), Color(0.85, 0.75, 0.5), false, 22.0)
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62) if map_theme != 3 else Color(0.08, 0.08, 0.11))
-	if map_theme == 3:
+	if live_mode:
+		# Cartoon-Arena (Briefing-Palette): flache Grundfläche, dunklere Muster, warme Wege
+		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color("#289B78"))
+	elif map_theme == 3:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.14, 0.14, 0.19))
 	elif map_theme == 1:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.9, 0.76, 0.46))
@@ -2582,7 +2585,9 @@ func _draw_outdoor() -> void:
 		if (gb[0] as Vector2).distance_squared_to(player_pos) > 1300.0 * 1300.0:
 			continue
 		var gc := Color(0.75, 1, 0.5, 0.10) if gb[2] else Color(0.1, 0.4, 0.2, 0.10)
-		if map_theme == 1:
+		if live_mode:
+			gc = Color("#208164", 0.55) if gb[2] else Color("#63D34E", 0.28)
+		elif map_theme == 1:
 			gc = Color(1, 0.9, 0.6, 0.18) if gb[2] else Color(0.75, 0.5, 0.2, 0.16)
 		elif map_theme == 2:
 			gc = Color(1, 1, 1, 0.5) if gb[2] else Color(0.65, 0.78, 0.95, 0.22)
@@ -2592,14 +2597,23 @@ func _draw_outdoor() -> void:
 		_disc(gb[0], gb[1] * 0.6, gc)
 
 	# Straßen: Bürgersteig, Asphalt, Mittelstreifen
+	if live_mode:
+		# Warme Wege mit heller Kante, ohne Strichmuster
+		for road in ROADS:
+			draw_rect(road.grow(10), Color("#F2E8CD"))
+		for road in ROADS:
+			draw_rect(road, Color("#F7AD32"))
+	else:
+		for road in ROADS:
+			draw_rect(road.grow(16), Color(0.78, 0.78, 0.8))
+		for road in ROADS:
+			if tex_asphalt:
+				draw_texture_rect(tex_asphalt, road, true)
+			else:
+				draw_rect(road, Color(0.32, 0.33, 0.37))
 	for road in ROADS:
-		draw_rect(road.grow(16), Color(0.78, 0.78, 0.8))
-	for road in ROADS:
-		if tex_asphalt:
-			draw_texture_rect(tex_asphalt, road, true)
-		else:
-			draw_rect(road, Color(0.32, 0.33, 0.37))
-	for road in ROADS:
+		if live_mode:
+			continue
 		if road.size.x > road.size.y:
 			var cy: float = road.get_center().y
 			draw_texture_rect(tex_dash_h, Rect2(road.position.x, cy - 4, road.size.x, 8), true)
