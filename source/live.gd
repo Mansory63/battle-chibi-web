@@ -1149,7 +1149,7 @@ func draw_hud(vs: Vector2) -> void:
 		var z: float = m.ZOOM
 		var rx := 30.0 * z
 		var ry: float = rx * m.VIEW_TILT
-		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx * 1.25, sp.y + 8.0 - ry * 1.25, rx * 2.5, ry * 2.5), false, Color(col.r, col.g, col.b, 0.95))
+		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx * 1.0, sp.y + 8.0 - ry * 1.0, rx * 2.0, ry * 2.0), false, Color(col.r, col.g, col.b, 0.8))
 		var hb: float = 112.0 * z / 1.15
 		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / float(b.get("maxhp", HP))), col, hb)
 		var nm: String = b["name"]

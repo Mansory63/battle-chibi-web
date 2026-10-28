@@ -312,9 +312,19 @@ func _build_reaper() -> Node3D:
 	# Kapuze: Kegel über dem Kopf
 	var hood := CylinderMesh.new()
 	hood.top_radius = 0.0
-	hood.bottom_radius = 0.17
-	hood.height = 0.24
-	_reaper_part(root, hood, robe_mat, Vector3(0, 1.12, 0))
+	hood.bottom_radius = 0.24
+	hood.height = 0.4
+	_reaper_part(root, hood, robe_mat, Vector3(0, 1.14, 0))
+	# Schultern der Kutte
+	var shoulders := SphereMesh.new()
+	shoulders.radius = 0.3
+	shoulders.height = 0.42
+	_reaper_part(root, shoulders, robe_mat, Vector3(0, 0.92, 0))
+	# Dunkle Öffnung der Kapuze: davor sitzt der Schädel
+	var hole := SphereMesh.new()
+	hole.radius = 0.15
+	hole.height = 0.2
+	_reaper_part(root, hole, robe_mat, Vector3(0, 1.1, 0.07))
 	# Schädel im Schatten der Kapuze
 	var skull := SphereMesh.new()
 	skull.radius = 0.1
@@ -322,19 +332,23 @@ func _build_reaper() -> Node3D:
 	_reaper_part(root, skull, bone_mat, Vector3(0, 1.02, 0.03))
 	# Glühende Augen
 	var eye := SphereMesh.new()
-	eye.radius = 0.028
-	eye.height = 0.056
-	_reaper_part(root, eye, eye_mat, Vector3(-0.04, 1.03, 0.12))
-	_reaper_part(root, eye, eye_mat, Vector3(0.04, 1.03, 0.12))
+	eye.radius = 0.045
+	eye.height = 0.09
+	_reaper_part(root, eye, eye_mat, Vector3(-0.06, 1.1, 0.17))
+	_reaper_part(root, eye, eye_mat, Vector3(0.06, 1.1, 0.17))
 	# Sense: Stiel in der Hand, Klinge oben
 	var handle := CylinderMesh.new()
 	handle.top_radius = 0.02
 	handle.bottom_radius = 0.02
-	handle.height = 1.6
-	_reaper_part(root, handle, wood_mat, Vector3(0.36, 0.75, 0.08), Vector3(0, 0, deg_to_rad(-8)))
+	handle.height = 2.0
+	_reaper_part(root, handle, wood_mat, Vector3(0.36, 0.9, 0.08), Vector3(0, 0, deg_to_rad(-8)))
 	var blade := BoxMesh.new()
-	blade.size = Vector3(0.03, 0.42, 0.66)
-	_reaper_part(root, blade, blade_mat, Vector3(0.2, 1.46, 0.24), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
+	blade.size = Vector3(0.05, 0.55, 0.9)
+	_reaper_part(root, blade, blade_mat, Vector3(0.22, 1.9, 0.3), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
+	# Haken der Sense: schmale Spitze nach unten
+	var hook := BoxMesh.new()
+	hook.size = Vector3(0.05, 0.2, 0.28)
+	_reaper_part(root, hook, blade_mat, Vector3(0.18, 1.62, 0.0), Vector3(deg_to_rad(-30), 0, deg_to_rad(18)))
 	return root
 
 func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
@@ -402,8 +416,11 @@ func _walk_look(n: Node, look: String, tint: Color) -> void:
 			if look == "zombie":
 				# Knochen-Soldat: komplett weiß, Textur wird ersetzt
 				var bone := StandardMaterial3D.new()
-				bone.albedo_color = Color(0.96, 0.95, 0.9)
-				bone.roughness = 0.85
+				bone.albedo_color = Color(0.98, 0.96, 0.9)
+				bone.roughness = 0.6
+				bone.emission_enabled = true
+				bone.emission = Color(0.55, 0.52, 0.45)
+				bone.emission_energy_multiplier = 0.25
 				c.material_override = bone
 				c.material_overlay = null
 			else:
