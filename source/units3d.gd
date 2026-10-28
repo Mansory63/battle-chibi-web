@@ -283,7 +283,7 @@ func _make_sprite_unit(skin: String) -> Dictionary:
 		spr.pixel_size = 2.3 / 256.0
 	spr.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	spr.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	spr.pixel_size = 1.1 / 256.0
+	spr.pixel_size = 1.25 / 256.0   # etwas größer für Lesbarkeit im Stream
 	spr.shaded = false
 	spr.offset = Vector2(0, 0)
 	holder.add_child(spr)

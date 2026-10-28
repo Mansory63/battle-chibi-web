@@ -1183,6 +1183,8 @@ func draw_hud(vs: Vector2) -> void:
 		var z: float = m.ZOOM
 		var rx := 24.0 * z   # etwas schmaler, damit Ringe im Gedränge nicht zu einer Fläche verschmelzen
 		var ry: float = rx * m.VIEW_TILT
+		# weicher Kontaktschatten unter den Füßen (günstig: wiederverwendete Kreistextur)
+		m.fx.draw_texture_rect(m.tex_disc, Rect2(sp.x - rx * 1.25, sp.y + 8.0 - ry * 1.1, rx * 2.5, ry * 2.2), false, Color(0.05, 0.1, 0.05, 0.3))
 		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx * 1.0, sp.y + 8.0 - ry * 1.0, rx * 2.0, ry * 2.0), false, Color(col.r, col.g, col.b, 0.55))
 		var hb: float = 112.0 * z / 1.15
 		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / float(b.get("maxhp", HP))), col, hb)
