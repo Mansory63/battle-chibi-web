@@ -655,8 +655,7 @@ func _build_pause() -> void:
 	title.add_theme_constant_override("outline_size", 12)
 	pstage.add_child(title)
 	pause_info = Label.new()
-	pause_info.position = Vector2(240, 88)
-	pause_info.visible = false   # Text wird im Pausenfenster (live.gd) gezeichnet
+	pause_info.position = Vector2(240, 196)   # Hinweis unter dem PAUSE-Titel, über den Knöpfen
 	pause_info.size = Vector2(800, 70)
 	pause_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pause_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -713,6 +712,8 @@ func _toggle_pause() -> void:
 		return
 	paused_away = not paused_away
 	pause_layer.visible = paused_away
+	if fx != null:
+		fx.queue_redraw()   # Zeichenfläche neu zeichnen, sonst bleibt der alte Bildinhalt stehen
 	pause_info.text = "You left the game, but you stay connected and can still be hit." if ONLINE else "The game is paused."
 	if not ONLINE:
 		get_tree().paused = paused_away

@@ -1577,16 +1577,20 @@ func _draw_intro(vs: Vector2) -> void:
 	var x0 := vs.x * 0.5 - (cw + 10.0) * 2.0 + 5.0
 	for k in 4:
 		var alive := 0
+		var picked: Array = []   # zwei ausgewählte Kämpfer pro Team für die Karte
 		for i in SLOTS * 4:
 			if m.bots[i]["alive"] and int(m.bots[i]["team"]) == k + 1:
 				alive += 1
+				if picked.size() < 2:
+					picked.append(str(m.bots[i]["name"]).substr(0, 9))
 		var cx := x0 + k * (cw + 10.0)
 		var cy := vs.y * 0.36
 		var col: Color = TEAM_COLORS[k]
 		m._pill(Rect2(cx, cy, cw, 150), Color(col.r * 0.4, col.g * 0.4, col.b * 0.4, 0.92 * a), 16)
 		m._text(Vector2(cx, cy + 14), TEAM_NAMES[k], 26, Color(col.r, col.g, col.b, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
 		m._text(Vector2(cx, cy + 58), str(alive), 42, Color(1, 1, 1, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
-		m._text(Vector2(cx, cy + 118), "FIGHTERS", 14, Color(0.9, 0.95, 1.0, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(cx, cy + 100), ", ".join(picked), 14, Color(1, 1, 1, a), cw - 8.0, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(cx, cy + 124), "FIGHTERS", 13, Color(0.9, 0.95, 1.0, a), cw, HORIZONTAL_ALIGNMENT_CENTER)
 	# Countdown in der Mitte: 3, 2, 1, dann FIGHT
 	var label := str(3 - int(t)) if t < 3.0 else "FIGHT!"
 	var size := 220 if t < 3.0 else (150 if small else 190)
@@ -1656,16 +1660,18 @@ const HOW_TO_PLAY := [
 ]
 
 func _draw_pause_info(vs: Vector2) -> void:
+	# Solange das Pausen-Layer mit Knöpfen sichtbar ist, zeichnet es Titel und Knöpfe selbst
+	if m.pause_layer != null and m.pause_layer.visible:
+		return
 	var k := clampf(vs.x / 420.0, 0.9, 1.4)
 	var pw := minf(vs.x - 20.0, 620.0)
 	var px := vs.x * 0.5 - pw * 0.5
-	# Rahmen umschliesst Infos oben und die Pausen-Knöpfe darunter (Knöpfe bei y 280)
-	var ph := 520.0 * k
-	var py := 150.0 * k   # unter dem großen PAUSE-Titel
+	var ph := 196.0 * k + HOW_TO_PLAY.size() * 26.0 * k
+	var py := maxf(vs.y * 0.5 - ph * 0.5 + 40.0, 110.0)
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(0.75, 0.45, 1.0, 0.9), 24)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 22)
-	m._text(Vector2(px, py + 14 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
-	m._text(Vector2(px, py + 44 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 34 * k), "NEXT ROUND IN %d s" % int(ceil(pause_t)), int(30 * k), Color(1, 0.9, 0.5), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 74 * k), "Queue: %d" % queued, int(22 * k), Color(0.9, 0.95, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var shown: Array = []
 	for i in mini(3, queue_names.size()):
 		shown.append(str(queue_names[i]).substr(0, 10))
@@ -1673,8 +1679,11 @@ func _draw_pause_info(vs: Vector2) -> void:
 	var names_txt := ", ".join(shown)
 	if more > 0:
 		names_txt += "  +%d more" % more
-	# Namensliste entfällt im Pausenfenster: sie würde unter den Knöpfen liegen
-	# Spielregeln stehen nicht mehr im Pausenfenster: sie wurden von den Knöpfen überdeckt
+	m._text(Vector2(px, py + 108 * k), names_txt, int(18 * k), Color(0.75, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := py + 146.0 * k
+	for line in HOW_TO_PLAY:
+		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
+		y += 26.0 * k
 
 # Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
 func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:
