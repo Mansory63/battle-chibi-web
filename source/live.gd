@@ -1181,9 +1181,9 @@ func draw_hud(vs: Vector2) -> void:
 			continue
 		var col: Color = TEAM_COLORS[clampi(int(b["team"]) - 1, 0, 4)]
 		var z: float = m.ZOOM
-		var rx := 30.0 * z
+		var rx := 24.0 * z   # etwas schmaler, damit Ringe im Gedränge nicht zu einer Fläche verschmelzen
 		var ry: float = rx * m.VIEW_TILT
-		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx * 1.0, sp.y + 8.0 - ry * 1.0, rx * 2.0, ry * 2.0), false, Color(col.r, col.g, col.b, 0.8))
+		m.fx.draw_texture_rect(m.tex_ring, Rect2(sp.x - rx * 1.0, sp.y + 8.0 - ry * 1.0, rx * 2.0, ry * 2.0), false, Color(col.r, col.g, col.b, 0.55))
 		var hb: float = 112.0 * z / 1.15
 		m._fx_bar2(sp, minf(100.0, float(b["health"]) * 100.0 / float(b.get("maxhp", HP))), col, hb)
 		var nm: String = b["name"]
@@ -1320,7 +1320,13 @@ func draw_hud(vs: Vector2) -> void:
 		"Last team standing wins. Beat the boss in time!",
 	]
 	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
-	m._text(Vector2(foot_x + 10.0, vs.y - 80), "TIP: " + str(TIPS[tip_i]), 14 if vs.x >= 620.0 else 12, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
+	# Tipp passt sich der Leistenbreite an (kleiner werden statt überlaufen)
+	var tip_txt := "TIP: " + str(TIPS[tip_i])
+	var tip_size := 14 if vs.x >= 620.0 else 12
+	var tip_font: Font = m.ui_font()
+	while tip_size > 9 and tip_font.get_string_size(tip_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(tip_size * 1.12))).x > foot_w - 24.0:
+		tip_size -= 1
+	m._text(Vector2(foot_x + 10.0, vs.y - 80), tip_txt, tip_size, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
