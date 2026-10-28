@@ -9,6 +9,12 @@ const SKIN_MODELS := {
 	"char_yellow": "character-male-d", "char_purple": "character-female-a", "char_orange": "character-female-b",
 	"char_cyan": "character-female-c", "char_pink": "character-female-d",
 }
+# Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
+const SPRITE_UNITS := true
+const SPRITE_HERO := {"char_player": "hero1", "char_red": "hero2", "char_green": "hero3", "char_yellow": "hero4", "char_purple": "hero1", "char_orange": "hero2", "char_cyan": "hero3", "char_pink": "hero4"}
+const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0}
+var _spr_cache := {}
+
 const UNIT_SCALE := 118.0
 const PITCH := 0.42   # Neigung zur Kamera (leichte Draufsicht)
 
@@ -249,7 +255,71 @@ func _add_outline(node: Node, mat: Material) -> void:
 
 var _tree_outline: StandardMaterial3D = _outline_mat(1.2, Color(0.06, 0.16, 0.1))
 
+func _spr_frames(set_name: String, anim: String) -> Array:
+	var key := set_name + "_" + anim
+	if _spr_cache.has(key):
+		return _spr_cache[key]
+	var frames: Array = []
+	for i in 40:
+		var path := "res://assets/sprites/%s_%s_%d.png" % [set_name, anim, i]
+		if not ResourceLoader.exists(path):
+			break
+		frames.append(load(path))
+	if frames.is_empty() and anim != "idle":
+		frames = _spr_frames(set_name, "idle")
+	_spr_cache[key] = frames
+	return frames
+
+func _make_sprite_unit(skin: String) -> Dictionary:
+	var pivot := Node3D.new()
+	var yaw := Node3D.new()
+	pivot.add_child(yaw)
+	var holder := Node3D.new()
+	yaw.add_child(holder)
+	var spr := Sprite3D.new()
+	spr.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	spr.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	spr.pixel_size = 1.1 / 256.0
+	spr.shaded = false
+	spr.offset = Vector2(0, -128)
+	holder.add_child(spr)
+	pivot.scale = Vector3.ONE * UNIT_SCALE
+	unit_root.add_child(pivot)
+	return {"pivot": pivot, "yaw": yaw, "model": holder, "ap": null, "hand": null, "skin": skin,
+		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0, "sprite": spr, "set": "", "anim_key": "", "t0": Time.get_ticks_msec()}
+
+func _sprite_update(d: Dictionary, e: Dictionary) -> void:
+	var spr: Sprite3D = d["sprite"]
+	var zombie: bool = str(e.get("look", "")) == "zombie"
+	var set_name: String = "foe2" if zombie else str(SPRITE_HERO.get(str(e.get("skin", d["skin"])), "hero1"))
+	spr.modulate = Color(0.92, 0.95, 1.0) if zombie else Color.WHITE
+	var anim := "idle"
+	if not e.get("alive", true):
+		anim = "death"
+	elif e.get("moving", false) or e.get("jumping", false) or e.get("falling", false):
+		anim = "walk"
+	var key := set_name + "_" + anim
+	if d["anim_key"] != key:
+		d["anim_key"] = key
+		d["t0"] = Time.get_ticks_msec()
+	var frames: Array = _spr_frames(set_name, anim)
+	if frames.is_empty():
+		return
+	var fps: float = float(SPRITE_FPS.get(anim, 8.0))
+	var t: float = (Time.get_ticks_msec() - int(d["t0"])) / 1000.0
+	var idx: int = int(t * fps)
+	if anim == "death":
+		idx = mini(idx, frames.size() - 1)
+	else:
+		idx = idx % frames.size()
+	spr.texture = frames[idx]
+	var aim: Vector2 = e.get("aim", Vector2.DOWN)
+	if absf(aim.x) > 0.2:
+		spr.flip_h = aim.x < 0.0
+
 func _make_unit(skin: String) -> Dictionary:
+	if SPRITE_UNITS and skin != "reaper":
+		return _make_sprite_unit(skin)
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()
 	pivot.add_child(yaw)
@@ -461,6 +531,9 @@ func update_unit(id: String, e: Dictionary) -> void:
 		var s: Vector2 = e["screen"]
 		pivot.position = Vector3(s.x, -s.y + lift, 0.0)
 		pivot.rotation.x = PITCH
+	if d.has("sprite"):
+		_sprite_update(d, e)
+		return
 	var target_yaw := atan2(aim.x, aim.y)
 	d["yaw_t"] = lerp_angle(d["yaw_t"], target_yaw, 0.35)
 	d["yaw"].rotation.y = d["yaw_t"]
