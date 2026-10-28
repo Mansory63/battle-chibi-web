@@ -950,7 +950,7 @@ func on_kill(i: int) -> void:
 			viewers[kname]["kills"] = int(viewers[kname]["kills"]) + 1
 	if OS.get_environment("LIVEDBG") != "" and t < 30.0:
 		print("kill t=", snapped(t, 0.1), " ", b["name"], " killer=", kl, " kw=", (m.bots[kl]["weapon"] if kl >= 0 else "zone"))
-	m.kill_feed.append({"text": ("%s  ›  %s" % [kname, b["name"]]) if kname != "" else ("%s ist geplatzt" % b["name"]), "t": 0.0})
+	m.kill_feed.append({"text": ("%s  ›  %s" % [kname, b["name"]]) if kname != "" else ("%s exploded" % b["name"]), "t": 0.0})
 	if m.kill_feed.size() > 5:
 		m.kill_feed.pop_front()
 	# Comic-Platzen: Konfetti in Teamfarbe plus Farbklecks
@@ -1278,15 +1278,15 @@ func draw_hud(vs: Vector2) -> void:
 	_draw_shop(vs, foot_x, foot_w)
 	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
 	const TIPS := [
-		"Chat: Team-Farbe schreiben (RED, BLUE, GREEN, YELLOW) = Kämpfer für dein Team",
-		"Likes: Likes bringen Kämpfer. Der Balken oben zeigt, wie viele noch fehlen",
-		"Geschenke = Waffen: Rose = Pistole, Ice Cream = AK, Hands = Minigun, Money Gun = Rocket",
-		"Shop im Chat: !heal, !shield, !revive wirkt nur auf den Namen, der geschrieben wurde",
-		"Galaxy-Geschenk = Atombombe. Der Preis steht unten an der Kachel",
-		"Letztes Team, das übrig bleibt, gewinnt. Der Boss muss vor Ablauf besiegt werden",
+		"Chat: type your team color (RED, BLUE, GREEN, YELLOW) = fighters for your team",
+		"Likes = more fighters. The bar on top shows how many likes are left",
+		"Gifts = weapons: Rose = Pistol, Ice Cream = AK, Hands = Minigun, Money Gun = Rocket",
+		"Chat shop: !heal, !shield, !revive only affects the name that was written",
+		"Galaxy gift = atomic bomb. The price is shown on the tile below",
+		"Last team standing wins. The boss must be defeated before time runs out",
 	]
 	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
-	m._text(Vector2(foot_x + 10.0, vs.y - 80), "TIPP: " + str(TIPS[tip_i]), 14 if vs.x >= 620.0 else 12, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x + 10.0, vs.y - 80), "TIP: " + str(TIPS[tip_i]), 14 if vs.x >= 620.0 else 12, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
