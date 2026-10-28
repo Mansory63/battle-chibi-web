@@ -1309,7 +1309,9 @@ func draw_hud(vs: Vector2) -> void:
 	# Kompakte Anleitung, damit Text im Hochformat nicht abgeschnitten wird.
 	var foot_w := minf(vs.x - 20.0, 680.0)
 	var foot_x := (vs.x - foot_w) * 0.5
-	m._pill(Rect2(foot_x, vs.y - 90, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
+	# Hochformat: Tipp-Leiste über dem Shop, damit Joystick und Feuer frei bleiben
+	var foot_y := vs.y - 90.0 if vs.x >= vs.y else vs.y - 396.0
+	m._pill(Rect2(foot_x, foot_y, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	# Shop unten: Kacheln mit Bild und Preisschild (Münzen)
 	_draw_shop(vs, foot_x, foot_w)
 	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
@@ -1328,9 +1330,9 @@ func draw_hud(vs: Vector2) -> void:
 	var tip_font: Font = m.ui_font()
 	while tip_size > 9 and tip_font.get_string_size(tip_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(tip_size * 1.12))).x > foot_w - 24.0:
 		tip_size -= 1
-	m._text(Vector2(foot_x + 10.0, vs.y - 80), tip_txt, tip_size, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(foot_x + 10.0, foot_y + 10.0), tip_txt, tip_size, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
-		m._text(Vector2(foot_x, vs.y - 57), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(foot_x, foot_y + 33.0), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
 		if pause_t > EXPLAIN_TIME:
 			_draw_results(vs)   # Ergebnis der letzten Runde
@@ -1416,7 +1418,8 @@ func _draw_nuke(vs: Vector2) -> void:
 # Shop-Leiste: Hilfsitems oben, Waffen darunter, jede Kachel mit Bild und Preisschild
 func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	# Eine Reihe mit acht Kacheln direkt über der Tipp-Leiste, damit der Kampf frei bleibt
-	var top := vs.y - 186.0
+	# Hochformat: Shop über den Bedienelementen (Joystick, Feuer) statt darüber
+	var top := vs.y - 186.0 if vs.x >= vs.y else vs.y - 330.0
 	# Breite begrenzt, damit die Leiste nicht unter die Aktionsknöpfe rechts reicht
 	fw = minf(fw, 580.0)
 	m._pill(Rect2(fx, top, fw, 92), Color(0.05, 0.06, 0.12, 0.85), 18)
