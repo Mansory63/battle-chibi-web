@@ -53,6 +53,7 @@ Branch: `grafik-overhaul` (Backup des Vorstands: `backup/stand-2026-10-28`). Nic
 - **Web-Build:** lädt ohne Konsolenfehler (Playwright-Test).
 
 ## Offen
-- Sensenmann-Boss: neu gebaut (Kapuze mit Schädel und glühenden Augen, Knochenhände, gebogene Sense, roter Schimmer, schwebt). Nur als Standbild geprüft, nicht im Kampf.
+- Windows-Build: `BattleYaroo-final2.zip` (Stand 28.10., Preset „Windows Desktop“ nur in der Testkopie, nicht im Repo).
+- Sensenmann-Boss: neu gebaut (Kapuze mit Schädel und glühenden Augen, Knochenhände, gebogene Sense, roter Schimmer, schwebt). Im Test: Spawn ab Sekunde 60, Schaden und K.O. mit Punktevergabe funktionieren. Standbild geprüft.
 - Angriffspose für die Sprite-Variante fehlt (3D-Variante hat sie).
 - Echte Leistung auf einem PC mit GPU und Windows-Build auf Windows noch nicht geprüft.
