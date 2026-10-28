@@ -21,7 +21,7 @@ const UNIT_SCALE := 118.0
 const PITCH := 0.42   # Neigung zur Kamera (leichte Draufsicht)
 
 const VIEW_ANGLE := 0.55
-const VIEW_TILT := 0.72
+const VIEW_TILT := 0.80   # ca. 53 Grad unter dem Horizont (Briefing: 50-60)
 var res_scale := 1.0
 const HOUSE_WALL_H := 84.0
 const ROOF_H := 44.0

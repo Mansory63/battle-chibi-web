@@ -36,7 +36,7 @@ const ROOM_LOOT_COUNT := 3
 const ART := "res://assets/art/"
 # Gekippte Kamera: Welt wird gedreht und vertikal gestaucht (Schrägansicht)
 const VIEW_ANGLE := 0.55
-const VIEW_TILT := 0.72
+const VIEW_TILT := 0.80   # ca. 53 Grad unter dem Horizont (Briefing: 50-60)
 const HOUSE_H := 74.0
 const ROADS := [Rect2(0, 820, 4800, 160), Rect2(0, 2620, 4800, 160), Rect2(500, 0, 160, 3600), Rect2(1700, 0, 160, 3600), Rect2(2900, 0, 160, 3600), Rect2(4100, 0, 160, 3600)]
 const TouchControlsScript := preload("res://touch_controls.gd")
