@@ -590,6 +590,15 @@ func update_unit(id: String, e: Dictionary) -> void:
 	pivot.visible = e.get("visible", true)
 	var lift: float = e.get("lift", 0.0)
 	pivot.scale = Vector3.ONE * UNIT_SCALE * float(e.get("scale", 1.0))
+	# Wiedererscheinen: wächst in 0,4 s von 30 % auf volle Größe
+	var now_ms := Time.get_ticks_msec()
+	var alive_now: bool = e.get("alive", true)
+	if alive_now and not d.get("alive_prev3", true):
+		d["spawn3_t"] = now_ms
+	d["alive_prev3"] = alive_now
+	if alive_now and d.has("spawn3_t"):
+		var g := clampf((now_ms - int(d["spawn3_t"])) / 400.0, 0.0, 1.0)
+		pivot.scale *= 0.3 + 0.7 * g
 	if str(e.get("look", "")) == "zombie":
 		# Knochen-Soldaten schlanker: nur Breite und Tiefe verringern
 		pivot.scale = Vector3(pivot.scale.x * 0.7, pivot.scale.y, pivot.scale.z * 0.7)
@@ -622,6 +631,9 @@ func update_unit(id: String, e: Dictionary) -> void:
 		anim = "fall"
 	elif e.get("jumping", false):
 		anim = "jump"
+	elif e.get("victory", false):
+		# Siegerpose: Idle (oder Waffenhaltung) und sanftes Hüpfen
+		anim = "holding-right" if armed else "idle"
 	elif e.get("attacking", false):
 		anim = "attack-melee-right"
 		spd = 1.4
@@ -633,6 +645,11 @@ func update_unit(id: String, e: Dictionary) -> void:
 	elif armed:
 		anim = "holding-right"
 	_play(d, anim, spd)
+	# Siegerpose: Hüpfen am Yaw-Knoten (ändert nicht die Bodenposition)
+	if e.get("victory", false) and alive_now:
+		d["yaw"].position.y = absf(sin(float(now_ms) / 1000.0 * 6.0)) * 0.12 * UNIT_SCALE
+	elif d.has("yaw"):
+		d["yaw"].position.y = 0.0
 	# Rückstoß: Waffe ruckt beim Schießen nach hinten und kippt leicht hoch
 	var wn = d["weapon_node"]
 	if wn != null:
