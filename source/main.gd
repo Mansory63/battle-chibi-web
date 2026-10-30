@@ -1146,6 +1146,11 @@ func _load_textures() -> void:
 		var dt := _load_tex(ART + dn[0] + ".png")
 		if dt:
 			decor.append({"tex": dt, "size": dn[1], "name": dn[0]})
+	# Kenney Mini Forest (CC0): kompakte Bäume, Felsen und Pflanzen als Deko-Sprites
+	for kn in [["kenney/plant", Vector2(30, 30)], ["kenney/stones", Vector2(40, 40)], ["kenney/rocks-low", Vector2(44, 44)], ["kenney/tree", Vector2(56, 56)], ["kenney/tree-high", Vector2(64, 64)]]:
+		var kt := _load_tex(ART + kn[0] + ".png")
+		if kt:
+			decor.append({"tex": kt, "size": kn[1], "name": kn[0]})
 
 # ---------- Licht und Stimmung ----------
 func _setup_visuals() -> void:
@@ -1278,6 +1283,12 @@ func _generate_decor() -> void:
 			continue
 		var pick := randi() % 10
 		var tex_idx := 0
+		# Jeder sechste Platz bekommt eine Kenney-Pflanze oder einen Baum (Index ab 6)
+		if decor.size() > 6 and randi() % 6 == 0:
+			tex_idx = 6 + randi() % (decor.size() - 6)
+			var kent: Dictionary = decor[tex_idx]
+			placed.append({"pos": p, "tex": kent["tex"], "size": kent["size"]})
+			continue
 		if pick < 5:
 			tex_idx = 2 + randi() % 3          # Blumen
 		elif pick < 8:
