@@ -1012,6 +1012,7 @@ func on_kill(i: int) -> void:
 			_say("%s %s" % [tag.to_lower(), kname])
 		if m.bots[kl]["viewer"]:
 			viewers[kname]["kills"] = int(viewers[kname]["kills"]) + 1
+			_board_add(kname)
 	if OS.get_environment("LIVEDBG") != "" and t < 30.0:
 		print("kill t=", snapped(t, 0.1), " ", b["name"], " killer=", kl, " kw=", (m.bots[kl]["weapon"] if kl >= 0 else "zone"))
 	m.kill_feed.append({"text": ("%s  ›  %s" % [kname, b["name"]]) if kname != "" else ("%s exploded" % b["name"]), "t": 0.0})
@@ -1704,6 +1705,51 @@ const HOW_TO_PLAY := [
 	"4. LAST TEAM STANDING WINS",
 ]
 
+# ---- Tages-Rangliste (Kills der Zuschauer pro Name, täglich zurückgesetzt) ----
+const BOARD_PATH := "user://daily_board.cfg"
+var daily_board: Dictionary = {}
+var daily_day := ""
+var daily_loaded := false
+
+func _board_ensure() -> void:
+	var today := Time.get_date_string_from_system()
+	if daily_loaded and daily_day == today:
+		return
+	daily_loaded = true
+	daily_day = today
+	daily_board = {}
+	var cfg := ConfigFile.new()
+	if cfg.load(BOARD_PATH) == OK and str(cfg.get_value("board", "day", "")) == today:
+		daily_board = cfg.get_value("board", "kills", {}).duplicate()
+
+func _board_add(name_: String) -> void:
+	if name_ == "":
+		return
+	_board_ensure()
+	daily_board[name_] = int(daily_board.get(name_, 0)) + 1
+	var cfg := ConfigFile.new()
+	cfg.set_value("board", "day", daily_day)
+	cfg.set_value("board", "kills", daily_board)
+	cfg.save(BOARD_PATH)
+
+func _draw_board(px: float, py: float, pw: float, k: float) -> void:
+	_board_ensure()
+	var rows: Array = []
+	for n_ in daily_board.keys():
+		rows.append([str(n_), int(daily_board[n_])])
+	rows.sort_custom(func(a, b): return a[1] > b[1] if a[1] != b[1] else a[0] < b[0])
+	var lines := mini(5, rows.size())
+	var ph := (34.0 + maxf(1.0, float(lines)) * 24.0 + 14.0) * k
+	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(1.0, 0.8, 0.3, 0.9), 22)
+	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 20)
+	m._text(Vector2(px, py + 8 * k), "RANGLISTE HEUTE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	if rows.is_empty():
+		m._text(Vector2(px, py + 38 * k), "Noch keine Kills heute. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		return
+	for i in lines:
+		var medal: String = ["1.", "2.", "3.", "4.", "5."][i]
+		m._text(Vector2(px + 18, py + (38.0 + 24.0 * i) * k), "%s %s  -  %d" % [medal, str(rows[i][0]).substr(0, 14), rows[i][1]], int(18 * k), Color(1, 0.97, 0.85), pw - 36.0, HORIZONTAL_ALIGNMENT_LEFT)
+
 func _draw_pause_info(vs: Vector2) -> void:
 	# Solange das Pausen-Layer mit Knöpfen sichtbar ist, zeichnet es Titel und Knöpfe selbst
 	if m.pause_layer != null and m.pause_layer.visible:
@@ -1729,6 +1775,7 @@ func _draw_pause_info(vs: Vector2) -> void:
 	for line in HOW_TO_PLAY:
 		m._text(Vector2(px + 14, y), line, int(18 * k), Color(1, 0.97, 0.85), pw - 28.0, HORIZONTAL_ALIGNMENT_CENTER)
 		y += 26.0 * k
+	_draw_board(px, py + ph + 14.0 * k, pw, k)
 
 # Kugel-Balken über dem Knochen-Krieger: jeder Treffer fliegt als Kugel in den nächsten Platz
 func _draw_bullet(p: Vector2, w: float, h: float, col: Color) -> void:

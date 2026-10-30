@@ -796,6 +796,15 @@ func _chibi_pose(d: Dictionary, anim: String, spd: float, armed: bool, alive: bo
 	(arms[1] as Node3D).rotation.x = arm_l
 	model.position.y = bob
 
+# Weiches Gleiten zur Zielposition (Sim-Schritte werden geglättet). Sprünge (Respawn, Teleport) springen direkt.
+func _smooth_pos(d: Dictionary, goal: Vector3, cur: Vector3) -> Vector3:
+	var now := Time.get_ticks_msec()
+	var dt := clampf(float(now - int(d.get("sm_ms", now))) / 1000.0, 0.0, 0.1)
+	d["sm_ms"] = now
+	if cur.distance_to(goal) > 3.0 or dt <= 0.0:
+		return goal
+	return cur.lerp(goal, 1.0 - exp(-14.0 * dt))
+
 # Waffen-Ansatzpunkt in Yaw-Koordinaten (Chibi: Höhe der Waffenhand)
 func _weapon_base(d: Dictionary) -> Vector3:
 	if d.get("chibi", false):
@@ -918,7 +927,8 @@ func update_unit(id: String, e: Dictionary) -> void:
 	if world_mode:
 		# Weltkoordinaten (x, Höhe, y); Figur steht aufrecht, Kamera kippt
 		var wp: Vector2 = e["world"]
-		pivot.position = Vector3(wp.x, lift / cos(pitch_angle), wp.y)
+		var goal := Vector3(wp.x, lift / cos(pitch_angle), wp.y)
+		pivot.position = _smooth_pos(d, goal, pivot.position)
 		pivot.rotation.x = 0.0
 		aim = e.get("aimw", Vector2.DOWN)
 	else:

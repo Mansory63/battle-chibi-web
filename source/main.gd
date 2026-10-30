@@ -2282,7 +2282,7 @@ func _update_bots(delta: float) -> void:
 					if bots[tid]["health"] <= 0.0:
 						_kill_bot(tid, false)
 				b["cd"] = randf_range(0.7, 1.1)
-		elif has_target and dist < eng_r and elapsed > 10.0 and not MELEE.has(b["weapon"]) and not (live_mode and elapsed < 60.0 and dist > 200.0):
+		elif has_target and dist < eng_r and elapsed > 10.0 and not MELEE.has(b["weapon"]) and not (live_mode and elapsed < 20.0 and dist > 200.0):
 			# Teamtaktik nur im Live-Modus: Angriff, Flanke, Deckung, Rueckzug.
 			if live_mode and team >= 1 and team <= 4 and not zomb:
 				step = _live_tactical_step(i, b, tpos, dist, delta)
