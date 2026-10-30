@@ -10,6 +10,12 @@ const SKIN_MODELS := {
 	"char_cyan": "character-female-c", "char_pink": "character-female-d",
 }
 # Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
+# Quaternius (CC0): Basisfigur mit Animationen aus der Universal Animation Library. Schalter: false = alte Figuren
+const QUAT_UNITS := true
+const QUAT_BASE := "res://assets/3d/quat/Superhero_Male_FullBody.gltf"
+const QUAT_LIB := "res://assets/anim/UAL1_Standard.glb"
+const QUAT_ANIM := {"idle": "Idle", "walk": "Walk", "sprint": "Sprint", "holding-right": "Pistol_Idle", "holding-right-shoot": "Pistol_Shoot", "attack-melee-right": "Sword_Attack", "die": "Death01", "fall": "Jump_Loop", "jump": "Jump_Start"}
+var quat_lib: AnimationLibrary = null
 const SPRITE_UNITS := false   # alte 3D-Figuren (wurden als besser bewertet); Sprite-Figuren auf true setzen
 const SPRITE_HERO := {"char_player": "hero1", "char_red": "hero2", "char_green": "hero3", "char_yellow": "hero4", "char_purple": "hero1", "char_orange": "hero2", "char_cyan": "hero3", "char_pink": "hero4"}
 const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0, "hit": 12.0}
@@ -399,17 +405,42 @@ func _make_unit(skin: String) -> Dictionary:
 	var model: Node3D
 	if skin == "reaper":
 		model = _build_reaper()
+	elif QUAT_UNITS:
+		model = load(QUAT_BASE).instantiate()
+		var qap := AnimationPlayer.new()
+		qap.name = "QuatAnim"
+		model.add_child(qap)
+		qap.root_node = NodePath("..")
+		qap.add_animation_library("", _quat_library())
 	else:
 		model = _scene_for(skin).instantiate()
 	yaw.add_child(model)
-	_add_outline(model, _outline_mat(0.03))
+	# Brawl-Stars-Look: dickere Outline, bei Quaternius-Figuren etwas kräftiger
+	_add_outline(model, _outline_mat(0.06 if (QUAT_UNITS and skin != "reaper") else 0.03))
 	pivot.scale = Vector3.ONE * UNIT_SCALE
 	unit_root.add_child(pivot)
-	var ap: AnimationPlayer = model.find_child("AnimationPlayer", true, false) if skin != "reaper" else null
+	var ap: AnimationPlayer = null
+	if skin != "reaper":
+		ap = model.find_child("AnimationPlayer", true, false)
+		if QUAT_UNITS and skin != "reaper":
+			ap = model.get_node("QuatAnim") as AnimationPlayer
 	var hand: Node3D = model.find_child("arm-right", true, false) if skin != "reaper" else null
 	var d := {"pivot": pivot, "yaw": yaw, "model": model, "ap": ap, "hand": hand, "skin": skin,
-		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0}
+		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0, "quat": QUAT_UNITS and skin != "reaper"}
 	return d
+
+# Animationen aus der Universal Animation Library einmal laden und zwischenspeichern
+func _quat_library() -> AnimationLibrary:
+	if quat_lib != null:
+		return quat_lib
+	quat_lib = AnimationLibrary.new()
+	var src: Node = load(QUAT_LIB).instantiate()
+	var sap: AnimationPlayer = src.find_child("AnimationPlayer", true, false)
+	for real in QUAT_ANIM.values():
+		if sap != null and sap.has_animation(real):
+			quat_lib.add_animation(real, sap.get_animation(real).duplicate())
+	src.free()
+	return quat_lib
 
 # Sensenmann-Boss aus einfachen Formen: schwarze Kutte, Kapuze, glühende Augen, Sense
 func _reaper_mat(col: Color, emis := Color(0, 0, 0), rough := 0.9) -> StandardMaterial3D:
@@ -545,10 +576,11 @@ func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
 		return
 	if d["anim"] != anim:
 		d["anim"] = anim
-		if ap.has_animation(anim):
-			var a := ap.get_animation(anim)
+		var real: String = str(QUAT_ANIM.get(anim, anim)) if d.get("quat", false) else anim
+		if ap.has_animation(real):
+			var a := ap.get_animation(real)
 			a.loop_mode = Animation.LOOP_NONE if anim == "die" else Animation.LOOP_LINEAR
-			ap.play(anim, 0.12)
+			ap.play(real, 0.12)
 	ap.speed_scale = speed
 
 # Ohne Waffe: Hand in Hautfarbe statt Boxhandschuh; mit Waffe wieder normal
