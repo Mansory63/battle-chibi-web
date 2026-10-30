@@ -96,6 +96,7 @@ var say_t := 0.0
 var ws: WebSocketPeer = null
 var ws_url := ""
 var ws_open := false
+var ws_next_try := 0   # Millisekunden: nächster Verbindungsversuch (max. alle 2 s)
 var arena_small := false
 var arena_r := START_R
 var zone_speed := 1.0   # Schrumpf-Tempo: 0.5 = halb so schnell, 2.0 = doppelt so schnell
@@ -1071,7 +1072,8 @@ func _poll_ws() -> void:
 	if ws_open:
 		while ws.get_available_packet_count() > 0:
 			_ingest_text(ws.get_packet().get_string_from_utf8())
-	elif st == WebSocketPeer.STATE_CLOSED:
+	elif st == WebSocketPeer.STATE_CLOSED and Time.get_ticks_msec() >= ws_next_try:
+		ws_next_try = Time.get_ticks_msec() + 2000
 		ws.connect_to_url(ws_url)
 
 # ---------- Demo und Testtasten ----------
