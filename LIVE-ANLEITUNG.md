@@ -4,7 +4,7 @@
 - Im Menü links unten auf **LIVE-MODUS** tippen, oder die Seite mit `?live=1` öffnen:
   `https://mansory63.github.io/battle-chibi-web/?live=1`
 - `&demo=1` startet simulierte Zuschauer (zum Ausprobieren ohne TikTok).
-- `&ws=ws://localhost:8765` verbindet das Spiel mit dem Relay (siehe unten).
+- `&ws=ws://127.0.0.1:8765` verbindet das Spiel mit dem Relay (siehe unten).
 
 ## Ablauf
 4 Teams (Rot, Blau, Grün, Gelb) mit je 12 Kämpfern, Runde 5 Minuten, 20 s Pause, danach automatisch die nächste.
