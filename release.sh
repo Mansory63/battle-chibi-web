@@ -16,7 +16,12 @@ mkdir -p ../build/web
 B=../build/web
 cp $B/index.html $B/index.js $B/index.pck $B/index.png $B/index.wasm $B/index.icon.png $B/index.apple-touch-icon.png $B/index.audio.worklet.js $B/index.audio.position.worklet.js "$REPO"/
 # Nur die Quelldateien aus dem Projektordner; keine Root-Kopien
-cp "$PROJ"/*.gd "$PROJ"/project.godot "$PROJ"/export_presets.cfg "$REPO"/source/
+# Nur Spielcode: Test-, Screenshot- und Render-Skripte bleiben lokal (nicht im Repo)
+for f in "$PROJ"/*.gd; do
+  case "$(basename "$f")" in test_*|shot_*|render_*) continue ;; esac
+  cp "$f" "$REPO"/source/
+done
+cp "$PROJ"/project.godot "$PROJ"/export_presets.cfg "$REPO"/source/
 echo "{\"v\": \"$BUILD\"}" > "$REPO"/version.json
 cd "$REPO"
 git add index.html index.js index.pck index.png index.wasm index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js version.json source
