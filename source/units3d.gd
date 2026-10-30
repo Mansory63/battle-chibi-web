@@ -407,6 +407,17 @@ func _make_unit(skin: String) -> Dictionary:
 		model = _build_reaper()
 	elif QUAT_UNITS:
 		model = load(QUAT_BASE).instantiate()
+		# Brawl-Stars-Look: Cel-Shading (harte Schattenkanten) und leicht gestauchte Chibi-Proportionen
+		model.scale = Vector3(1.12, 0.92, 1.12)
+		for mi in model.find_children("*", "MeshInstance3D", true, false):
+			var mesh_i := mi as MeshInstance3D
+			for si in range(mesh_i.get_surface_override_material_count() if mesh_i.get_surface_override_material_count() > 0 else (mesh_i.mesh.get_surface_count() if mesh_i.mesh else 0)):
+				var src_mat = mesh_i.get_active_material(si)
+				if src_mat is StandardMaterial3D:
+					var toon := (src_mat as StandardMaterial3D).duplicate() as StandardMaterial3D
+					toon.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+					toon.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+					mesh_i.set_surface_override_material(si, toon)
 		var qap := AnimationPlayer.new()
 		qap.name = "QuatAnim"
 		model.add_child(qap)

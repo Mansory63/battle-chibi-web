@@ -57,3 +57,17 @@ Branch: `grafik-overhaul` (Backup des Vorstands: `backup/stand-2026-10-28`). Nic
 - Sensenmann-Boss: neu gebaut (Kapuze mit Schädel und glühenden Augen, Knochenhände, gebogene Sense, roter Schimmer, schwebt). Im Test: Spawn ab Sekunde 60, Schaden und K.O. mit Punktevergabe funktionieren. Standbild geprüft.
 - Angriffspose für die Sprite-Variante fehlt (3D-Variante hat sie).
 - Echte Leistung auf einem PC mit GPU und Windows-Build auf Windows noch nicht geprüft.
+
+## Stand 30.10. (Nachtrag 2)
+- **Kämpfer-Figuren:** Quaternius „Universal Base Characters“ (CC0) mit Animationen aus der „Universal Animation Library“ (CC0). Schalter `QUAT_UNITS` in `units3d.gd` (true = neue Figuren, false = alte). Abbildung der Spiel-Animationen in `QUAT_ANIM`. Dateien: `source/assets/3d/quat/`, `source/assets/anim/`.
+- **Stil:** dickere Outline (0.06), Toon-Diffuse (Cel-Shading), leichte Stauchung für Chibi-Proportion (Skala 1.12 / 0.92 / 1.12).
+- **Tests:** `test_commands.gd` 28/28, Screenshot im Hochformat geprüft (Figuren animiert, keine T-Pose).
+- **Build:** `BattleYaroo-final8.zip` (Outline) erstellt; final9 mit Cel-Shading kommt separat.
+- **Lokaler Commit** `89867a5` (ohne Push). Gepusht wird nur nach ausdrücklicher Freigabe.
+- **Fehler behoben:** Animationen hingen am falschen AnimationPlayer (`find_child` fand den leeren aus der glTF-Datei) → jetzt eigener Knoten `QuatAnim`.
+
+### Offen (Stand 30.10.)
+- Echter Kopf-Vergrößerung (Chibi) fehlt: braucht Knochenanpassung am Skelett, nur Gesamtskalierung umgesetzt.
+- Web-Build (GitHub Pages) veraltet, Veröffentlichung nur nach Freigabe.
+- Real-Leistung und Handy-Ansicht der Quaternius-Figuren noch nicht geprüft.
+- Junk-Datei `C:\Users\Salon\Downloads\kenney-mini-forest.zip` (162 Byte) vom Nutzer zu löschen.
