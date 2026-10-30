@@ -11,7 +11,7 @@ const SKIN_MODELS := {
 }
 # Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
 # Quaternius (CC0): Basisfigur mit Animationen aus der Universal Animation Library. Schalter: false = alte Figuren
-const QUAT_UNITS := true
+const QUAT_UNITS := false
 const QUAT_BASE := "res://assets/3d/quat/Superhero_Male_FullBody.gltf"
 const QUAT_LIB := "res://assets/anim/UAL1_Standard.glb"
 const QUAT_ANIM := {"idle": "Idle", "walk": "Walk", "sprint": "Sprint", "holding-right": "Pistol_Idle", "holding-right-shoot": "Pistol_Shoot", "attack-melee-right": "Sword_Attack", "die": "Death01", "fall": "Jump_Loop", "jump": "Jump_Start"}
