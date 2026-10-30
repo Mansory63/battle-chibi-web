@@ -12,6 +12,11 @@ const SKIN_MODELS := {
 # Figuren als gezeichnete 2D-Sprites (CC0, RGSDev): Cartoon-Stil statt Grundformen
 # Quaternius (CC0): Basisfigur mit Animationen aus der Universal Animation Library. Schalter: false = alte Figuren
 const QUAT_UNITS := false
+# Brawl-Stars-Stil aus Grundformen (prozedural): großer Kopf, kleiner Körper, Teamfarbe, dicke Outline.
+# true = Chibi-Figuren für alle Nicht-Reaper. false = vorherige Modelle.
+const CHIBI_UNITS := true
+const CHIBI_SCALE := 0.68   # Modellhöhe ca. 0,67 wie das alte Kenney-Modell, damit die Figur gleich groß bleibt
+const CHIBI_HAIR := {"char_player": Color(0.2, 0.13, 0.08), "char_red": Color(0.1, 0.08, 0.08), "char_green": Color(0.95, 0.8, 0.35), "char_yellow": Color(0.75, 0.35, 0.12), "char_purple": Color(0.32, 0.12, 0.36), "char_orange": Color(0.55, 0.3, 0.15), "char_cyan": Color(0.12, 0.12, 0.16), "char_pink": Color(0.95, 0.5, 0.6)}
 const QUAT_BASE := "res://assets/3d/quat/Superhero_Male_FullBody.gltf"
 const QUAT_LIB := "res://assets/anim/UAL1_Standard.glb"
 const QUAT_ANIM := {"idle": "Idle", "walk": "Walk", "sprint": "Sprint", "holding-right": "Pistol_Idle", "holding-right-shoot": "Pistol_Shoot", "attack-melee-right": "Sword_Attack", "die": "Death01", "fall": "Jump_Loop", "jump": "Jump_Start"}
@@ -22,6 +27,12 @@ const SPRITE_FPS := {"idle": 8.0, "walk": 12.0, "death": 10.0, "hit": 12.0}
 # Waffen-Sprites (CC0): Pistole, Gewehr, schwere Waffe. Nahkampfwaffen werden nicht angezeigt
 const WEAPON_SPR := {"pistol": "weapon1", "smg": "weapon1", "ak": "weapon2", "shotgun": "weapon2", "sniper": "weapon2", "minigun": "weapon3", "rocket": "weapon3"}
 var _spr_cache := {}
+var _chibi_meshes := {}
+var _chibi_mats := {}
+var _chibi_face_m: ArrayMesh = null
+var _chibi_vc_m: StandardMaterial3D = null
+var _chibi_ol: StandardMaterial3D = null
+var _chibi_sh: StandardMaterial3D = null
 
 const UNIT_SCALE := 118.0
 const PITCH := 0.42   # Neigung zur Kamera (leichte Draufsicht)
@@ -399,6 +410,8 @@ func _sprite_update(d: Dictionary, e: Dictionary) -> void:
 func _make_unit(skin: String) -> Dictionary:
 	if SPRITE_UNITS:
 		return _make_sprite_unit(skin)
+	if CHIBI_UNITS and skin != "reaper":
+		return _make_chibi_unit(skin)
 	var pivot := Node3D.new()
 	var yaw := Node3D.new()
 	pivot.add_child(yaw)
@@ -585,6 +598,210 @@ func _build_reaper() -> Node3D:
 		_reaper_part(root, seg, blade_mat, Vector3(p.x, p.y, 0.12), Vector3(0, 0, am - PI * 0.5))
 	return root
 
+# ---------- Chibi-Figuren (Brawl-Stil) aus Grundformen ----------
+# Maßstab: Körperhöhe 1,0 (Modell wird mit CHIBI_SCALE skaliert). Kopf ca. 45 % der Höhe, Blick nach +Z wie die Waffen.
+# Beine und Arme sind eigene Gelenke; _chibi_pose bewegt sie je nach Zustand aus update_unit.
+func _chibi_prim(kind: String, dims: Vector3) -> Mesh:
+	var key := "%s%s" % [kind, str(dims)]
+	if _chibi_meshes.has(key):
+		return _chibi_meshes[key]
+	var m: Mesh
+	if kind == "sphere":
+		var sm := SphereMesh.new()
+		sm.radius = dims.x
+		sm.height = dims.x * 2.0
+		sm.radial_segments = 20
+		sm.rings = 10
+		m = sm
+	elif kind == "caps":
+		# Kapsel mit runden Enden: die Outline bekommt dort keine Spitzen
+		var cap := CapsuleMesh.new()
+		cap.radius = dims.x
+		cap.height = dims.y
+		cap.radial_segments = 12
+		cap.rings = 4
+		m = cap
+	else:
+		var bm := BoxMesh.new()
+		bm.size = dims
+		m = bm
+	_chibi_meshes[key] = m
+	return m
+
+# Toon-Material (harte Schattenkanten, kein Glanz); gleiche Farben teilen sich alle Figuren
+func _chibi_mat(col: Color) -> StandardMaterial3D:
+	var key := str(col)
+	if not _chibi_mats.has(key):
+		var m := StandardMaterial3D.new()
+		m.albedo_color = col
+		m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+		m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		m.roughness = 1.0
+		_chibi_mats[key] = m
+	return _chibi_mats[key]
+
+func _chibi_vc() -> StandardMaterial3D:
+	if _chibi_vc_m == null:
+		_chibi_vc_m = StandardMaterial3D.new()
+		_chibi_vc_m.vertex_color_use_as_albedo = true
+		_chibi_vc_m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+		_chibi_vc_m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		_chibi_vc_m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_chibi_vc_m.roughness = 1.0
+	return _chibi_vc_m
+
+# Bodenschatten: weicher, halbtransparenter Fleck unter der Figur
+func _chibi_shadow() -> StandardMaterial3D:
+	if _chibi_sh == null:
+		_chibi_sh = StandardMaterial3D.new()
+		_chibi_sh.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_chibi_sh.albedo_color = Color(0.05, 0.05, 0.08, 0.38)
+		_chibi_sh.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	return _chibi_sh
+
+func _chibi_outline() -> StandardMaterial3D:
+	if _chibi_ol == null:
+		_chibi_ol = _outline_mat(0.05)
+	return _chibi_ol
+
+# Gesicht: Augen, Glanzlichter, Wangen, Mund als eine geteilte Vertex-Color-Fläche
+func _chibi_face() -> ArrayMesh:
+	if _chibi_face_m == null:
+		var st := _new_st()
+		for sx in [-1.0, 1.0]:
+			var ex: float = sx * 0.085
+			_add_sphere(st, Vector3(ex, 0.79, 0.2), 0.042, Color(0.08, 0.06, 0.08), 1.2)
+			_add_sphere(st, Vector3(ex + 0.014, 0.8, 0.228), 0.013, Color(1, 1, 1), 1.0)
+			_add_sphere(st, Vector3(sx * 0.14, 0.715, 0.17), 0.045, Color(1.0, 0.55, 0.55), 0.6)
+		_add_box(st, Vector3(0, 0.7, 0.215), Vector3(0.06, 0.014, 0.02), Color(0.45, 0.12, 0.12))
+		_chibi_face_m = st.commit()
+	return _chibi_face_m
+
+func _chibi_hair(skin: String) -> Color:
+	return CHIBI_HAIR.get(skin, Color(0.2, 0.13, 0.08))
+
+func _cpart(parent: Node3D, mesh: Mesh, mat: Material, pos: Vector3, scl := Vector3.ONE) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = pos
+	mi.scale = scl
+	parent.add_child(mi)
+	return mi
+
+func _cjoint(parent: Node3D, pos: Vector3) -> Node3D:
+	var n := Node3D.new()
+	n.position = pos
+	parent.add_child(n)
+	return n
+
+func _make_chibi_unit(skin: String) -> Dictionary:
+	var pivot := Node3D.new()
+	var yaw := Node3D.new()
+	pivot.add_child(yaw)
+	var model := Node3D.new()
+	model.scale = Vector3.ONE * CHIBI_SCALE
+	yaw.add_child(model)
+	var skin_c := Color(0.99, 0.84, 0.7)
+	var pants := Color(0.2, 0.23, 0.36)
+	var shoe := Color(0.16, 0.11, 0.09)
+	# Kopf (groß), Haare, Gesicht
+	var head := _cpart(model, _chibi_prim("sphere", Vector3(0.225, 0, 0)), _chibi_mat(skin_c), Vector3(0, 0.775, 0))
+	_cpart(model, _chibi_prim("sphere", Vector3(0.235, 0, 0)), _chibi_mat(_chibi_hair(skin)), Vector3(0, 0.9, -0.02), Vector3(1.0, 0.55, 1.04))
+	var face := _cpart(model, _chibi_face(), _chibi_vc(), Vector3.ZERO)
+	# Körper: Oberteil in Teamfarbe, Gürtel und Hose
+	var torso := _cpart(model, _chibi_prim("box", Vector3(0.3, 0.24, 0.2)), _chibi_mat(Color.WHITE), Vector3(0, 0.44, 0))
+	var belt := _cpart(model, _chibi_prim("box", Vector3(0.31, 0.035, 0.21)), _chibi_mat(pants), Vector3(0, 0.325, 0))
+	_cpart(model, _chibi_prim("box", Vector3(0.28, 0.12, 0.19)), _chibi_mat(pants), Vector3(0, 0.27, 0))
+	# Beine und Arme als Gelenke (Ursprung an Hüfte bzw. Schulter); Index 0 = rechts (-X, Waffenarm)
+	var legs: Array = []
+	var arms: Array = []
+	var hands: Array = []
+	var sleeves: Array = []
+	for sx in [-1.0, 1.0]:
+		var lj := _cjoint(model, Vector3(sx * 0.075, 0.23, 0))
+		_cpart(lj, _chibi_prim("caps", Vector3(0.065, 0.2, 0)), _chibi_mat(pants), Vector3(0, -0.1, 0))
+		_cpart(lj, _chibi_prim("box", Vector3(0.14, 0.07, 0.2)), _chibi_mat(shoe), Vector3(0, -0.195, 0.02))
+		legs.append(lj)
+	for sx in [-1.0, 1.0]:
+		var aj := _cjoint(model, Vector3(sx * 0.19, 0.5, 0))
+		sleeves.append(_cpart(aj, _chibi_prim("caps", Vector3(0.062, 0.22, 0)), _chibi_mat(Color.WHITE), Vector3(0, -0.11, 0)))
+		hands.append(_cpart(aj, _chibi_prim("sphere", Vector3(0.065, 0, 0)), _chibi_mat(skin_c), Vector3(0, -0.25, 0)))
+		arms.append(aj)
+	# Bodenschatten am Yaw-Knoten (bleibt beim Umfallen liegen)
+	_cpart(yaw, _chibi_prim("cyl", Vector3(0.2, 0.01, 0)), _chibi_shadow(), Vector3(0, 0.004, 0), Vector3(1, 1, 0.8))
+	# Dicke Outline; das Gesicht bekommt keine (sonst frisst sie Augen und Wangen)
+	_add_outline(model, _chibi_outline())
+	face.material_overlay = null
+	pivot.scale = Vector3.ONE * UNIT_SCALE
+	unit_root.add_child(pivot)
+	var tint_nodes: Array = [torso] + sleeves
+	return {"pivot": pivot, "yaw": yaw, "model": model, "ap": null, "hand": null, "skin": skin,
+		"weapon": "", "weapon_node": null, "anim": "", "yaw_t": 0.0, "quat": false, "chibi": true,
+		"legs": legs, "arms": arms, "tint_nodes": tint_nodes, "dark_nodes": [belt], "skin_nodes": [head] + hands}
+
+# Teamfarbe (oder Zombie-Grün/Grau) auf Oberteil, Ärmel, Gürtel und Haut
+func _chibi_look(d: Dictionary, look: String, tint: Color) -> void:
+	var zombie := look == "zombie"
+	var body := Color(0.36, 0.42, 0.34) if zombie else tint
+	var sk := Color(0.66, 0.8, 0.6) if zombie else Color(0.99, 0.84, 0.7)
+	for n in d["tint_nodes"]:
+		(n as MeshInstance3D).material_override = _chibi_mat(body)
+	for n in d["dark_nodes"]:
+		(n as MeshInstance3D).material_override = _chibi_mat(body.darkened(0.45))
+	for n in d["skin_nodes"]:
+		(n as MeshInstance3D).material_override = _chibi_mat(sk)
+
+# Animation ohne AnimationPlayer: Beine und Arme pendeln je nach Zustand aus update_unit
+func _chibi_pose(d: Dictionary, anim: String, spd: float, armed: bool, alive: bool, now_ms: int, kick: float) -> void:
+	var model: Node3D = d["model"]
+	if not alive:
+		# Sterben: kippt nach hinten (0,35 s) und bleibt liegen
+		if not d.has("die_t"):
+			d["die_t"] = now_ms
+		var k := clampf((now_ms - int(d["die_t"])) / 350.0, 0.0, 1.0)
+		model.rotation.x = -PI * 0.5 * k
+		return
+	d.erase("die_t")
+	model.rotation.x = 0.0
+	var t := float(now_ms) / 1000.0
+	var ph := t * 9.0 * spd
+	var leg := 0.0
+	var arm_l := sin(t * 2.2) * 0.05   # Ruhepose: leichtes Atmen
+	var arm_r := arm_l
+	var bob := 0.0
+	match anim:
+		"walk", "sprint":
+			var s := sin(ph)
+			leg = s * 0.8
+			arm_l = -s * 0.7
+			arm_r = -1.45 if armed else s * 0.7
+			bob = absf(s) * 0.03
+		"holding-right", "holding-right-shoot":
+			arm_r = -1.45 + 0.2 * kick   # Waffe nach vorn, Rückstoß zieht den Arm zurück
+		"attack-melee-right":
+			arm_r = -2.4 + 1.8 * (0.5 + 0.5 * sin(ph))
+		"fall":
+			arm_l = -2.6
+			arm_r = -2.6
+		"jump":
+			leg = -0.5
+			arm_l = -2.6
+			arm_r = -2.6
+	var legs: Array = d["legs"]
+	var arms: Array = d["arms"]
+	(legs[0] as Node3D).rotation.x = leg
+	(legs[1] as Node3D).rotation.x = -leg
+	(arms[0] as Node3D).rotation.x = arm_r
+	(arms[1] as Node3D).rotation.x = arm_l
+	model.position.y = bob
+
+# Waffen-Ansatzpunkt in Yaw-Koordinaten (Chibi: Höhe der Waffenhand)
+func _weapon_base(d: Dictionary) -> Vector3:
+	if d.get("chibi", false):
+		return Vector3(-0.19, 0.5, 0.12) * CHIBI_SCALE
+	return Vector3(-0.13, 0.27, 0.09)
+
 func _play(d: Dictionary, anim: String, speed := 1.0) -> void:
 	var ap: AnimationPlayer = d["ap"]
 	if ap == null:
@@ -629,7 +846,7 @@ func _set_weapon(d: Dictionary, kind: String) -> void:
 	var w := _build_weapon(kind)
 	# Arm-Knoten ist klein skaliert/gedreht; Waffe in Modellraum am Körper befestigen
 	var holder: Node3D = d["yaw"]
-	w.position = Vector3(-0.13, 0.27, 0.09)
+	w.position = _weapon_base(d)
 	w.scale = Vector3.ONE * 0.95
 	holder.add_child(w)
 	d["weapon_node"] = w
@@ -641,6 +858,9 @@ func _apply_look(d: Dictionary, look: String, tint: Color) -> void:
 	if d.get("lk", "") == key:
 		return
 	d["lk"] = key
+	if d.get("chibi", false):
+		_chibi_look(d, look, tint)
+		return
 	_walk_look(d["model"], look, tint)
 
 func _walk_look(n: Node, look: String, tint: Color) -> void:
@@ -754,8 +974,11 @@ func update_unit(id: String, e: Dictionary) -> void:
 		else:
 			k = move_toward(k, 0.0, 0.2)
 		d["kick"] = k
-		wn.position = Vector3(-0.13, 0.27, 0.09 - 0.06 * k)
+		var wb := _weapon_base(d)
+		wn.position = Vector3(wb.x, wb.y, wb.z - 0.06 * k)
 		wn.rotation.x = -0.18 * k
+	if d.get("chibi", false):
+		_chibi_pose(d, anim, spd, armed, alive_now, now_ms, float(d.get("kick", 0.0)))
 
 # Nach dem Aktualisieren aller Einheiten: nicht mehr gesehene aufräumen
 func begin_frame() -> void:
