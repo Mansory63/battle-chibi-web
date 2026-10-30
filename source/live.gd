@@ -1254,6 +1254,9 @@ func draw_hud(vs: Vector2) -> void:
 	vs = vs / ui
 	# Spielregeln während der Pause
 	# Kopfleiste: Countdown + Teams
+	# Hochformat: Minimap aus, damit die Kopfleiste mittig und symmetrisch bleibt
+	if m.minimap != null:
+		m.minimap.visible = vs.x >= vs.y
 	var w := minf(vs.x - 24.0, 760.0)
 	var x0 := vs.x * 0.5 - w * 0.5
 	var left := maxf(0.0, ROUND_TIME - t) if state == "round" else 0.0
@@ -1269,13 +1272,13 @@ func draw_hud(vs: Vector2) -> void:
 		m._pill(Rect2(cx, cy, cw, 66), Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.88), 14)
 		m._text(Vector2(cx + 10, cy + 19), TEAM_NAMES[k], 17, col, cw - 12.0)
 		var score_line := ("%d · %d K" % [alive_t[k], round_kills[k]]) if vs.x < 620.0 else ("%d alive · %d kills · %d rnd%s" % [alive_t[k], round_kills[k], team_points[k], ("  🔥x%d" % streak) if (streak_team == k and streak >= 2) else ""])
-		m._text(Vector2(cx + 10, cy + 37), score_line, 12 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
+		m._text(Vector2(cx + 10, cy + 37), score_line, 14 if vs.x < 620.0 else 14, Color.WHITE, cw - 12.0)
 		# Countdown: Balken und Zahl bis zum nächsten Verstärkungs-Kämpfer (Likes)
 		var into: int = int(team_total_likes[k]) % REINFORCE_EVERY
 		var likes_left: int = REINFORCE_EVERY - into
 		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, cw - 8.0, 5.0), Color(0.05, 0.05, 0.1, 0.85))
 		m.fx.draw_rect(Rect2(cx + 4.0, cy + 47.0, (cw - 8.0) * float(into) / float(REINFORCE_EVERY), 5.0), col)
-		m._text(Vector2(cx + 4.0, cy + 54.0), "+1 in %d likes" % likes_left, 11, Color(0.95, 0.95, 1.0), cw - 8.0)
+		m._text(Vector2(cx + 4.0, cy + 54.0), "+1 in %d likes" % likes_left, 12, Color(0.95, 0.95, 1.0), cw - 8.0)
 	var boss: Dictionary = m.bots[SLOTS * 4]
 	if boss["alive"] and boss["boss"]:
 		var bw := minf(vs.x - 40.0, 420.0)
@@ -1457,6 +1460,8 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	var top := vs.y - 186.0 if vs.x >= vs.y else vs.y - 330.0
 	# Breite begrenzt, damit die Leiste nicht unter die Aktionsknöpfe rechts reicht
 	fw = minf(fw, 580.0)
+	# Immer exakt mittig, unabhängig vom übergebenen Versatz
+	fx = (vs.x - fw) * 0.5
 	m._pill(Rect2(fx, top, fw, 92), Color(0.05, 0.06, 0.12, 0.85), 18)
 	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
 	var guns := ["pistol", "ak", "minigun", "rocket"]   # die vier Waffen zur Auswahl
