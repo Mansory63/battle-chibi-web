@@ -1461,11 +1461,11 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
 	var guns := ["pistol", "ak", "minigun", "rocket"]   # die vier Waffen zur Auswahl
 	# Preis der Waffe = das Geschenk, das sie bringt
-	var gift_tag := {"pistol": "Rose", "smg": "TikTok", "shotgun": "Finger Heart", "ak": "Ice Cream", "sniper": "GG", "minigun": "Hand Hearts", "rocket": "Money Gun"}
+	var gift_tag := {"pistol": "ROSE", "smg": "TIKTOK", "shotgun": "HEART", "ak": "ICE", "sniper": "GG", "minigun": "HANDS", "rocket": "MONEY"}
 	var tw := minf(96.0, (fw - 16.0) / 8.0)
 	var x0 := fx + (fw - 8.0 * tw) * 0.5
 	for k in util.size():
-		_shop_tile(Vector2(x0 + k * tw, top + 6.0), tw - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "GALAXY")
+		_shop_tile(Vector2(x0 + k * tw, top + 6.0), tw - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "NUKE")
 	for k in guns.size():
 		_shop_tile(Vector2(x0 + (k + 4) * tw, top + 6.0), tw - 6.0, guns[k], str(gift_tag[guns[k]]))
 
@@ -1578,7 +1578,7 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(1, 0.85, 0.25), false, 1.5)
 	# Passt der Name nicht ins Preisschild, läuft er als Laufschrift durch
 	var fs := 16 if label.length() <= 4 else 13
-	var room := maxi(1, int((w - 4.0) / (fs * 0.6)))
+	var room := maxi(1, int((w - 4.0) / (fs * 0.8)))
 	if label.length() <= room:
 		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), label, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 	else:

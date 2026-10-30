@@ -453,7 +453,7 @@ var _ui_font_cache: Font = null
 # Schrift der Oberfläche: Kenney Future (CC0), sonst Standardschrift
 func ui_font() -> Font:
 	if _ui_font_cache == null:
-		var f = load("res://assets/fonts/kenney_future.ttf")
+		var f = load("res://assets/fonts/lilita_one.ttf")
 		_ui_font_cache = f if f is Font else ThemeDB.fallback_font
 	return _ui_font_cache
 
