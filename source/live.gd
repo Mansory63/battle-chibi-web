@@ -1578,19 +1578,15 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 				var k2 := minf((w - 12.0) / ts.x, (h - 24.0) / ts.y)
 				var sz := ts * k2
 				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
-	# Preisschild: dunkle Leiste mit heller, gut lesbarer Schrift
-	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(0.06, 0.08, 0.16))
-	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - 21.0, w - 4.0, 19.0), Color(1, 0.85, 0.25), false, 1.5)
-	# Passt der Name nicht ins Preisschild, läuft er als Laufschrift durch
-	var fs := 16 if label.length() <= 4 else 13
-	var room := maxi(1, int((w - 4.0) / (fs * 0.8)))
-	if label.length() <= room:
-		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), label, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
-	else:
-		var full := label + "   "
-		var start := int(Time.get_ticks_msec() / 180.0) % full.length()
-		var win := (full + full).substr(start, room)
-		m._text(Vector2(p.x + 2.0, p.y + h - 20.0), win, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_LEFT)
+	# Preisschild: feste Leiste, Schrift wird passend verkleinert, nie abgeschnitten
+	var bar_h := 22.0
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - bar_h - 2.0, w - 4.0, bar_h), Color(0.06, 0.08, 0.16))
+	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - bar_h - 2.0, w - 4.0, bar_h), Color(1, 0.85, 0.25), false, 1.5)
+	var font: Font = m.ui_font()
+	var fs := 15
+	while fs > 8 and font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > w - 10.0:
+		fs -= 1
+	m._text(Vector2(p.x + 2.0, p.y + h - bar_h + 2.0), label, fs, Color(1, 0.95, 0.6), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _coin_bar(center: Vector2, coins: int) -> void:
 	var stages := [5, 10, 15]

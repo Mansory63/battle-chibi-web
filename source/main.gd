@@ -867,7 +867,13 @@ func _load_save() -> void:
 		reduced_fx = bool(cfg.get_value("settings", "reduced_fx", false))
 		quality = clampi(int(cfg.get_value("settings", "quality", 1)), 0, 2)
 		hardcore = bool(cfg.get_value("settings", "hardcore", false))
-		map_theme = int(cfg.get_value("settings", "map_theme", 3)) % 4
+		# Dunkle Karte ist Standard; eine alte gespeicherte Wahl wird einmalig überschrieben
+		if bool(cfg.get_value("settings", "dark_default_v2", false)):
+			map_theme = int(cfg.get_value("settings", "map_theme", 3)) % 4
+		else:
+			map_theme = 3
+			cfg.set_value("settings", "dark_default_v2", true)
+			cfg.set_value("settings", "map_theme", 3)
 		team_size = clampi(int(cfg.get_value("settings", "team_size", 1)), 1, 4)
 		tut_done = bool(cfg.get_value("settings", "tut_done", false))
 		var hd = cfg.get_value("hub", "data", {})
@@ -2607,7 +2613,7 @@ func _draw_outdoor() -> void:
 	draw_rect(Rect2(-60, -60, MAP_SIZE.x + 120, MAP_SIZE.y + 120), Color(0.93, 0.85, 0.62) if map_theme != 3 else Color(0.08, 0.08, 0.11))
 	if live_mode:
 		# Cartoon-Arena (Briefing-Palette): flache Grundfläche, dunklere Muster, warme Wege
-		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color("#289B78"))
+		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color("#15192A") if map_theme == 3 else Color("#289B78"))
 	elif map_theme == 3:
 		draw_rect(Rect2(Vector2.ZERO, MAP_SIZE), Color(0.14, 0.14, 0.19))
 	elif map_theme == 1:
@@ -2643,10 +2649,12 @@ func _draw_outdoor() -> void:
 	# Straßen: Bürgersteig, Asphalt, Mittelstreifen
 	if live_mode:
 		# Warme Wege mit heller Kante, ohne Strichmuster
+		var edge_c := Color("#2A3145") if map_theme == 3 else Color("#F2E8CD")
+		var road_c := Color("#3A4258") if map_theme == 3 else Color("#F7AD32")
 		for road in ROADS:
-			draw_rect(road.grow(10), Color("#F2E8CD"))
+			draw_rect(road.grow(10), edge_c)
 		for road in ROADS:
-			draw_rect(road, Color("#F7AD32"))
+			draw_rect(road, road_c)
 	else:
 		for road in ROADS:
 			draw_rect(road.grow(16), Color(0.78, 0.78, 0.8))
