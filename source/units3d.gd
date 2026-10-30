@@ -409,6 +409,10 @@ func _make_unit(skin: String) -> Dictionary:
 		model = load(QUAT_BASE).instantiate()
 		# Brawl-Stars-Look: Cel-Shading (harte Schattenkanten) und leicht gestauchte Chibi-Proportionen
 		model.scale = Vector3(1.12, 0.92, 1.12)
+		# Chibi-Kopf: Kopfknochen vergrößern (Animationen ohne Skalierungs-Spur behalten das bei)
+		var qsk: Skeleton3D = model.find_child("Skeleton3D", true, false) as Skeleton3D
+		if qsk != null and qsk.find_bone("Head") >= 0:
+			qsk.set_bone_pose_scale(qsk.find_bone("Head"), Vector3.ONE * 1.3)
 		for mi in model.find_children("*", "MeshInstance3D", true, false):
 			var mesh_i := mi as MeshInstance3D
 			for si in range(mesh_i.get_surface_override_material_count() if mesh_i.get_surface_override_material_count() > 0 else (mesh_i.mesh.get_surface_count() if mesh_i.mesh else 0)):
