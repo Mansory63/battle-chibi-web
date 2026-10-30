@@ -1351,26 +1351,30 @@ func draw_hud(vs: Vector2) -> void:
 	var foot_x := (vs.x - foot_w) * 0.5
 	# Hochformat: Tipp-Leiste über dem Shop, damit Joystick und Feuer frei bleiben
 	var foot_y := vs.y - 90.0 if vs.x >= vs.y else vs.y - 396.0
-	m._pill(Rect2(foot_x, foot_y, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
+	# In der Pause erklärt das Panel die Regeln, dort stört die Leiste nur
+	var show_tip: bool = state != "pause" and not (m.pause_layer != null and m.pause_layer.visible)
+	if show_tip:
+		m._pill(Rect2(foot_x, foot_y, foot_w, 52), Color(0.05, 0.06, 0.12, 0.8), 26)
 	# Shop unten: Kacheln mit Bild und Preisschild (Münzen)
 	_draw_shop(vs, foot_x, foot_w)
 	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
 	const TIPS := [
-		"Chat: type RED, BLUE, GREEN or YELLOW = fighters",
-		"Likes = more fighters. The top bar shows how many",
-		"Gifts = weapons (see the shop tiles)",
-		"Chat shop: !heal !shield !revive (on your name)",
-		"Galaxy gift = atomic bomb",
-		"Last team standing wins. Beat the boss in time!",
+		"Chat: ROT, BLAU, GRUEN oder GELB = Kaempfer",
+		"Likes bringen nach und nach mehr Kaempfer",
+		"Geschenke = Waffen (siehe Shop unten)",
+		"Chat-Shop: !heal !shield !revive",
+		"Galaxy-Geschenk = Atombombe",
+		"Letztes Team gewinnt, Boss rechtzeitig besiegen!",
 	]
 	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
 	# Tipp passt sich der Leistenbreite an (kleiner werden statt überlaufen)
 	var tip_txt := "TIP: " + str(TIPS[tip_i])
-	var tip_size := 14 if vs.x >= 620.0 else 12
+	var tip_size := 15 if vs.x >= 620.0 else 14
 	var tip_font: Font = m.ui_font()
 	while tip_size > 9 and tip_font.get_string_size(tip_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(tip_size * 1.12))).x > foot_w - 24.0:
 		tip_size -= 1
-	m._text(Vector2(foot_x + 10.0, foot_y + 10.0), tip_txt, tip_size, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
+	if show_tip:
+		m._text(Vector2(foot_x + 10.0, foot_y + 10.0), tip_txt, tip_size, Color(1, 0.95, 0.7), foot_w - 20.0, HORIZONTAL_ALIGNMENT_CENTER)
 	if state != "pause":
 		m._text(Vector2(foot_x, foot_y + 33.0), "Queue: %d" % queued, 20, Color(1, 0.95, 0.7), foot_w, HORIZONTAL_ALIGNMENT_CENTER)
 	if state == "pause" and not (nuke_t >= 0.0 and nuke_t < NUKE_WARN + 9.0):
