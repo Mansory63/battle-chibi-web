@@ -21,7 +21,7 @@ const LOOT_KINDS := ["pistol"]  # Waffen nur per Geschenk/Kauf, am Boden nur Pis
 # Geschenk-Name (klein geschrieben) -> Waffe. Anpassbar; unbekannte Geschenke werden nach Münzwert zugeordnet.
 # Es gibt nur noch vier Waffen: Pistole, AK, Minigun, Raketenwerfer
 # Geschenk -> Waffe (entspricht der Hilfe im Spiel)
-const GIFT_WEAPONS := {"rose": "pistol", "tiktok": "smg", "gg": "sniper", "finger heart": "shotgun", "ice cream cone": "ak", "doughnut": "katana", "hand hearts": "minigun", "money gun": "rocket"}
+const GIFT_WEAPONS := {"rose": "pistol", "tiktok": "smg", "gg": "sniper", "finger heart": "shotgun", "ice cream cone": "ak", "doughnut": "katana", "hand hearts": "rocket", "money gun": "shotgun"}
 const FILLER_NAMES := ["Luki", "Mia", "Jonas", "Lena", "Tim", "Anna", "Ben", "Emma", "Finn", "Sofia", "Noah", "Lara", "Paul", "Nina", "Leo", "Zoe", "Max", "Ida", "Elias", "Jana", "Ali", "Yara", "Kian", "Mira"]
 const SKINS := ["char_player", "char_red", "char_green", "char_yellow", "char_purple", "char_orange", "char_cyan", "char_pink"]
 
@@ -245,8 +245,8 @@ func _team_from_text(low: String) -> int:
 # Hilfe im Chat: Schlüsselwort schreiben, Erklärung erscheint für alle auf dem Stream
 const HELP_TOPICS := {
 	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
-	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "Galaxy gift = atomic bomb next round", "weapons: send the gift – Rose pistol · TikTok uzi · GG sniper · Finger Heart shotgun · Ice Cream Cone AK · Hand Hearts minigun · Money Gun rocket"],
-	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Minigun · Money Gun = Rocket", "Universe = ATOMIC BOMB"],
+	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "Galaxy gift = atomic bomb next round", "weapons: send the gift – Rose pistol · TikTok uzi · GG sniper · Finger Heart shotgun · Ice Cream Cone AK · Hand Hearts bazooka · Money Gun pumpgun"],
+	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Bazooka · Money Gun = Pumpgun", "Universe = ATOMIC BOMB"],
 	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
 	"nuke": ["Universe gift = ATOMIC BOMB", "The atomic bomb is a special gift, not a free action"],
@@ -475,7 +475,7 @@ func gift(nm: String, gname: String, coins: int) -> void:
 		return
 	var wk: String = GIFT_WEAPONS.get(gname.to_lower(), "")
 	if wk == "":
-		var pool: Array = ["pistol", "ak", "minigun", "rocket"]
+		var pool: Array = ["pistol", "ak", "minigun", "shotgun"]
 		wk = pool[clampi(int(log(float(maxi(1, coins))) / log(4.0)), 0, 3)]
 	var rar := 1 if coins < 10 else (2 if coins < 100 else 3)
 	_give_weapon(nm, wk, rar)
@@ -1517,9 +1517,9 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	fx = (vs.x - fw) * 0.5
 	m._pill(Rect2(fx, top, fw, 92), Color(0.05, 0.06, 0.12, 0.85), 18)
 	var util := [["heal", SHOP["heal"]], ["shield", SHOP["shield"]], ["revive", SHOP["revive"]], ["nuke", -1]]   # Atombombe kostet keine Münzen: der Preis ist ein Galaxy-Geschenk
-	var guns := ["pistol", "ak", "minigun", "rocket"]   # die vier Waffen zur Auswahl
+	var guns := ["pistol", "ak", "rocket", "shotgun"]   # Pistole, AK, Bazooka, Pumpgun
 	# Preis der Waffe = das Geschenk, das sie bringt
-	var gift_tag := {"pistol": "ROSE", "smg": "TIKTOK", "shotgun": "HEART", "ak": "ICE", "sniper": "GG", "minigun": "HANDS", "rocket": "MONEY"}
+	var gift_tag := {"pistol": "ROSE", "smg": "TIKTOK", "shotgun": "HEART", "ak": "ICE", "sniper": "GG", "minigun": "HANDS", "rocket": "HANDS"}
 	var tw := minf(96.0, (fw - 16.0) / 8.0)
 	var x0 := fx + (fw - 8.0 * tw) * 0.5
 	for k in util.size():
@@ -1575,8 +1575,8 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.12, 0.14, 0.24, 0.95))
 	m.fx.draw_rect(Rect2(p, Vector2(w, h * 0.45)), Color(0.2, 0.23, 0.36, 0.55))
 	m.fx.draw_rect(Rect2(p, Vector2(w, h)), Color(0.5, 0.56, 0.78, 0.9), false, 1.5)
-	var c := p + Vector2(w * 0.5, h * 0.4)
-	var s := minf(w, h) * 0.26
+	var c := p + Vector2(w * 0.5, h * 0.47)
+	var s := minf(w, h) * 0.2
 	# Bodenschatten für den 3D-Effekt
 	m.fx.draw_circle(c + Vector2(0, s * 1.05), s * 0.85, Color(0, 0, 0, 0.35))
 	match key:
@@ -1633,6 +1633,13 @@ func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
 				m.fx.draw_texture_rect(tex, Rect2(p + Vector2(w, h) * 0.5 - sz * 0.5 - Vector2(0, 4), sz), false)
 	# Preisschild: feste Leiste, Schrift wird passend verkleinert, nie abgeschnitten
 	var bar_h := 22.0
+	var top_names := {"heal": "HEAL", "shield": "SHIELD", "revive": "REVIVE", "nuke": "NUKE", "pistol": "PISTOL", "ak": "AK", "shotgun": "PUMPGUN", "rocket": "BAZOOKA", "minigun": "MINIGUN"}
+	var top_txt := str(top_names.get(key, key.to_upper()))
+	var tfs := 12
+	var tfont: Font = m.ui_font()
+	while tfs > 7 and tfont.get_string_size(top_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, tfs).x > w - 8.0:
+		tfs -= 1
+	m._text(Vector2(p.x + 2.0, p.y + 3.0), top_txt, tfs, Color(1, 1, 1), w - 4.0, HORIZONTAL_ALIGNMENT_CENTER)
 	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - bar_h - 2.0, w - 4.0, bar_h), Color(0.06, 0.08, 0.16))
 	m.fx.draw_rect(Rect2(p.x + 2.0, p.y + h - bar_h - 2.0, w - 4.0, bar_h), Color(1, 0.85, 0.25), false, 1.5)
 	var font: Font = m.ui_font()
