@@ -1757,8 +1757,13 @@ var daily_board: Dictionary = {}
 var daily_day := ""
 var daily_loaded := false
 
+# Wochen-Schluessel: Montag als Wochenbeginn (1970-01-01 war ein Donnerstag)
+func _week_key() -> String:
+	var days := int(floor(float(Time.get_unix_time_from_system()) / 86400.0))
+	return str(int(floor(float(days + 3) / 7.0)))
+
 func _board_ensure() -> void:
-	var today := Time.get_date_string_from_system()
+	var today := _week_key()
 	if daily_loaded and daily_day == today:
 		return
 	daily_loaded = true
@@ -1788,9 +1793,9 @@ func _draw_board(px: float, py: float, pw: float, k: float) -> void:
 	var ph := (48.0 + maxf(1.0, float(lines)) * 24.0 + 12.0) * k
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(1.0, 0.8, 0.3, 0.9), 22)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 20)
-	m._text(Vector2(px, py + 14 * k), "RANGLISTE HEUTE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 14 * k), "RANGLISTE DIESE WOCHE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	if rows.is_empty():
-		m._text(Vector2(px, py + 46 * k), "Noch keine Kills heute. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(px, py + 46 * k), "Noch keine Kills diese Woche. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	for i in lines:
 		var medal: String = ["1.", "2.", "3.", "4.", "5."][i]
