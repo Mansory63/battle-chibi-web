@@ -1510,7 +1510,7 @@ func _draw_nuke(vs: Vector2) -> void:
 func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	# Eine Reihe mit acht Kacheln direkt über der Tipp-Leiste, damit der Kampf frei bleibt
 	# Hochformat: Shop über den Bedienelementen (Joystick, Feuer) statt darüber
-	var top := vs.y - 186.0 if vs.x >= vs.y else vs.y - 330.0
+	var top := vs.y - 186.0 if vs.x >= vs.y else vs.y - 262.0
 	# Breite begrenzt, damit die Leiste nicht unter die Aktionsknöpfe rechts reicht
 	fw = minf(fw, 580.0)
 	# Immer exakt mittig, unabhängig vom übergebenen Versatz
