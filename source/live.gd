@@ -38,6 +38,11 @@ var viewers: Dictionary = {}       # name -> {team, coins, wins, kills, last, pe
 var queued := 0
 var team_points := [0, 0, 0, 0]
 var team_likes := [0, 0, 0, 0]
+# Like-Salven: je 25 Likes ein Schuss fuer das Team (max. 6 gespeichert), 1 Schuss alle 0,5 s
+const LIKES_PER_SHOT := 25
+var like_shots := [0, 0, 0, 0]
+var like_rem := [0, 0, 0, 0]
+var like_shot_cd := 0.0
 var round_kills := [0, 0, 0, 0]
 var alive_t := [0, 0, 0, 0]
 var streak_team := -1
@@ -391,6 +396,42 @@ func _spawn_reinforce() -> void:
 				m._spark_burst(b["pos"], TEAM_COLORS[k], 20, 300.0)
 				break
 
+# Like-Salve: ein gespeicherter Schuss eines Teams feuert auf den nächsten Gegner
+func _like_shoot(delta: float) -> void:
+	like_shot_cd -= delta
+	if like_shot_cd > 0.0 or state != "round":
+		return
+	for tm in 4:
+		if int(like_shots[tm]) <= 0:
+			continue
+		var shooter := -1
+		var target := -1
+		var best := 1e9
+		for i in m.bots.size():
+			var b: Dictionary = m.bots[i]
+			if not b["alive"] or int(b["team"]) != tm + 1:
+				continue
+			if shooter < 0:
+				shooter = i
+		if shooter < 0:
+			continue
+		var sp: Vector2 = m.bots[shooter]["pos"]
+		for j in m.bots.size():
+			var o: Dictionary = m.bots[j]
+			if not o["alive"] or int(o["team"]) == tm + 1 or int(o["team"]) > 4:
+				continue
+			var dd: float = o["pos"].distance_to(sp)
+			if dd < best:
+				best = dd
+				target = j
+		if target < 0:
+			continue
+		var dir: Vector2 = (m.bots[target]["pos"] - sp).normalized()
+		m._fire(shooter, sp, dir, "ak")
+		like_shots[tm] = int(like_shots[tm]) - 1
+		like_shot_cd = 0.5
+		return
+
 func likes(nm: String, n: int) -> void:
 	nm = _clean(nm)
 	var tm := -1
@@ -407,6 +448,10 @@ func likes(nm: String, n: int) -> void:
 			if team_likes[k] < team_likes[tm]:
 				tm = k
 	team_likes[tm] += maxi(1, n)
+	like_rem[tm] += maxi(1, n)
+	while like_rem[tm] >= LIKES_PER_SHOT:
+		like_rem[tm] -= LIKES_PER_SHOT
+		like_shots[tm] = mini(6, int(like_shots[tm]) + 1)
 	# Verstärkung: alle 50 Likes ein Kämpfer, max. 3 wartend
 	var before: int = int(team_total_likes[tm]) / REINFORCE_EVERY
 	team_total_likes[tm] += maxi(1, n)
@@ -822,6 +867,7 @@ func _refresh_queue() -> void:
 	queued = queue_names.size()
 
 func update(delta: float) -> void:
+	_like_shoot(delta)
 	help_t = maxf(0.0, help_t - delta)
 	if state == "pause":
 		m.bullets.clear()  # keine Geschosse über der Erklärung
