@@ -1785,16 +1785,16 @@ func _draw_board(px: float, py: float, pw: float, k: float) -> void:
 		rows.append([str(n_), int(daily_board[n_])])
 	rows.sort_custom(func(a, b): return a[1] > b[1] if a[1] != b[1] else a[0] < b[0])
 	var lines := mini(5, rows.size())
-	var ph := (34.0 + maxf(1.0, float(lines)) * 24.0 + 14.0) * k
+	var ph := (48.0 + maxf(1.0, float(lines)) * 24.0 + 12.0) * k
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(1.0, 0.8, 0.3, 0.9), 22)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 20)
-	m._text(Vector2(px, py + 8 * k), "RANGLISTE HEUTE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 14 * k), "RANGLISTE HEUTE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	if rows.is_empty():
-		m._text(Vector2(px, py + 38 * k), "Noch keine Kills heute. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(px, py + 46 * k), "Noch keine Kills heute. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	for i in lines:
 		var medal: String = ["1.", "2.", "3.", "4.", "5."][i]
-		m._text(Vector2(px + 18, py + (38.0 + 24.0 * i) * k), "%s %s  -  %d" % [medal, str(rows[i][0]).substr(0, 14), rows[i][1]], int(18 * k), Color(1, 0.97, 0.85), pw - 36.0, HORIZONTAL_ALIGNMENT_LEFT)
+		m._text(Vector2(px + 18, py + (46.0 + 24.0 * i) * k), "%s %s  -  %d" % [medal, str(rows[i][0]).substr(0, 14), rows[i][1]], int(18 * k), Color(1, 0.97, 0.85), pw - 36.0, HORIZONTAL_ALIGNMENT_LEFT)
 
 func _draw_pause_info(vs: Vector2) -> void:
 	# Solange das Pausen-Layer mit Knöpfen sichtbar ist, zeichnet es Titel und Knöpfe selbst
