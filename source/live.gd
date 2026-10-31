@@ -1528,45 +1528,71 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 		_shop_tile(Vector2(x0 + (k + 4) * tw, top + 6.0), tw - 6.0, guns[k], str(gift_tag[guns[k]]))
 
 # Seitenansicht der kaufbaren Waffen, gezeichnet (keine Textur): Pistole, AK, Minigun, Raketenwerfer
+# Rechteck mit dunklem Umriss, Hauptfarbe und heller Oberkante (wirkt wie ein 3D-Bauteil)
+func _gbox(c: Vector2, pos: Vector2, size: Vector2, col: Color, u: float) -> void:
+	var ol := Color(0.06, 0.06, 0.09)
+	m.fx.draw_rect(Rect2(c + pos * u - Vector2(0.09, 0.09) * u, size * u + Vector2(0.18, 0.18) * u), ol)
+	m.fx.draw_rect(Rect2(c + pos * u, size * u), col)
+	m.fx.draw_rect(Rect2(c + pos * u, Vector2(size.x * u, maxf(1.0, size.y * 0.22 * u))), col.lightened(0.35))
+	m.fx.draw_rect(Rect2(c + (pos + Vector2(0, size.y - size.y * 0.18)) * u, Vector2(size.x * u, size.y * 0.18 * u)), col.darkened(0.3))
+
+# Dreieck/Polygon mit dunklem Umriss
+func _gpoly(c: Vector2, pts: Array, col: Color, u: float) -> void:
+	var ol := Color(0.06, 0.06, 0.09)
+	var pa := PackedVector2Array()
+	var cx := 0.0
+	var cy := 0.0
+	for p2 in pts:
+		cx += (p2 as Vector2).x
+		cy += (p2 as Vector2).y
+	cx /= pts.size()
+	cy /= pts.size()
+	var center := Vector2(cx, cy)
+	for p2 in pts:
+		var v := (p2 as Vector2) - center
+		pa.append(c + (center + v * 1.14) * u)
+	m.fx.draw_colored_polygon(pa, ol)
+	var pb := PackedVector2Array()
+	for p2 in pts:
+		pb.append(c + (p2 as Vector2) * u)
+	m.fx.draw_colored_polygon(pb, col)
+
 func _gun_icon(key: String, c: Vector2, u: float) -> void:
-	var steel := Color(0.36, 0.38, 0.44)
-	var steel_hi := Color(0.62, 0.66, 0.72)
+	var steel := Color(0.4, 0.43, 0.5)
 	var dark := Color(0.13, 0.13, 0.16)
 	match key:
 		"pistol":
-			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.6 * u), Vector2(2.6 * u, 0.5 * u)), steel)
-			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.6 * u), Vector2(2.6 * u, 0.14 * u)), steel_hi)
-			m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, -0.1 * u), Vector2(1.1 * u, 0.42 * u)), steel.darkened(0.15))
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(0.2 * u, 0.32 * u), c + Vector2(1.05 * u, 0.32 * u), c + Vector2(0.85 * u, 1.45 * u), c + Vector2(0.3 * u, 1.45 * u)]), Color(0.3, 0.12, 0.2))
-			m.fx.draw_line(c + Vector2(-0.15 * u, 0.42 * u), c + Vector2(0.45 * u, 0.42 * u), dark, 2.0)
-			m.fx.draw_rect(Rect2(c + Vector2(1.1 * u, -0.6 * u), Vector2(0.2 * u, 0.12 * u)), dark)
+			# Schlitten, Lauf, Griff, Abzugsbügel, Visier
+			_gbox(c, Vector2(-1.5, -0.65), Vector2(2.7, 0.55), steel, u)
+			_gbox(c, Vector2(0.9, -0.5), Vector2(0.28, 0.2), dark, u)
+			_gbox(c, Vector2(-0.25, -0.1), Vector2(1.2, 0.42), steel.darkened(0.12), u)
+			_gpoly(c, [Vector2(0.2, 0.32), Vector2(1.1, 0.32), Vector2(0.9, 1.5), Vector2(0.3, 1.5)], Color(0.32, 0.13, 0.22), u)
+			m.fx.draw_line(c + Vector2(-0.1, 0.42) * u, c + Vector2(0.5, 0.42) * u, dark, 2.0)
+			m.fx.draw_line(c + Vector2(-0.1, 0.3) * u, c + Vector2(0.35, 0.3) * u, Color(0.6, 0.2, 0.3), 1.0)
 		"ak":
+			# Holzschaft, Metallgehäuse, Magazin, Lauf
 			var wood := Color(0.62, 0.42, 0.22)
-			var wood_hi := Color(0.8, 0.6, 0.35)
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-1.7 * u, -0.1 * u), c + Vector2(-0.6 * u, -0.25 * u), c + Vector2(-0.5 * u, 0.3 * u), c + Vector2(-1.7 * u, 0.5 * u)]), wood)
-			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.35 * u), Vector2(1.5 * u, 0.5 * u)), steel)
-			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.35 * u), Vector2(1.5 * u, 0.12 * u)), steel_hi)
-			m.fx.draw_rect(Rect2(c + Vector2(0.9 * u, -0.2 * u), Vector2(1.1 * u, 0.2 * u)), dark)
-			m.fx.draw_rect(Rect2(c + Vector2(0.2 * u, -0.1 * u), Vector2(0.9 * u, 0.3 * u)), wood_hi)
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(-0.1 * u, 0.15 * u), c + Vector2(0.35 * u, 0.15 * u), c + Vector2(0.25 * u, 1.0 * u), c + Vector2(-0.05 * u, 1.0 * u)]), dark)
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(0.45 * u, 0.15 * u), c + Vector2(0.8 * u, 0.15 * u), c + Vector2(0.65 * u, 0.9 * u), c + Vector2(0.4 * u, 0.9 * u)]), wood)
+			_gpoly(c, [Vector2(-1.8, -0.15), Vector2(-0.6, -0.3), Vector2(-0.5, 0.35), Vector2(-1.8, 0.55)], wood, u)
+			_gbox(c, Vector2(-0.6, -0.4), Vector2(1.6, 0.55), steel, u)
+			_gbox(c, Vector2(-0.6, -0.42), Vector2(1.6, 0.14), Color(0.65, 0.68, 0.75), u)
+			_gbox(c, Vector2(1.0, -0.22), Vector2(1.1, 0.2), dark, u)
+			_gbox(c, Vector2(0.15, -0.12), Vector2(0.9, 0.32), Color(0.8, 0.6, 0.35), u)
+			_gpoly(c, [Vector2(-0.05, 0.15), Vector2(0.4, 0.15), Vector2(0.3, 1.05), Vector2(-0.1, 1.05)], dark, u)
+			_gpoly(c, [Vector2(0.5, 0.15), Vector2(0.9, 0.15), Vector2(0.75, 0.95), Vector2(0.42, 0.95)], wood, u)
 		"minigun":
-			m.fx.draw_rect(Rect2(c + Vector2(-1.2 * u, -0.5 * u), Vector2(1.1 * u, 1.0 * u)), Color(0.8, 0.2, 0.2))
-			m.fx.draw_rect(Rect2(c + Vector2(-1.2 * u, -0.5 * u), Vector2(1.1 * u, 0.18 * u)), Color(1, 0.5, 0.45))
+			_gbox(c, Vector2(-1.2, -0.5), Vector2(1.1, 1.0), Color(0.8, 0.2, 0.2), u)
 			for bi in 4:
-				var by := -0.45 * u + bi * 0.25 * u
-				m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, by), Vector2(1.9 * u, 0.17 * u)), steel)
-				m.fx.draw_rect(Rect2(c + Vector2(-0.2 * u, by), Vector2(1.9 * u, 0.06 * u)), steel_hi)
-			m.fx.draw_rect(Rect2(c + Vector2(1.55 * u, -0.6 * u), Vector2(0.2 * u, 0.9 * u)), dark)
-			m.fx.draw_rect(Rect2(c + Vector2(-1.0 * u, 0.5 * u), Vector2(0.4 * u, 0.9 * u)), dark)
-			m.fx.draw_circle(c + Vector2(-0.8 * u, -0.7 * u), 0.3 * u, dark)
+				var by := -0.45 + bi * 0.25
+				_gbox(c, Vector2(-0.2, by), Vector2(1.9, 0.17), steel, u)
+			_gbox(c, Vector2(1.55, -0.6), Vector2(0.2, 0.9), dark, u)
 		"rocket":
-			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.4 * u), Vector2(2.6 * u, 0.75 * u)), Color(0.3, 0.6, 0.35))
-			m.fx.draw_rect(Rect2(c + Vector2(-1.5 * u, -0.4 * u), Vector2(2.6 * u, 0.16 * u)), Color(0.55, 0.85, 0.5))
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(1.1 * u, -0.3 * u), c + Vector2(1.6 * u, -0.3 * u), c + Vector2(1.6 * u, 0.3 * u), c + Vector2(1.1 * u, 0.3 * u)]), Color(0.85, 0.85, 0.9))
-			m.fx.draw_colored_polygon(PackedVector2Array([c + Vector2(1.6 * u, -0.3 * u), c + Vector2(2.0 * u, 0.0), c + Vector2(1.6 * u, 0.3 * u)]), Color(0.9, 0.25, 0.2))
-			m.fx.draw_rect(Rect2(c + Vector2(-0.5 * u, 0.35 * u), Vector2(0.4 * u, 0.7 * u)), dark)
-			m.fx.draw_rect(Rect2(c + Vector2(-0.6 * u, -0.6 * u), Vector2(0.5 * u, 0.2 * u)), dark)
+			# Rohr mit Rot-Spitze, Griff, Zielrohr
+			_gbox(c, Vector2(-1.5, -0.42), Vector2(2.5, 0.8), Color(0.3, 0.6, 0.35), u)
+			_gbox(c, Vector2(-1.5, -0.42), Vector2(2.5, 0.2), Color(0.55, 0.85, 0.5), u)
+			_gbox(c, Vector2(1.0, -0.32), Vector2(0.6, 0.64), Color(0.85, 0.85, 0.9), u)
+			_gpoly(c, [Vector2(1.55, -0.32), Vector2(2.05, 0.0), Vector2(1.55, 0.32)], Color(0.9, 0.25, 0.2), u)
+			_gbox(c, Vector2(-0.5, 0.38), Vector2(0.4, 0.7), dark, u)
+			_gbox(c, Vector2(-0.6, -0.65), Vector2(0.5, 0.2), dark, u)
 
 # Seitenansicht der kaufbaren Waffen, gezeichnet (keine Textur): Pistole, AK, Minigun, Raketenwerfer
 func _shop_tile(p: Vector2, w: float, key: String, label: String) -> void:
