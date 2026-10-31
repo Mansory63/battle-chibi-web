@@ -655,7 +655,7 @@ func _chibi_shadow() -> StandardMaterial3D:
 	if _chibi_sh == null:
 		_chibi_sh = StandardMaterial3D.new()
 		_chibi_sh.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_chibi_sh.albedo_color = Color(0.05, 0.05, 0.08, 0.38)
+		_chibi_sh.albedo_color = Color(0.04, 0.04, 0.07, 0.5)
 		_chibi_sh.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return _chibi_sh
 
@@ -670,8 +670,9 @@ func _chibi_face() -> ArrayMesh:
 		var st := _new_st()
 		for sx in [-1.0, 1.0]:
 			var ex: float = sx * 0.085
-			_add_sphere(st, Vector3(ex, 0.79, 0.2), 0.042, Color(0.08, 0.06, 0.08), 1.2)
-			_add_sphere(st, Vector3(ex + 0.014, 0.8, 0.228), 0.013, Color(1, 1, 1), 1.0)
+			_add_sphere(st, Vector3(ex, 0.79, 0.2), 0.052, Color(0.08, 0.06, 0.08), 1.2)
+			_add_sphere(st, Vector3(ex + 0.016, 0.81, 0.245), 0.017, Color(1, 1, 1), 1.0)
+			_add_sphere(st, Vector3(ex - 0.012, 0.775, 0.245), 0.007, Color(1, 1, 1), 1.0)
 			_add_sphere(st, Vector3(sx * 0.14, 0.715, 0.17), 0.045, Color(1.0, 0.55, 0.55), 0.6)
 		_add_box(st, Vector3(0, 0.7, 0.215), Vector3(0.06, 0.014, 0.02), Color(0.45, 0.12, 0.12))
 		_chibi_face_m = st.commit()
@@ -708,6 +709,8 @@ func _make_chibi_unit(skin: String) -> Dictionary:
 	# Kopf (groß), Haare, Gesicht
 	var head := _cpart(model, _chibi_prim("sphere", Vector3(0.225, 0, 0)), _chibi_mat(skin_c), Vector3(0, 0.775, 0))
 	_cpart(model, _chibi_prim("sphere", Vector3(0.235, 0, 0)), _chibi_mat(_chibi_hair(skin)), Vector3(0, 0.9, -0.02), Vector3(1.0, 0.55, 1.04))
+	# Haarlicht: hellerer Fleck oben auf dem Haar gibt Tiefe
+	_cpart(model, _chibi_prim("sphere", Vector3(0.09, 0, 0)), _chibi_mat(_chibi_hair(skin).lightened(0.35)), Vector3(0.06, 1.0, 0.1), Vector3(1.0, 0.45, 0.8))
 	var face := _cpart(model, _chibi_face(), _chibi_vc(), Vector3.ZERO)
 	# Körper: Oberteil in Teamfarbe, Gürtel und Hose
 	var torso := _cpart(model, _chibi_prim("box", Vector3(0.3, 0.24, 0.2)), _chibi_mat(Color.WHITE), Vector3(0, 0.44, 0))
