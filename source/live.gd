@@ -247,7 +247,7 @@ const HELP_TOPICS := {
 	"rules": ["1. Chat RED, BLUE, GREEN or YELLOW to join a team", "2. Likes = reinforcements for your team", "3. Gifts = weapon + crate for your team", "4. Chat shop: !heal · !shield · !revive · !ak · !smg · ...", "5. The circle shrinks. Last one standing wins"],
 	"shop": ["!shield = +50 shield (5 coins)", "!heal = heal to full health (10 coins)", "!revive = bring a dead player back (15 coins)", "Galaxy gift = atomic bomb next round", "weapons: send the gift – Rose pistol · TikTok uzi · GG sniper · Finger Heart shotgun · Ice Cream Cone AK · Hand Hearts bazooka · Money Gun pumpgun"],
 	"gift": ["Every paid gift = weapon + crate for your team", "Rose = Pistol · TikTok = Uzi · GG = Sniper · Finger Heart = Pumpgun", "Ice Cream Cone = AK · Doughnut = Katana · Hand Hearts = Bazooka · Money Gun = Pumpgun", "Universe = ATOMIC BOMB"],
-	"likes": ["Likes fill your team's bar", "Every 50 likes = one reinforcement fighter", "Likes count as activity: stay active or you are removed"],
+	"likes": ["Likes fill your team's bar", "Every 400 likes = one extra fighter, every 25 likes = one shot", "Likes count as activity: stay active or you are removed"],
 	"queue": ["12 fighters per team", "Everybody else waits in the queue", "Free players who did nothing for 30 s of a round are removed"],
 	"nuke": ["Universe gift = ATOMIC BOMB", "The atomic bomb is a special gift, not a free action"],
 }
@@ -1775,11 +1775,29 @@ func _draw_results(vs: Vector2) -> void:
 		m._text(Vector2(px + 40, py + 144 + r * 30), "%d. %s" % [r + 1, TEAM_NAMES[k]], 22, TEAM_COLORS[k])
 		m._text(Vector2(px + pw - 200, py + 144 + r * 30), "%d points · %d kills" % [team_points[k], round_kills[k]], 20, Color.WHITE, 170.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	m._text(Vector2(px, py + 278), "Next round: choose a team and join!", 16, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	# Alle Regeln unter dem Ergebnis
+	var ry := py + 304.0
+	var rh := 26.0 + RULES_END.size() * 22.0
+	m._pill(Rect2(px, ry, pw, rh), Color(0.04, 0.05, 0.12, 0.88), 18)
+	m._text(Vector2(px, ry + 8.0), "SPIELREGELN", 18, Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	for i in RULES_END.size():
+		m._text(Vector2(px + 16, ry + 34.0 + i * 22.0), RULES_END[i], 15, Color(1, 0.97, 0.85), pw - 32.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
+# Alle Regeln, am Ende der Runde gezeigt
+const RULES_END := [
+	"1. CHAT YOUR TEAM COLOR (ROT, BLAU, GRUEN oder GELB)",
+	"2. Every 25 likes = 1 shot for your team",
+	"3. Every 400 likes = +1 extra fighter",
+	"4. Gifts = weapons (see the shop)",
+	"5. Chat: !heal  !shield  !revive",
+	"6. Galaxy gift = atomic bomb",
+	"7. LAST TEAM STANDING WINS",
+]
+
 const HOW_TO_PLAY := [
 	"1. CHAT YOUR TEAM COLOR",
-	"2. LIKES = MORE FIGHTERS",
+	"2. LIKES = SHOTS + MORE FIGHTERS",
 	"3. GIFTS = WEAPONS",
 	"4. LAST TEAM STANDING WINS",
 ]
