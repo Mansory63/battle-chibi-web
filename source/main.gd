@@ -197,7 +197,7 @@ var fireballs: Array[Dictionary] = []
 var shake := 0.0
 var tut_done := false
 var tut_step := 0
-const TUT_TEXTS := ["Linker Daumen: laufen", "Right thumb: HOLD FIRE = shoot, drag = aim", "Open crates: stand next to them for 3 seconds", "Stay in the zone, the fire outside hurts!"]
+const TUT_TEXTS := ["Left thumb: move", "Right thumb: HOLD FIRE = shoot, drag = aim", "Open crates: stand next to them for 3 seconds", "Stay in the zone, the fire outside hurts!"]
 var zone_dmg := ZONE_DAMAGE_PER_SEC
 var zone_time := ZONE_SHRINK_TIME
 var bot_dmg_mult := 0.5

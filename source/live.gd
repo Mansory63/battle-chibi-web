@@ -1406,12 +1406,12 @@ func draw_hud(vs: Vector2) -> void:
 	_draw_shop(vs, foot_x, foot_w)
 	# Tipp-Leiste: wechselt alle 4 s zwischen kurzen Erklärungen
 	const TIPS := [
-		"Chat: ROT, BLAU, GRUEN oder GELB = Kaempfer",
-		"Likes bringen nach und nach mehr Kaempfer",
-		"Geschenke = Waffen (siehe Shop unten)",
+		"Chat RED, BLUE, GREEN or YELLOW = fighters",
+		"Likes bring more fighters over time",
+		"Gifts = weapons (see the shop below)",
 		"Chat-Shop: !heal !shield !revive",
-		"Galaxy-Geschenk = Atombombe",
-		"Letztes Team gewinnt, Boss rechtzeitig besiegen!",
+		"Galaxy gift = atomic bomb",
+		"Last team standing wins - defeat the boss in time!",
 	]
 	var tip_i := int(Time.get_ticks_msec() / 4000.0) % TIPS.size()
 	# Tipp passt sich der Leistenbreite an (kleiner werden statt überlaufen)
@@ -1766,7 +1766,7 @@ func _draw_results(vs: Vector2) -> void:
 	var wc: Color = TEAM_COLORS[maxi(0, winner)]
 	m._text(Vector2(px, py + 44), "TEAM %s WINS!" % TEAM_NAMES[maxi(0, winner)], 34, wc, pw, HORIZONTAL_ALIGNMENT_CENTER)
 	if streak >= 2:
-		m._text(Vector2(px, py + 74), "Siegesserie: %d" % streak, 20, Color(1, 0.6, 0.2), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(px, py + 74), "Win streak: %d" % streak, 20, Color(1, 0.6, 0.2), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	m._text(Vector2(px, py + 108), "OVERALL SCORE", 18, Color(0.8, 0.9, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	var order := [0, 1, 2, 3]
 	order.sort_custom(func(a, b): return team_points[a] > team_points[b])
@@ -1779,14 +1779,14 @@ func _draw_results(vs: Vector2) -> void:
 	var ry := py + 304.0
 	var rh := 26.0 + RULES_END.size() * 22.0
 	m._pill(Rect2(px, ry, pw, rh), Color(0.04, 0.05, 0.12, 0.88), 18)
-	m._text(Vector2(px, ry + 8.0), "SPIELREGELN", 18, Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, ry + 8.0), "GAME RULES", 18, Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	for i in RULES_END.size():
 		m._text(Vector2(px + 16, ry + 34.0 + i * 22.0), RULES_END[i], 15, Color(1, 0.97, 0.85), pw - 32.0, HORIZONTAL_ALIGNMENT_CENTER)
 
 # Pause-Anzeige: Countdown, Warteschlange mit Namen und Spielregeln (englisch, für Zuschauer)
 # Alle Regeln, am Ende der Runde gezeigt
 const RULES_END := [
-	"1. CHAT YOUR TEAM COLOR (ROT, BLAU, GRUEN oder GELB)",
+	"1. CHAT RED, BLUE, GREEN or YELLOW to join",
 	"2. Every 25 likes = 1 shot for your team",
 	"3. Every 400 likes = +1 extra fighter",
 	"4. Gifts = weapons (see the shop)",
@@ -1844,9 +1844,9 @@ func _draw_board(px: float, py: float, pw: float, k: float) -> void:
 	var ph := (48.0 + maxf(1.0, float(lines)) * 24.0 + 12.0) * k
 	m._pill(Rect2(px - 3, py - 3, pw + 6, ph + 6), Color(1.0, 0.8, 0.3, 0.9), 22)
 	m._pill(Rect2(px, py, pw, ph), Color(0.07, 0.04, 0.14, 0.95), 20)
-	m._text(Vector2(px, py + 14 * k), "RANGLISTE DIESE WOCHE (Kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
+	m._text(Vector2(px, py + 14 * k), "WEEKLY LEADERBOARD (kills)", int(20 * k), Color(1, 0.85, 0.3), pw, HORIZONTAL_ALIGNMENT_CENTER)
 	if rows.is_empty():
-		m._text(Vector2(px, py + 46 * k), "Noch keine Kills diese Woche. Wer führt?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
+		m._text(Vector2(px, py + 46 * k), "No kills this week yet. Who takes the lead?", int(17 * k), Color(0.8, 0.85, 1.0), pw, HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	for i in lines:
 		var medal: String = ["1.", "2.", "3.", "4.", "5."][i]
