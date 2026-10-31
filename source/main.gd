@@ -802,6 +802,9 @@ func start_live(opts := {}) -> void:
 	if live_mode:
 		return
 	live_mode = true
+	# TikTok-Live: keine Steuerung für Zuschauer, daher Joystick und Feuer-Knopf ausblenden
+	if touch != null:
+		touch.visible = false
 	live = LiveScript.new()
 	live.begin(self, opts)
 	if music_player and not music_player.playing:
