@@ -644,7 +644,7 @@ func _spawn_boss() -> void:
 	_reset_bot(b, 4, "BOSS", false, boss_spawn_pos)
 	b["health"] = 700.0
 	b["maxhp"] = 700.0
-	b["scale"] = 5.0   # Godzilla-Größe
+	b["scale"] = 7.0   # Godzilla-Größe (noch größer)
 	b["boss"] = true
 	b["skin"] = "reaper"
 	_equip(b, "minigun", 3)
