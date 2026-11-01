@@ -1523,7 +1523,7 @@ func _draw_shop(vs: Vector2, fx: float, fw: float) -> void:
 	var tw := minf(96.0, (fw - 16.0) / 8.0)
 	var x0 := fx + (fw - 8.0 * tw) * 0.5
 	for k in util.size():
-		_shop_tile(Vector2(x0 + k * tw, top + 6.0), tw - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "NUKE")
+		_shop_tile(Vector2(x0 + k * tw, top + 6.0), tw - 6.0, str(util[k][0]), str(util[k][1]) if int(util[k][1]) >= 0 else "GALAXY")
 	for k in guns.size():
 		_shop_tile(Vector2(x0 + (k + 4) * tw, top + 6.0), tw - 6.0, guns[k], str(gift_tag[guns[k]]))
 
