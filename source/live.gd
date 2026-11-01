@@ -331,6 +331,7 @@ func _buy(nm: String, item: String) -> void:
 		_equip(b, item, 0)
 		v["coins"] = int(v["coins"]) - price
 		m._spark_burst(b["pos"], Color(1.0, 0.85, 0.3), 24, 300.0)
+		_popup(b["pos"], "BUY " + str(m.WEAPONS[item]["name"]).to_upper(), Color(1.0, 0.85, 0.3))
 		_toast("%s equips %s (-%d coins)" % [nm, m.WEAPONS[item]["name"], price], Color(0.5, 1.0, 0.6))
 		return
 	if item == "revive":
@@ -349,6 +350,7 @@ func _buy(nm: String, item: String) -> void:
 		b["health"] = minf(HP, float(b["health"]) + 50.0)
 	v["coins"] = int(v["coins"]) - price
 	m._spark_burst(b["pos"], Color(0.3, 0.9, 1.0), 24, 300.0)
+	_popup(b["pos"], item.to_upper(), Color(0.4, 1.0, 0.9))
 	_toast("%s buys %s (-%d coins)" % [nm, item, price], Color(0.5, 1.0, 0.6))
 
 func join(nm: String, team: int) -> void:
@@ -626,6 +628,7 @@ func _give_weapon(nm: String, wk: String, rar: int) -> void:
 		_reset_bot(b, tm, nm, true, m._nearest_free(_centroid(tm) + Vector2.from_angle(randf() * TAU) * 80.0, m.BOT_RADIUS))
 	b["health"] = HP
 	_equip(b, wk, rar)
+	_popup(b["pos"], "GIFT " + str(m.WEAPONS[wk]["name"]).to_upper() if m.WEAPONS.has(wk) else "GIFT", TEAM_COLORS[tm])
 	m._spark_burst(b["pos"], TEAM_COLORS[tm], 30, 380.0)
 	m._spark_burst(b["pos"], Color(1, 0.9, 0.3), 20, 300.0)
 	focus = i
@@ -866,8 +869,28 @@ func _refresh_queue() -> void:
 			queue_names.append(nm)
 	queued = queue_names.size()
 
+# Einblendungen über den Figuren (Kauf/Geschenk), damit man im Stream sieht, was passiert
+var buy_popups: Array = []
+
+func _popup(pos: Vector2, text: String, col: Color) -> void:
+	buy_popups.append({"pos": pos, "text": text, "col": col, "t": 0.0})
+	if buy_popups.size() > 12:
+		buy_popups.pop_front()
+
+func _draw_popups(vs: Vector2) -> void:
+	for pp in buy_popups:
+		var sc: Vector2 = m._fx_screen(pp["pos"])
+		var a := clampf(1.0 - float(pp["t"]) / 1.6, 0.0, 1.0)
+		var c: Color = pp["col"]
+		c.a = a
+		m._text(Vector2(sc.x - 80.0, sc.y - 64.0 - float(pp["t"]) * 36.0), str(pp["text"]), 20, c, 160.0, HORIZONTAL_ALIGNMENT_CENTER)
+
 func update(delta: float) -> void:
 	_like_shoot(delta)
+	for pp in buy_popups:
+		pp["t"] = float(pp["t"]) + delta
+	while buy_popups.size() > 0 and float(buy_popups[0]["t"]) > 1.6:
+		buy_popups.pop_front()
 	help_t = maxf(0.0, help_t - delta)
 	if state == "pause":
 		m.bullets.clear()  # keine Geschosse über der Erklärung
@@ -1436,6 +1459,7 @@ func draw_hud(vs: Vector2) -> void:
 	m.fx.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if nuke_t >= 0.0:
 		_draw_nuke(vs)
+	_draw_popups(vs)
 
 func _draw_nuke(vs: Vector2) -> void:
 	var sc: Vector2 = m._fx_screen(nuke_pos)
