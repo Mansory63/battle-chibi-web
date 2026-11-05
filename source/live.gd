@@ -1297,9 +1297,9 @@ func draw_hud(vs: Vector2) -> void:
 		# Profilbild-Bubble über dem Namen (nur Zuschauer mit geladenem Bild)
 		var akey := str(b["name"])
 		if b["viewer"] and avatar_tex.get(akey) != null:
-			var ar := 17.0 * ui
+			var ar := 24.0 * ui
 			m.fx.draw_texture_rect(avatar_tex[akey], Rect2(sp.x - ar, ty - ar * 2.0 - 8.0, ar * 2.0, ar * 2.0), false)
-			m.fx.draw_arc(Vector2(sp.x, ty - ar - 8.0), ar, 0.0, TAU, 32, col, 3.0)
+			m.fx.draw_arc(Vector2(sp.x, ty - ar - 8.0), ar, 0.0, TAU, 32, col, 4.0)
 		var nfs := int(17 * ui)
 		m.fx.draw_string_outline(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, 6, Color(0.06, 0.05, 0.1, 0.95))
 		m.fx.draw_string(f, Vector2(sp.x - 90, ty), nm, HORIZONTAL_ALIGNMENT_CENTER, 180, nfs, nc)
