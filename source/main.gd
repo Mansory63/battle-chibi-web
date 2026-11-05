@@ -2565,7 +2565,7 @@ func _update_bullets(delta: float) -> void:
 				if not explodes:
 					b["health"] -= bl["damage"] * (1.0 if ow == -1 else 2.0)
 					b["lh"] = ow
-					if ow == -1:
+					if ow == -1 or randf() < 0.3:
 						_hit_popup(b["pos"], bl["damage"], float(b["health"]) <= 0.0)
 					if b["health"] <= 0.0:
 						_kill_bot(i, ow == -1)

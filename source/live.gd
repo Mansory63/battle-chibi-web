@@ -464,6 +464,7 @@ func likes(nm: String, n: int) -> void:
 	if team_likes[tm] >= LIKE_GOAL:
 		team_likes[tm] = 0  # keine Kiste mehr: Kisten nur bei bezahlten Geschenken
 
+var gift_feed: Array = []   # {text, team, t} - Live-Liste der letzten Geschenke
 func gift(nm: String, gname: String, coins: int) -> void:
 	nm = _ensure_viewer(nm)
 	if nm == "":
@@ -471,6 +472,9 @@ func gift(nm: String, gname: String, coins: int) -> void:
 	var v: Dictionary = viewers[nm]
 	v["coins"] = int(v["coins"]) + coins
 	var tm: int = v["team"]
+	gift_feed.append({"text": "%s  sent  %s" % [nm, gname], "team": tm, "t": 0.0})
+	if gift_feed.size() > 5:
+		gift_feed.pop_front()
 	topsup[tm][nm] = int(topsup[tm].get(nm, 0)) + coins
 	if gname.to_lower().contains("universe") or gname.to_lower().contains("galaxy") or coins >= NUKE_COINS:
 		nuke(nm)
@@ -887,6 +891,10 @@ func _draw_popups(vs: Vector2) -> void:
 
 func update(delta: float) -> void:
 	_like_shoot(delta)
+	for gf in gift_feed:
+		gf["t"] = float(gf["t"]) + delta
+	while gift_feed.size() > 0 and float(gift_feed[0]["t"]) > 7.0:
+		gift_feed.pop_front()
 	for pp in buy_popups:
 		pp["t"] = float(pp["t"]) + delta
 	while buy_popups.size() > 0 and float(buy_popups[0]["t"]) > 1.6:
@@ -1460,6 +1468,20 @@ func draw_hud(vs: Vector2) -> void:
 	if nuke_t >= 0.0:
 		_draw_nuke(vs)
 	_draw_popups(vs)
+	_draw_gift_feed(vs)
+
+func _draw_gift_feed(vs: Vector2) -> void:
+	var n := gift_feed.size()
+	if n == 0:
+		return
+	var fw := minf(300.0, vs.x - 24.0)
+	var y := vs.y - 214.0 - float(n) * 26.0
+	for gf in gift_feed:
+		var a := clampf(1.0 - (float(gf["t"]) - 5.5) / 1.5, 0.0, 1.0)
+		var tc: Color = TEAM_COLORS[clampi(int(gf["team"]) - 1, 0, 4)]
+		m._pill(Rect2(12, y, fw, 22), Color(0.05, 0.06, 0.12, 0.6 * a), 10)
+		m._text(Vector2(20, y + 2), str(gf["text"]), 14, Color(tc.r, tc.g, tc.b, a), fw - 16.0)
+		y += 26.0
 
 func _draw_nuke(vs: Vector2) -> void:
 	var sc: Vector2 = m._fx_screen(nuke_pos)
